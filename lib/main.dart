@@ -48,7 +48,9 @@ void main() async {
                 const SizedBox(height: 8),
                 Text(e.toString(), textAlign: TextAlign.center),
               ],
+              
             ),
+            
           ),
         ),
       ),
@@ -68,7 +70,58 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const DashboardScreen(),
+      
+      
+      home: const MainScreen(),
+    );
+    
+  }
+}
+
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  int _selectedIndex = 0;
+  
+  // For now, assuming admin role is true. You can modify this based on your authentication logic
+  bool isAdmin = true;
+
+  static const List<Widget> _widgetOptions = <Widget>[
+    DashboardScreen(), // Index 0
+    Text('Halaman Ambil Perca'), // Index 1
+    Text('Halaman Ambil Majun'), // Index 2
+    Text('Halaman Pengiriman'), // Index 3
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _widgetOptions.elementAt(_selectedIndex),
+      bottomNavigationBar: isAdmin ? BottomNavigationBar(
+        type: BottomNavigationBarType.fixed, // This ensures all tabs are visible
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Menu Awal'),
+          BottomNavigationBarItem(icon: Icon(Icons.inventory_2), label: 'Ambil Perca'),
+          BottomNavigationBarItem(icon: Icon(Icons.local_shipping), label: 'Ambil Majun'),
+          BottomNavigationBarItem(icon: Icon(Icons.delivery_dining), label: 'Pengiriman'),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Theme.of(context).primaryColor,
+        unselectedItemColor: Colors.grey,
+        showUnselectedLabels: true,
+        onTap: _onItemTapped,
+      ) : null, // Only show bottom navigation bar for admin users
     );
   }
 }

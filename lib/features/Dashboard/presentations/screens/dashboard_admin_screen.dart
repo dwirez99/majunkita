@@ -4,8 +4,10 @@ import '../widgets/management_menu.dart';
 import '../widgets/quick_acces_menu.dart';
 import '../widgets/summary_card.dart';
 import '../widgets/user_profile_card.dart';
+import '../../domain/providers/dashboard_providers.dart';
 
 class DashboardScreen extends ConsumerWidget {
+  
   const DashboardScreen({super.key});
 
   @override
@@ -14,7 +16,7 @@ class DashboardScreen extends ConsumerWidget {
       // Kita gunakan AppBar transparan agar konten bisa dimulai dari atas
       appBar: AppBar(
         title: const Text('Dashboard'),
-        backgroundColor: Colors.transparent,
+        backgroundColor: const Color.fromARGB(239, 14, 255, 175),
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -23,6 +25,7 @@ class DashboardScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const SizedBox(height: 16),
               // 1. KARTU PROFIL PENGGUNA
               const UserProfileCard(),
 
@@ -52,29 +55,41 @@ class DashboardScreen extends ConsumerWidget {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              const SummaryCard(
-                title: 'Ringkasan Perca',
-                children: [
-                  Text('Stok Perca Saat Ini : 580 KG'),
-                  Text('Stok yang ada pada penjahit : 60kg'),
-                  Text('Terakhir Ambil : 29-05-2025'),
-                ],
-              ),
-               const SummaryCard(
-                title: 'Ringkasan Majun',
-                children: [
-                  Text('Stok majun Saat Ini : 120 KG'),
-                  Text('Kemungkinan kirim : 20 Karung'),
-                  Text('Pengiriman Terakhir : 01-09-2024'),
-                ],
-              ),
-              const SummaryCard(
-                title: 'Ringkasan Penjahit',
-                children: [
-                  Text('Jumlah Penjahit Aktif : 10'),
-                  Text('Upah yang belum dibayarkan : Rp.700,000.00'),
-                ],
-              ),
+              
+              ref.watch(adminDashboardProvider).when(
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (error, stackTrace) => Center(child: Text(error.toString())),
+                  data: (summary) {
+                    // 'summary' adalah objek AdminDashboardSummary yang sudah terisi data!
+                    return Column(
+                      children: [
+                        SummaryCard(
+                          title: 'Ringkasan Perca',
+                          children: [
+                            Text('Stok Perca Saat Ini : ${summary.percaSummary.stockSaatIni} KG'),
+                            Text('Stok pada penjahit : ${summary.stockAtTailor} KG'),
+                            // Tambahkan data lain jika ada
+                          ],
+                        ),
+                        SummaryCard(
+                          title: 'Ringkasan Majun',
+                          children: [
+                            Text('Stok majun Saat Ini : ${summary.majunSummary.stockSaatIni} KG'),
+                            // Tambahkan data lain jika ada
+                          ],
+                        ),
+                        SummaryCard(
+                          title: 'Ringkasan Penjahit',
+                          children: [
+                            Text('Jumlah Penjahit Aktif : ${summary.tailorSummary.jumlahAktif}'),
+                            Text('Upah belum dibayarkan : ${summary.tailorSummary.formattedUnpaidWages}'),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              const SizedBox(height: 32), 
             ],
           ),
         ),
