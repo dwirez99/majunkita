@@ -42,3 +42,37 @@ android {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // Biasanya di sini ada dependencies tambahan, tapi jika kosong biarkan saja.
+    // Flutter otomatis memanage dependencies-nya.
+}
+
+// ==================================================================
+// FIX DARI MENTOR (STRATEGI PAKSA VERSI STABIL)
+// ==================================================================
+// Kode ini memaksa Gradle menggunakan versi library AndroidX yang
+// kompatibel dengan AGP 8.7.0 milikmu, meskipun library lain meminta yang lebih baru.
+// ==================================================================
+configurations.all {
+    resolutionStrategy {
+        eachDependency {
+            // Memaksa browser kembali ke versi stabil 1.8.0
+            if (requested.group == "androidx.browser" && requested.name == "browser") {
+                useVersion("1.8.0")
+            }
+            // Memaksa activity kembali ke versi stabil 1.9.3
+            if (requested.group == "androidx.activity") {
+                if (requested.name.startsWith("activity")) {
+                    useVersion("1.9.3")
+                }
+            }
+            // Memaksa core kembali ke versi stabil 1.13.1
+            if (requested.group == "androidx.core") {
+                if (requested.name.startsWith("core")) {
+                    useVersion("1.13.1")
+                }
+            }
+        }
+    }
+}

@@ -1,5 +1,6 @@
 // lib/features/dashboard/presentation/widgets/quick_access_buttons.dart
 import 'package:flutter/material.dart';
+import '../../../manage_percas/presentations/screens/add_perca_screen.dart';
 
 class QuickAccessButtons extends StatelessWidget {
   const QuickAccessButtons({super.key});
@@ -11,21 +12,25 @@ class QuickAccessButtons extends StatelessWidget {
       children: [
         const Text('Akses Cepat', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        Wrap(
-          spacing: 8.0, // Jarak horizontal antar tombol
-          runSpacing: 8.0, // Jarak vertical jika tombol pindah baris
+        Row(
           children: [
-            SizedBox(
-              width: (MediaQuery.of(context).size.width - 48) / 3, // 48 = padding + spacing
+            Expanded(
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AddPercaScreen(),
+                    ),
+                  );
+                },
                 child: const Text('Ambil Perca', 
                   style: TextStyle(fontSize: 12),
                   overflow: TextOverflow.ellipsis),
               ),
             ),
-            SizedBox(
-              width: (MediaQuery.of(context).size.width - 48) / 3,
+            const SizedBox(width: 8),
+            Expanded(
               child: ElevatedButton(
                 onPressed: () {},
                 child: const Text('Setor Majun',
@@ -33,8 +38,8 @@ class QuickAccessButtons extends StatelessWidget {
                   overflow: TextOverflow.ellipsis),
               ),
             ),
-            SizedBox(
-              width: (MediaQuery.of(context).size.width - 48) / 3,
+            const SizedBox(width: 8),
+            Expanded(
               child: ElevatedButton(
                 onPressed: () {},
                 child: const Text('Kirim Majun',
