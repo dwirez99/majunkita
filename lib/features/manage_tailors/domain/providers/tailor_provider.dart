@@ -66,6 +66,8 @@ class TailorManagementNotifier extends AsyncNotifier<void> {
 
   void _log(String message, {String level = 'INFO'}) {
     final timestamp = DateTime.now().toString();
+    // NOTE: Using print() to match existing codebase pattern.
+    // Consider migrating to logger package for production.
     print('[$timestamp] [$level] TAILOR_MGMT_NOTIFIER: $message');
   }
 

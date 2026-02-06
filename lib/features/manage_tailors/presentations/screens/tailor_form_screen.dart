@@ -99,8 +99,11 @@ class _TailorFormScreenState extends ConsumerState<TailorFormScreen> {
                   if (value == null || value.trim().isEmpty) {
                     return 'Email harus diisi';
                   }
-                  // Simple email validation
-                  if (!value.contains('@') || !value.contains('.')) {
+                  // More robust email validation
+                  final emailRegex = RegExp(
+                    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+                  );
+                  if (!emailRegex.hasMatch(value.trim())) {
                     return 'Format email tidak valid';
                   }
                   return null;

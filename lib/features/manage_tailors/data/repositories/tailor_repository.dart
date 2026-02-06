@@ -10,6 +10,9 @@ class TailorRepository {
 
   // ===========================================================================
   // LOGGING HELPER
+  // NOTE: Using print() to match existing codebase pattern.
+  // Consider migrating to a proper logging framework (e.g., logger package)
+  // for better log management in the future.
   // ===========================================================================
 
   void _log(String message, {String level = 'INFO'}) {
