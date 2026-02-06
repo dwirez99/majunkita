@@ -11,7 +11,7 @@ class UserProfileCard extends StatelessWidget {
         leading: const CircleAvatar(
           child: Icon(Icons.person),
         ),
-        title: const Text('Doni Setiawan', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('', style: TextStyle(fontWeight: FontWeight.bold)),
         subtitle: const Text('ADMIN'),
       ),
     );

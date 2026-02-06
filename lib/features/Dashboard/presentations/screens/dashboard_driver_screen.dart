@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/domain/providers/auth_provider.dart';
-import '../../../manage_partner/presentations/screens/manage_partner_screen.dart';
 import '../widgets/dashboard_appbar.dart';
 import '../widgets/dashboard_bottom_bar.dart';
 
-class DashboardManagerScreen extends ConsumerStatefulWidget {
-  const DashboardManagerScreen({super.key});
+class DashboardDriverScreen extends ConsumerStatefulWidget {
+  const DashboardDriverScreen({super.key});
 
   @override
-  ConsumerState<DashboardManagerScreen> createState() =>
-      _DashboardManagerScreenState();
+  ConsumerState<DashboardDriverScreen> createState() =>
+      _DashboardDriverScreenState();
 }
 
-class _DashboardManagerScreenState
-    extends ConsumerState<DashboardManagerScreen> {
+class _DashboardDriverScreenState
+    extends ConsumerState<DashboardDriverScreen> {
   int _selectedIndex = 0;
 
   void _onItemTapped(int index) {
@@ -29,7 +28,7 @@ class _DashboardManagerScreenState
     final userProfileAsync = ref.watch(userProfileProvider);
 
     return Scaffold(
-      appBar: const DashboardAppBar(title: 'Dashboard Manager'),
+      appBar: const DashboardAppBar(title: 'Dashboard Driver'),
       backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
@@ -41,8 +40,8 @@ class _DashboardManagerScreenState
               userProfileAsync.when(
                 data:
                     (profile) => _buildProfileCard(
-                      name: profile?['nama_lengkap'] ?? 'Manager',
-                      role: profile?['role'] ?? 'Manager',
+                      name: profile?['nama_lengkap'] ?? 'Driver',
+                      role: profile?['role'] ?? 'Driver',
                     ),
                 loading:
                     () => _buildProfileCard(name: 'Loading...', role: '...'),
@@ -57,7 +56,7 @@ class _DashboardManagerScreenState
               userProfileAsync.when(
                 data:
                     (profile) => Text(
-                      'Hallo, ${profile?['nama_lengkap']?.split(' ')[0] ?? 'Manager'}!',
+                      'Hallo, ${profile?['nama_lengkap']?.split(' ')[0] ?? 'Driver'}!',
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -83,16 +82,27 @@ class _DashboardManagerScreenState
 
               const SizedBox(height: 20),
 
-              // 4. CARD RENCANA PENGIRIMAN TERBARU
-              _buildShipmentCard(),
-
-              const SizedBox(height: 30),
-
-              // 5. ACTION BUTTONS (Menu Utama)
+              // 4. DRIVER ACTION BUTTONS (Menu Utama)
               _buildMenuButton(
-                label: 'RIWAYAT AMBIL DAN SETOR\nPERCA',
+                label: 'TAMBAH STOK PERCA',
                 onTap: () {
-                  // TODO: Navigasi ke Riwayat Perca
+                  // TODO: Navigasi ke Tambah Stok Perca
+                },
+              ),
+              const SizedBox(height: 16),
+
+              _buildMenuButton(
+                label: 'TAMBAH MAJUN SIAP KIRIM',
+                onTap: () {
+                  // TODO: Navigasi ke Tambah Majun Siap Kirim
+                },
+              ),
+              const SizedBox(height: 16),
+
+              _buildMenuButton(
+                label: 'RENCANA PENGIRIMAN',
+                onTap: () {
+                  // TODO: Navigasi ke Rencana Pengiriman
                 },
               ),
               const SizedBox(height: 16),
@@ -103,29 +113,16 @@ class _DashboardManagerScreenState
                   // TODO: Navigasi ke Riwayat Pengiriman
                 },
               ),
-              const SizedBox(height: 16),
-
-              _buildMenuButton(
-                label: 'MANAJEMEN PARTNER',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ManagePartnerScreen(),
-                    ),
-                  );
-                },
-              ),
             ],
           ),
         ),
       ),
 
-      // 6. BOTTOM NAVIGATION BAR
+      // 5. BOTTOM NAVIGATION BAR
       bottomNavigationBar: DashboardBottomBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        userRole: 'manager',
+        userRole: 'driver',
       ),
     );
   }
@@ -178,66 +175,6 @@ class _DashboardManagerScreenState
     );
   }
 
-  Widget _buildShipmentCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.green[50], // Warna hijau sangat muda
-        border: Border.all(color: Colors.green[200]!, width: 1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Rencana Pengiriman Terbaru',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment:
-                CrossAxisAlignment.end, // Agar button sejajar bawah
-            children: [
-              // Kolom Informasi Data
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _InfoRow(label: 'Tanggal Kirim', value: '19 04 2025'),
-                  SizedBox(height: 4),
-                  _InfoRow(label: 'Jumlah Kirim', value: '23 Karung'),
-                  SizedBox(height: 4),
-                  _InfoRow(label: 'Bobot Kirim', value: '1150 KG'),
-                ],
-              ),
-
-              // Tombol Detail Kecil
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.green[400], // Warna hijau untuk tombol
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Text(
-                  'Detail Pengiriman',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildMenuButton({
     required String label,
     required VoidCallback onTap,
@@ -268,34 +205,6 @@ class _DashboardManagerScreenState
           ),
         ),
       ),
-    );
-  }
-}
-
-// Widget Helper Kecil untuk Baris Info (Tanggal : Nilai)
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _InfoRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 100, // Lebar label tetap agar titik dua sejajar
-          child: Text(
-            label,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-          ),
-        ),
-        const Text(':  ', style: TextStyle(fontWeight: FontWeight.w600)),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
-        ),
-      ],
     );
   }
 }

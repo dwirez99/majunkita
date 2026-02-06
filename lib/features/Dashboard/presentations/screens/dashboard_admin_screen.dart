@@ -1,31 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../widgets/dashboard_appbar.dart';
+import '../widgets/dashboard_bottom_bar.dart';
 import '../widgets/management_menu.dart';
 import '../widgets/quick_acces_menu.dart';
 import '../widgets/summary_card.dart';
 import '../widgets/user_profile_card.dart';
 import '../../domain/providers/dashboard_providers.dart';
 
-class DashboardScreen extends ConsumerWidget {
-  const DashboardScreen({super.key});
+class DashboarAdminScreen extends ConsumerStatefulWidget {
+  const DashboarAdminScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboarAdminScreen> createState() => _DashboarAdminScreenState();
+}
+
+class _DashboarAdminScreenState extends ConsumerState<DashboarAdminScreen> {
+  int _selectedIndex = 0;
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    // TODO: Handle navigation based on index
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      // Kita gunakan AppBar transparan agar konten bisa dimulai dari atas
-      appBar: AppBar(
-        title: const Text('Dashboard'),
-        backgroundColor: const Color.fromARGB(239, 14, 255, 175),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Logout',
-            onPressed: () => _showLogoutDialog(context),
-          ),
-        ],
-      ),
+      appBar: const DashboardAppBar(title: 'Dashboard Admin'),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -116,37 +119,11 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
-
-  // Method to show logout confirmation dialog
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Konfirmasi Logout'),
-          content: const Text('Apakah Anda yakin ingin keluar?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(context).pop(); // Close dialog
-                await Supabase.instance.client.auth.signOut();
-                // Navigation will be handled automatically by AuthWrapper's listener
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Logout'),
-            ),
-          ],
-        );
-      },
+      bottomNavigationBar: DashboardBottomBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        userRole: 'admin',
+      ),
     );
   }
 }
