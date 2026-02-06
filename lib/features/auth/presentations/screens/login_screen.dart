@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/api/supabase_client_api.dart';
 import '../../data/repositories/auth_repository.dart';
-import '../../../Dashboard/presentations/screens/dashboard_manager_screen.dart';
-
-// Placeholder untuk Dashboard lain (Nanti kita buat)
-// import '../../../Dashboard/presentations/screens/dashboard_driver_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,7 +14,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _authRepo = AuthRepository(supabaseClient);
   final _formKey = GlobalKey<FormState>();
 
-  final _emailController = TextEditingController();
+  final _identifierController = TextEditingController(); // Email atau Username
   final _passwordController = TextEditingController();
 
   // State Variable
@@ -35,24 +31,24 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       // A. Proses Autentikasi ke Supabase Auth
       await _authRepo.signIn(
-        email: _emailController.text.trim(), // Trim spasi bahaya
+        identifier:
+            _identifierController.text.trim(), // Bisa email atau username
         password: _passwordController.text,
       );
 
-      // B. Ambil Profil untuk Cek Role
-      // (Kita butuh tahu dia siapa: Manager? Driver?)
-      final profile = await _authRepo.getCurrentUserProfile();
-
+      // B. Login berhasil - AuthWrapper akan otomatis handle navigation
+      // Tidak perlu manual navigation karena sudah ada auth state listener
       if (!mounted) return;
 
-      if (profile == null) {
-        throw Exception('Profil pengguna tidak ditemukan. Hubungi Admin.');
-      }
-
-      final role = profile['role'] as String?;
-
-      // C. Navigasi Berdasarkan Role (THE ROUTER)
-      _navigateBasedOnRole(role);
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Login berhasil!'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 1),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       // Tampilkan Error
@@ -66,41 +62,6 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  void _navigateBasedOnRole(String? role) {
-    Widget nextScreen;
-
-    // Normalisasi string (jaga-jaga ada huruf besar)
-    switch (role?.toLowerCase()) {
-      case 'admin':
-      case 'manager':
-        nextScreen = const DashboardManagerScreen();
-        break;
-      case 'driver':
-        // TODO: Ganti ke DashboardDriverScreen nanti
-        nextScreen = const Scaffold(
-          body: Center(child: Text("Dashboard Driver (Coming Soon)")),
-        );
-        break;
-      case 'partner_pabrik':
-        // TODO: Ganti ke DashboardPartnerScreen nanti
-        nextScreen = const Scaffold(
-          body: Center(child: Text("Dashboard Partner (Coming Soon)")),
-        );
-        break;
-      default:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Role tidak dikenali. Akses ditolak.')),
-        );
-        return;
-    }
-
-    // Pindah halaman & Hapus riwayat login (agar tidak bisa di-back)
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => nextScreen),
-    );
   }
 
   @override
@@ -136,13 +97,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 48),
 
-                // INPUT EMAIL
+                // INPUT EMAIL ATAU USERNAME
                 TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
+                  controller: _identifierController,
+                  keyboardType: TextInputType.text,
                   decoration: InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: const Icon(Icons.email_outlined),
+                    labelText: 'Email atau Username',
+                    hintText: 'Masukkan email atau username',
+                    prefixIcon: const Icon(Icons.person_outline),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -150,9 +112,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     fillColor: Colors.grey[50],
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty)
-                      return 'Email wajib diisi';
-                    if (!value.contains('@')) return 'Email tidak valid';
+                    if (value == null || value.isEmpty) {
+                      return 'Email atau Username wajib diisi';
+                    }
                     return null;
                   },
                 ),
@@ -184,8 +146,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     fillColor: Colors.grey[50],
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty)
+                    if (value == null || value.isEmpty) {
                       return 'Password wajib diisi';
+                    }
                     return null;
                   },
                 ),
