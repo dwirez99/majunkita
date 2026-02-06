@@ -1,5 +1,6 @@
 // lib/features/dashboard/presentation/widgets/management_menu_grid.dart
 import 'package:flutter/material.dart';
+import '../../../manage_tailors/presentations/screens/tailors_list_screen.dart';
 
 class ManagementMenuGrid extends StatelessWidget {
   const ManagementMenuGrid({super.key});
@@ -32,7 +33,7 @@ class ManagementMenuGrid extends StatelessWidget {
             return Card(
               child: InkWell(
                 onTap: () {
-                  // TODO: Tambahkan navigasi sesuai menu
+                  _handleMenuTap(context, index);
                 },
                 child: Center(
                   child: Text(
@@ -47,5 +48,31 @@ class ManagementMenuGrid extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  void _handleMenuTap(BuildContext context, int index) {
+    switch (index) {
+      case 0:
+        // TODO: Navigate to Kelola Stok Perca
+        break;
+      case 1:
+        // TODO: Navigate to Kelola Stok Majun
+        break;
+      case 2:
+        // Navigate to Kelola Penjahit
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const TailorsListScreen()),
+        );
+        break;
+      case 3:
+        // TODO: Navigate to Kelola Pengiriman
+        break;
+      case 4:
+        // TODO: Navigate to Kelola Partner
+        break;
+      default:
+        break;
+    }
   }
 }
