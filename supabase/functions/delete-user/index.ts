@@ -1,5 +1,5 @@
-// Supabase Edge Function to create a new user
-// This function is called by admins/managers to create new users
+// Supabase Edge Function to delete a user
+// This function is called by admins/managers to delete users
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
@@ -10,14 +10,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface CreateUserRequest {
-  email: string;
-  password: string;
-  username?: string;
-  nama_lengkap: string;
-  role: string;
-  no_telp?: string;
-  alamat?: string;
+interface DeleteUserRequest {
+  user_id: string;
 }
 
 serve(async (req) => {
@@ -83,7 +77,7 @@ serve(async (req) => {
     ) {
       return new Response(
         JSON.stringify({
-          error: "Forbidden - Only admins and managers can create users",
+          error: "Forbidden - Only admins and managers can delete users",
         }),
         {
           status: 403,
@@ -93,15 +87,14 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const requestData: CreateUserRequest = await req.json();
-    const { email, password, username, nama_lengkap, role, no_telp, alamat } =
-      requestData;
+    const requestData: DeleteUserRequest = await req.json();
+    const { user_id } = requestData;
 
     // Validate required fields
-    if (!email || !password || !nama_lengkap || !role) {
+    if (!user_id) {
       return new Response(
         JSON.stringify({
-          error: "Missing required fields: email, password, nama_lengkap, role",
+          error: "Missing required field: user_id",
         }),
         {
           status: 400,
@@ -110,19 +103,11 @@ serve(async (req) => {
       );
     }
 
-    // Validate role
-    const validRoles = [
-      "admin",
-      "manager",
-      "driver",
-      "karyawan_admin",
-      "partner_pabrik",
-      "penjahit",
-    ];
-    if (!validRoles.includes(role)) {
+    // Prevent self-deletion
+    if (user_id === requestingUser.id) {
       return new Response(
         JSON.stringify({
-          error: `Invalid role. Must be one of: ${validRoles.join(", ")}`,
+          error: "Cannot delete your own account",
         }),
         {
           status: 400,
@@ -131,27 +116,17 @@ serve(async (req) => {
       );
     }
 
-    // Create the new user using Supabase Admin API
-    const { data: newUser, error: createError } =
-      await supabaseAdmin.auth.admin.createUser({
-        email: email,
-        password: password,
-        email_confirm: true, // Auto-confirm email
-        user_metadata: {
-          username: username || email.split("@")[0],
-          nama: nama_lengkap,
-          role: role,
-          no_telp: no_telp || "",
-          alamat: alamat || "",
-        },
-      });
+    // Delete the user using Supabase Admin API
+    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(
+      user_id
+    );
 
-    if (createError) {
-      console.error("Error creating user:", createError);
+    if (deleteError) {
+      console.error("Error deleting user:", deleteError);
       return new Response(
         JSON.stringify({
-          error: "Database error creating new user",
-          details: createError.message,
+          error: "Failed to delete user",
+          details: deleteError.message,
         }),
         {
           status: 400,
@@ -160,42 +135,11 @@ serve(async (req) => {
       );
     }
 
-    // The trigger should automatically create the profile
-    // Let's verify it was created
-    const { data: profile, error: profileCheckError } = await supabaseAdmin
-      .from("profiles")
-      .select("*")
-      .eq("id", newUser.user.id)
-      .single();
-
-    if (profileCheckError) {
-      console.error("Profile not created by trigger:", profileCheckError);
-      // Try to create profile manually as fallback
-      const { error: manualProfileError } = await supabaseAdmin
-        .from("profiles")
-        .insert({
-          id: newUser.user.id,
-          nama: nama_lengkap,
-          email: email,
-          role: role,
-          no_telp: no_telp || "",
-          alamat: alamat || "",
-        });
-
-      if (manualProfileError) {
-        console.error("Failed to create profile manually:", manualProfileError);
-      }
-    }
-
+    // Profile should be automatically deleted via CASCADE constraint
     return new Response(
       JSON.stringify({
         success: true,
-        message: "User created successfully",
-        user: {
-          id: newUser.user.id,
-          email: newUser.user.email,
-          role: role,
-        },
+        message: "User deleted successfully",
       }),
       {
         status: 200,
