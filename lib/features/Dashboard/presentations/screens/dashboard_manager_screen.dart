@@ -72,7 +72,7 @@ class _DashboardManagerScreenState
                       ),
                     ),
                 error:
-                    (_, __) => const Text(
+                    (_, _) => const Text(
                       'Hallo!',
                       style: TextStyle(
                         fontSize: 24,
@@ -251,7 +251,7 @@ class _DashboardManagerScreenState
           backgroundColor: Colors.green[400], // Warna hijau cerah
           foregroundColor: Colors.white, // Warna teks putih
           elevation: 2, // Sedikit shadow untuk depth
-          shadowColor: Colors.green.withOpacity(0.5),
+          shadowColor: Colors.green.withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
