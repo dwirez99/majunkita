@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// Sesuaikan import ini dengan struktur foldermu
-import '../../domain/providers/manage_partner_providers.dart';
-import '../../data/models/manage_partner_models.dart'; // Import Model Admin
-import '../widgets/staff_form_dialog.dart'; // Import Dialog Generic baru
+import '../../data/models/tailor_model.dart';
+import '../../domain/providers/tailor_provider.dart';
+import 'tailor_form_dialog.dart';
 
-class ManageAdminScreen extends ConsumerStatefulWidget {
-  const ManageAdminScreen({super.key});
+/// Screen untuk menampilkan daftar tailor (penjahit)
+class TailorsListScreen extends ConsumerStatefulWidget {
+  const TailorsListScreen({super.key});
 
   @override
-  ConsumerState<ManageAdminScreen> createState() => _ManageAdminScreenState();
+  ConsumerState<TailorsListScreen> createState() => _TailorsListScreenState();
 }
 
-class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
+class _TailorsListScreenState extends ConsumerState<TailorsListScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -23,17 +23,14 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Watch Provider List Admin yang baru (sudah auto-search)
-    final adminsState = ref.watch(adminsListProvider);
-
-    // 2. Watch Provider Action (untuk loading state saat delete)
-    final actionState = ref.watch(staffManagementProvider);
+    final tailorsAsync = ref.watch(tailorsListProvider);
+    final actionState = ref.watch(tailorManagementProvider);
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
-          'Kelola Partner Admin',
+          'Kelola Penjahit',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -58,7 +55,7 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
                   onPressed:
                       actionState.isLoading
                           ? null // Disable kalau lagi loading delete/create
-                          : () => _showAddAdminDialog(context),
+                          : () => _showAddTailorDialog(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green[400],
                     foregroundColor: Colors.white,
@@ -68,7 +65,7 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
                     ),
                   ),
                   child: const Text(
-                    'Tambah Partner Admin',
+                    'Tambah Penjahit',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -90,12 +87,12 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
                         controller: _searchController,
                         decoration: const InputDecoration(
                           border: InputBorder.none,
-                          hintText: 'Cari name admin...',
+                          hintText: 'Cari nama penjahit...',
                         ),
                         onChanged: (value) {
                           // Update Query di Provider
                           ref
-                              .read(adminSearchQueryProvider.notifier)
+                              .read(tailorSearchQueryProvider.notifier)
                               .setQuery(value);
                         },
                       ),
@@ -106,7 +103,7 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
                         icon: const Icon(Icons.clear, color: Colors.grey),
                         onPressed: () {
                           _searchController.clear();
-                          ref.read(adminSearchQueryProvider.notifier).clear();
+                          ref.read(tailorSearchQueryProvider.notifier).clear();
                         },
                       )
                     else
@@ -117,17 +114,17 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
 
               const SizedBox(height: 16),
 
-              // --- TOMBOL REFRESH ---Gagal
+              // --- TOMBOL REFRESH ---
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton.icon(
                   onPressed: () {
                     // Paksa refresh data
-                    ref.invalidate(adminsListProvider);
+                    ref.invalidate(tailorsListProvider);
                   },
                   icon: const Icon(Icons.refresh, color: Colors.black),
                   label: const Text(
-                    'Refresh Data', // Ganti "Terbaru" jadi Refresh karena logic sort default database
+                    'Refresh Data',
                     style: TextStyle(
                       color: Colors.black,
                       fontWeight: FontWeight.w600,
@@ -140,9 +137,9 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
 
               // --- LIST VIEW ---
               Expanded(
-                child: adminsState.when(
-                  data: (admins) {
-                    if (admins.isEmpty) {
+                child: tailorsAsync.when(
+                  data: (tailors) {
+                    if (tailors.isEmpty) {
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -155,8 +152,8 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
                             const SizedBox(height: 16),
                             Text(
                               _searchController.text.isEmpty
-                                  ? 'Belum ada data Admin.'
-                                  : 'Admin "${_searchController.text}" tidak ditemukan.',
+                                  ? 'Belum ada data Penjahit.'
+                                  : 'Penjahit "${_searchController.text}" tidak ditemukan.',
                               style: const TextStyle(
                                 fontSize: 16,
                                 color: Colors.grey,
@@ -168,13 +165,13 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
                     }
 
                     return ListView.builder(
-                      itemCount: admins.length,
+                      itemCount: tailors.length,
                       physics: const BouncingScrollPhysics(),
                       itemBuilder: (context, index) {
-                        final admin = admins[index];
+                        final tailor = tailors[index];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12.0),
-                          child: _buildAdminCard(context, admin),
+                          child: _buildTailorCard(context, tailor),
                         );
                       },
                     );
@@ -198,7 +195,7 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
                             ),
                             ElevatedButton(
                               onPressed:
-                                  () => ref.invalidate(adminsListProvider),
+                                  () => ref.invalidate(tailorsListProvider),
                               child: const Text('Coba Lagi'),
                             ),
                           ],
@@ -213,7 +210,7 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
     );
   }
 
-  Widget _buildAdminCard(BuildContext context, Admin admin) {
+  Widget _buildTailorCard(BuildContext context, TailorModel tailor) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -230,18 +227,27 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
       ),
       child: Row(
         children: [
-          // Avatar
+          // Avatar - Show image if available, otherwise show initial
           CircleAvatar(
             radius: 25,
             backgroundColor: Colors.white,
-            child: Text(
-              admin.name.isNotEmpty ? admin.name[0].toUpperCase() : '?',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.green[800],
-              ),
-            ),
+            backgroundImage:
+                tailor.tailorImages != null && tailor.tailorImages!.isNotEmpty
+                    ? NetworkImage(tailor.tailorImages!)
+                    : null,
+            child:
+                tailor.tailorImages == null || tailor.tailorImages!.isEmpty
+                    ? Text(
+                      tailor.name.isNotEmpty
+                          ? tailor.name[0].toUpperCase()
+                          : '?',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green[800],
+                      ),
+                    )
+                    : null,
           ),
           const SizedBox(width: 16),
 
@@ -251,7 +257,7 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  admin.name,
+                  tailor.name,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -260,7 +266,7 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  admin.noTelp,
+                  tailor.noTelp,
                   style: const TextStyle(fontSize: 12, color: Colors.white70),
                 ),
               ],
@@ -269,7 +275,7 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
 
           // Edit Button
           IconButton(
-            onPressed: () => _showEditAdminDialog(context, admin),
+            onPressed: () => _showEditTailorDialog(context, tailor),
             icon: const Icon(Icons.edit_outlined, color: Colors.white),
             style: IconButton.styleFrom(
               backgroundColor: Colors.black.withValues(alpha: 0.1),
@@ -280,7 +286,7 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
 
           // Delete Button
           IconButton(
-            onPressed: () => _showDeleteConfirmation(context, admin),
+            onPressed: () => _showDeleteConfirmation(context, tailor),
             icon: const Icon(Icons.delete_outline, color: Colors.white),
             style: IconButton.styleFrom(
               backgroundColor: Colors.red.withValues(
@@ -295,35 +301,31 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
 
   // --- DIALOG FUNCTIONS (INTEGRATED) ---
 
-  void _showAddAdminDialog(BuildContext context) {
+  void _showAddTailorDialog(BuildContext context) {
     showDialog(
       context: context,
       builder:
-          (context) => const StaffFormDialog(
-            role: AppRoles.admin, // Pass Role Constant
+          (context) => const TailorFormDialog(),
+    );
+  }
+
+  void _showEditTailorDialog(BuildContext context, TailorModel tailor) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => TailorFormDialog(
+            tailorToEdit: tailor,
           ),
     );
   }
 
-  void _showEditAdminDialog(BuildContext context, Admin admin) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => StaffFormDialog(
-            role: AppRoles.admin,
-            staffToEdit:
-                admin, // Langsung lempar object admin, GAK PERLU Provider Selection
-          ),
-    );
-  }
-
-  void _showDeleteConfirmation(BuildContext context, Admin admin) {
+  void _showDeleteConfirmation(BuildContext context, TailorModel tailor) {
     showDialog(
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Hapus Admin'),
-            content: Text('Yakin ingin menghapus akses untuk ${admin.name}?'),
+            title: const Text('Hapus Penjahit'),
+            content: Text('Yakin ingin menghapus penjahit ${tailor.name}?'),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -339,19 +341,21 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
                 onPressed: () async {
                   Navigator.pop(context); // Tutup dialog konfirmasi
 
-                  // Panggil Provider Delete yang baru
+                  // Panggil Provider Delete
                   try {
                     await ref
-                        .read(staffManagementProvider.notifier)
-                        .deleteStaff(id: admin.id, role: AppRoles.admin);
+                        .read(tailorManagementProvider.notifier)
+                        .deleteTailor(tailor.id);
 
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Admin berhasil dihapus'),
+                          content: Text('Penjahit berhasil dihapus'),
                           backgroundColor: Colors.green,
                         ),
                       );
+                      // Refresh the list
+                      ref.invalidate(tailorsListProvider);
                     }
                   } catch (e) {
                     if (context.mounted) {

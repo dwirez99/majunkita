@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 void showSuccessDialog(BuildContext context, {String message = 'Bukti Berhasil dikirim'}) {
   showDialog(
     context: context,
-    builder: (BuildContext context) {
+    builder: (BuildContext dialogContext) {
       // Otomatis menutup dialog setelah 2 detik
       Future.delayed(const Duration(seconds: 2), () {
-        if (Navigator.of(context).canPop()) {
-          Navigator.of(context).pop();
+        if (dialogContext.mounted && Navigator.of(dialogContext).canPop()) {
+          Navigator.of(dialogContext).pop();
         }
       });
 

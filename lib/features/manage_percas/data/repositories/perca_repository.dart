@@ -8,13 +8,13 @@ class PercaRepository {
 
   PercaRepository(this._supabase);
 
-  // 1. Mengambil daftar pabrik untuk dropdown
-  Future<List<Pabrik>> getPabrikList() async {
+  // 1. Mengambil daftar Factory untuk dropdown
+  Future<List<Factory>> getFactoryList() async {
     try {
-      final data = await _supabase.from('pabrik').select('id, nama_pabrik');
-      return data.map((item) => Pabrik.fromJson(item)).toList();
+      final data = await _supabase.from('Factory').select('id, factoryName');
+      return data.map((item) => Factory.fromJson(item)).toList();
     } catch (e) {
-      throw Exception('Gagal mengambil daftar pabrik: $e');
+      throw Exception('Gagal mengambil daftar Factory: $e');
     }
   }
 
@@ -45,7 +45,7 @@ class PercaRepository {
   }
 
   // 3. Simpan data stok ke database
-  Future<void> saveStockToDatabase(PercaStock stockData) async {
+  Future<void> saveStockToDatabase(PercasStock stockData) async {
     try {
       await _supabase.from('stok_perca').insert(stockData.toJson());
     } catch (e) {
@@ -54,7 +54,7 @@ class PercaRepository {
   }
 
   // 4. Simpan multiple stocks ke database
-  Future<void> saveMultipleStocksToDatabase(List<PercaStock> stockList) async {
+  Future<void> saveMultipleStocksToDatabase(List<PercasStock> stockList) async {
     try {
       final dataList = stockList.map((stock) => stock.toJson()).toList();
       await _supabase.from('stok_perca').insert(dataList);

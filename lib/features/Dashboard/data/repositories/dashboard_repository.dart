@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 // lib/features/dashboard/data/repositories/dashboard_repository.dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/admin_dashboard_models.dart';

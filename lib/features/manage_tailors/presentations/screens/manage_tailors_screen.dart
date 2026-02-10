@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'manage_admin_screen.dart';
-import 'manage_driver_screen.dart';
-import '../../../manage_tailors/presentations/screens/manage_tailors_screen.dart';
+import 'tailors_list_screen.dart';
 
-class ManagePartnerScreen extends StatelessWidget {
-  const ManagePartnerScreen({super.key});
+/// Screen untuk menampilkan kategori manajemen penjahit
+/// Similar to ManagePartnerScreen
+class ManageTailorsScreen extends StatelessWidget {
+  const ManageTailorsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -12,7 +12,7 @@ class ManagePartnerScreen extends StatelessWidget {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
-          'Manajemen Partner',
+          'Manajemen Penjahit',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -30,7 +30,7 @@ class ManagePartnerScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Pilih Kategori Partner',
+                'Pilih Kategori Penjahit',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -38,18 +38,18 @@ class ManagePartnerScreen extends StatelessWidget {
               ),
               const SizedBox(height: 30),
 
-              // Kelola Partner Admin Card
-              _buildPartnerCard(
+              // Daftar Penjahit Card
+              _buildTailorCard(
                 context: context,
-                icon: Icons.admin_panel_settings,
-                title: 'Kelola Partner Admin',
-                description: 'Manajemen data partner admin',
-                color: Colors.green[400]!,
+                icon: Icons.people,
+                title: 'Daftar Penjahit',
+                description: 'Lihat dan kelola data semua penjahit',
+                color: Colors.blue[400]!,
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const ManageAdminScreen(),
+                      builder: (context) => const TailorsListScreen(),
                     ),
                   );
                 },
@@ -57,18 +57,17 @@ class ManagePartnerScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // Kelola Driver Card
-              _buildPartnerCard(
+              // Statistik Penjahit Card
+              _buildTailorCard(
                 context: context,
-                icon: Icons.local_shipping,
-                title: 'Kelola Driver',
-                description: 'Manajemen data driver pengiriman',
-                color: Colors.green[400]!,
+                icon: Icons.bar_chart,
+                title: 'Statistik Penjahit',
+                description: 'Lihat statistik dan performa penjahit',
+                color: Colors.orange[400]!,
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ManageDriverScreen(),
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Fitur statistik akan segera hadir'),
                     ),
                   );
                 },
@@ -76,17 +75,17 @@ class ManagePartnerScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              _buildPartnerCard(
+              // Laporan Penjahit Card
+              _buildTailorCard(
                 context: context,
-                icon: Icons.admin_panel_settings,
-                title: 'Kelola Partner Penjahit',
-                description: 'Manajemen data partner admin',
-                color: Colors.green[400]!,
+                icon: Icons.description,
+                title: 'Laporan Penjahit',
+                description: 'Lihat laporan aktivitas penjahit',
+                color: Colors.purple[400]!,
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ManageTailorsScreen(),
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Fitur laporan akan segera hadir'),
                     ),
                   );
                 },
@@ -98,7 +97,7 @@ class ManagePartnerScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPartnerCard({
+  Widget _buildTailorCard({
     required BuildContext context,
     required IconData icon,
     required String title,

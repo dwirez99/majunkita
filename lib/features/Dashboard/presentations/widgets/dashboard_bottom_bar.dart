@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_theme.dart';
 
 class DashboardBottomBar extends StatelessWidget {
   final int currentIndex;
@@ -66,9 +67,10 @@ class DashboardBottomBar extends StatelessWidget {
     return BottomNavigationBar(
       currentIndex: currentIndex,
       onTap: onTap,
-      selectedItemColor: Colors.black,
-      unselectedItemColor: Colors.black54,
-      backgroundColor: Colors.grey[300],
+      selectedItemColor: AppColors.primary,
+      unselectedItemColor: AppColors.grey,
+      backgroundColor: AppColors.white,
+      elevation: 8,
       type: BottomNavigationBarType.fixed,
       showUnselectedLabels: true,
       items: _getNavigationItems(),

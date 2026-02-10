@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../widgets/dashboard_appbar.dart';
 import '../widgets/dashboard_bottom_bar.dart';
 import '../widgets/management_menu.dart';
@@ -29,6 +30,7 @@ class _DashboarAdminScreenState extends ConsumerState<DashboarAdminScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const DashboardAppBar(title: 'Dashboard Admin'),
+      backgroundColor: AppColors.background,
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),

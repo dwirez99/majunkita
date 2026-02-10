@@ -7,7 +7,7 @@ class StaffFormDialog extends ConsumerStatefulWidget {
   final String role;
 
   /// Jika null, berarti mode CREATE. Jika ada isi, berarti mode EDIT.
-  /// Kita pakai dynamic agar bisa menerima object KaryawanAdmin ataupun Driver
+  /// Kita pakai dynamic agar bisa menerima object Admin ataupun Driver
   final dynamic staffToEdit;
 
   const StaffFormDialog({super.key, required this.role, this.staffToEdit});
@@ -20,11 +20,11 @@ class _StaffFormDialogState extends ConsumerState<StaffFormDialog> {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
-  late TextEditingController _namaController;
+  late TextEditingController _nameController;
   late TextEditingController _usernameController;
   late TextEditingController _noTelpController;
   late TextEditingController _emailController;
-  late TextEditingController _alamatController;
+  late TextEditingController _addressController;
   late TextEditingController _passwordController;
 
   bool get _isEdit => widget.staffToEdit != null;
@@ -33,8 +33,8 @@ class _StaffFormDialogState extends ConsumerState<StaffFormDialog> {
   void initState() {
     super.initState();
     // Inisialisasi controller dengan data jika mode Edit
-    _namaController = TextEditingController(
-      text: widget.staffToEdit?.nama ?? '',
+    _nameController = TextEditingController(
+      text: widget.staffToEdit?.name ?? '',
     );
     _usernameController = TextEditingController(
       text: widget.staffToEdit?.username ?? '',
@@ -46,19 +46,19 @@ class _StaffFormDialogState extends ConsumerState<StaffFormDialog> {
       text: widget.staffToEdit?.email ?? '',
     );
     // Cek apakah model punya alamat (handle null safety)
-    _alamatController = TextEditingController(
-      text: widget.staffToEdit?.alamat ?? '',
+    _addressController = TextEditingController(
+      text: widget.staffToEdit?.address ?? '',
     );
     _passwordController = TextEditingController();
   }
 
   @override
   void dispose() {
-    _namaController.dispose();
+    _nameController.dispose();
     _usernameController.dispose();
     _noTelpController.dispose();
     _emailController.dispose();
-    _alamatController.dispose();
+    _addressController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -106,12 +106,12 @@ class _StaffFormDialogState extends ConsumerState<StaffFormDialog> {
                 // Nama
                 _buildLabel('Nama Lengkap'),
                 _buildTextField(
-                  controller: _namaController,
+                  controller: _nameController,
                   hint: 'Masukkan nama lengkap',
                   validator: (v) => v!.isEmpty ? 'Nama wajib diisi' : null,
                 ),
 
-                // USername
+                // Username
                 _buildLabel('Username'),
                 _buildTextField(
                   controller: _usernameController,
@@ -148,7 +148,7 @@ class _StaffFormDialogState extends ConsumerState<StaffFormDialog> {
 
                 // Password (Hanya muncul saat Tambah Baru)
                 if (!_isEdit) ...[
-                  _buildLabel('Password Sementara'),
+                  _buildLabel('Password '),
                   _buildTextField(
                     controller: _passwordController,
                     hint: 'Minimal 6 karakter',
@@ -181,7 +181,7 @@ class _StaffFormDialogState extends ConsumerState<StaffFormDialog> {
                 // Alamat
                 _buildLabel('Alamat Domisili'),
                 _buildTextField(
-                  controller: _alamatController,
+                  controller: _addressController,
                   hint: 'Alamat lengkap...',
                   maxLines: 3,
                   validator: (v) => v!.isEmpty ? 'Alamat wajib diisi' : null,
@@ -300,10 +300,11 @@ class _StaffFormDialogState extends ConsumerState<StaffFormDialog> {
         // --- LOGIKA UPDATE ---
         await notifier.updateStaff(
           id: widget.staffToEdit!.id,
-          namaLengkap: _namaController.text.trim(),
+          name: _nameController.text.trim(),
           username: _usernameController.text.trim(),
           email: _emailController.text.trim(),
           noTelp: _noTelpController.text.trim(),
+          address: _addressController.text.trim(),
           role: widget.role, // Penting agar list yang direfresh sesuai
           password: _passwordController.text.trim().isEmpty
               ? null
@@ -313,12 +314,13 @@ class _StaffFormDialogState extends ConsumerState<StaffFormDialog> {
       } else {
         // --- LOGIKA CREATE ---
         await notifier.createStaff(
-          namaLengkap: _namaController.text.trim(),
+          name: _nameController.text.trim(),
           username: _usernameController.text.trim(),
           email: _emailController.text.trim(),
           noTelp: _noTelpController.text.trim(),
           password: _passwordController.text,
           role: widget.role, // 'admin' atau 'driver'
+          address: _addressController.text.trim(),
         );
         if (mounted) _showSuccess('Akun ${widget.role} baru berhasil dibuat!');
       }
