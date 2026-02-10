@@ -218,7 +218,7 @@ class _ManageDriverScreenState extends ConsumerState<ManageDriverScreen> {
         // Tambahkan shadow sedikit biar elegan
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
+            color: Colors.grey.withValues(alpha: 0.2),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 3),
@@ -245,7 +245,7 @@ class _ManageDriverScreenState extends ConsumerState<ManageDriverScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  driver.nama,
+                  driver.name,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -276,7 +276,7 @@ class _ManageDriverScreenState extends ConsumerState<ManageDriverScreen> {
             onPressed: () => _showEditDriverDialog(context, driver),
             icon: const Icon(Icons.edit_outlined, color: Colors.white),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.black.withOpacity(0.1),
+              backgroundColor: Colors.black.withValues(alpha: 0.1),
             ),
           ),
 
@@ -287,7 +287,7 @@ class _ManageDriverScreenState extends ConsumerState<ManageDriverScreen> {
             onPressed: () => _showDeleteConfirmation(context, driver),
             icon: const Icon(Icons.delete_outline, color: Colors.white),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.red.withOpacity(0.8),
+              backgroundColor: Colors.red.withValues(alpha: 0.8),
             ),
           ),
         ],
@@ -324,7 +324,7 @@ class _ManageDriverScreenState extends ConsumerState<ManageDriverScreen> {
       builder:
           (context) => AlertDialog(
             title: const Text('Hapus Driver'),
-            content: Text('Yakin ingin menghapus ${driver.nama}?'),
+            content: Text('Yakin ingin menghapus ${driver.name}?'),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),

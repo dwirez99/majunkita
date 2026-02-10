@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/theme/app_theme.dart';
 
 class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -16,19 +17,20 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0,
+      backgroundColor: AppColors.white,
+      elevation: 1,
+      shadowColor: AppColors.greyLight,
       leading:
           showBackButton
               ? IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black),
+                icon: const Icon(Icons.arrow_back, color: AppColors.black),
                 onPressed: () => Navigator.of(context).pop(),
               )
               : null,
       title: Text(
         title,
         style: const TextStyle(
-          color: Colors.black,
+          color: AppColors.black,
           fontSize: 20,
           fontWeight: FontWeight.bold,
         ),
@@ -39,7 +41,7 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
             IconButton(
               icon: const Icon(
                 Icons.notifications_outlined,
-                color: Colors.black,
+                color: AppColors.black,
               ),
               onPressed: () {
                 // TODO: Navigate to notifications screen
@@ -84,8 +86,8 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
+                backgroundColor: AppColors.error,
+                foregroundColor: AppColors.white,
               ),
               child: const Text('Logout'),
             ),

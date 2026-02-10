@@ -21,7 +21,7 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
   File? _imageFile;
   
   // List untuk menyimpan semua stok yang sudah diinput
-  List<Map<String, dynamic>> _stockList = [];
+  final List<Map<String, dynamic>> _stockList = [];
   
   // Flag untuk menentukan apakah sedang dalam mode input stok atau upload bukti
   bool _isInputStockMode = true;
@@ -150,7 +150,7 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final pabrikListState = ref.watch(pabrikListProvider);
+    final pabrikListState = ref.watch(factoryListProvider);
     final addPercaState = ref.watch(addPercaNotifierProvider);
     final List<String> jenisPercaList = ['Kaos', 'Kain']; // Contoh data statis
 

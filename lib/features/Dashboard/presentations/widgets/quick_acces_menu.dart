@@ -1,5 +1,6 @@
 // lib/features/dashboard/presentation/widgets/quick_access_buttons.dart
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../manage_percas/presentations/screens/add_perca_screen.dart';
 
 class QuickAccessButtons extends StatelessWidget {
@@ -10,8 +11,15 @@ class QuickAccessButtons extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Akses Cepat', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
+        const Text(
+          'Akses Cepat',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.black,
+          ),
+        ),
+        const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
@@ -24,27 +32,57 @@ class QuickAccessButtons extends StatelessWidget {
                     ),
                   );
                 },
-                child: const Text('Ambil Perca', 
-                  style: TextStyle(fontSize: 12),
-                  overflow: TextOverflow.ellipsis),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.white,
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'Ambil Perca',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: ElevatedButton(
                 onPressed: () {},
-                child: const Text('Setor Majun',
-                  style: TextStyle(fontSize: 12),
-                  overflow: TextOverflow.ellipsis),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.secondary,
+                  foregroundColor: AppColors.white,
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'Setor Majun',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: ElevatedButton(
                 onPressed: () {},
-                child: const Text('Kirim Majun',
-                  style: TextStyle(fontSize: 12),
-                  overflow: TextOverflow.ellipsis),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.accent,
+                  foregroundColor: AppColors.white,
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'Kirim Majun',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
           ],

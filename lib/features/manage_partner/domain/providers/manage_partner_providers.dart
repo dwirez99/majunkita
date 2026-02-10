@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/api/supabase_client_api.dart';
 import '../../data/models/manage_partner_models.dart';
@@ -49,7 +51,7 @@ final driverSearchQueryProvider = NotifierProvider<SearchQueryNotifier, String>(
 );
 
 /// Provider untuk List Admin (dengan filter search otomatis)
-final adminsListProvider = FutureProvider.autoDispose<List<KaryawanAdmin>>((
+final adminsListProvider = FutureProvider.autoDispose<List<Admin>>((
   ref,
 ) async {
   final repository = ref.watch(managePartnerRepositoryProvider);
@@ -111,16 +113,17 @@ class StaffManagementNotifier extends AsyncNotifier<void> {
 
   // --- PERBAIKAN DI SINI ---
   Future<void> createStaff({
-    required String namaLengkap,
+    required String name,
     required String username,
     required String email,
     required String noTelp,
     required String password,
     required String role,
+    String? address,
   }) async {
     _checkManagerPermission();
     _log(
-      'Creating new $role: $namaLengkap (username: $username, email: $email)',
+      'Creating new $role: $name (username: $username, email: $email)',
     );
 
     state = const AsyncValue.loading();
@@ -132,28 +135,30 @@ class StaffManagementNotifier extends AsyncNotifier<void> {
 
       if (role == AppRoles.admin) {
         await repository.createAdmin(
-          namaLengkap: namaLengkap,
+          name: name,
           email: email,
           noTelp: noTelp,
           password: password,
+          address: address,
         );
         ref.invalidate(adminsListProvider);
       } else if (role == AppRoles.driver) {
         await repository.createDriver(
-          namaLengkap: namaLengkap,
+          name: name,
           email: email,
           noTelp: noTelp,
           password: password,
+          address: address,
         );
         ref.invalidate(driversListProvider);
       }
 
       // Jika berhasil, set state data
-      _log('Successfully created $role: $namaLengkap');
+      _log('Successfully created $role: $name');
       state = const AsyncValue.data(null);
     } catch (e, st) {
       // 1. Simpan error ke state (agar UI bisa baca status error)
-      _log('Error creating $role $namaLengkap: $e', level: 'ERROR');
+      _log('Error creating $role $name: $e', level: 'ERROR');
       state = AsyncValue.error(e, st);
 
       // 2. LEMPAR ULANG errornya agar UI (Dialog) tahu ini gagal!
@@ -164,25 +169,27 @@ class StaffManagementNotifier extends AsyncNotifier<void> {
   // Lakukan hal yang sama untuk updateStaff dan deleteStaff
   Future<void> updateStaff({
     required String id,
-    required String namaLengkap,
+    required String name,
     String? username,
     required String email,
     required String noTelp,
+    String? address,
     required String role,
     String? password,
   }) async {
     _checkManagerPermission();
-    _log('Updating $role: id=$id, nama=$namaLengkap, email=$email');
+    _log('Updating $role: id=$id, name=$name, email=$email, address=${address ?? 'N/A'}');
     state = const AsyncValue.loading();
 
     try {
       final repository = ref.read(managePartnerRepositoryProvider);
       await repository.updateUser(
         id: id,
-        namaLengkap: namaLengkap,
+        name: name,
         username: username,
         email: email,
         noTelp: noTelp,
+        address: address,
         password: password,
         role: role,
       );
