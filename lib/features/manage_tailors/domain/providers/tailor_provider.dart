@@ -1,5 +1,8 @@
+// ignore_for_file: avoid_print
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/api/supabase_client_api.dart';
+import '../../../../core/services/storage_service_provider.dart';
 import '../../data/models/tailor_model.dart';
 import '../../data/repositories/tailor_repository.dart';
 
@@ -8,7 +11,10 @@ import '../../data/repositories/tailor_repository.dart';
 // ===========================================================================
 
 final tailorRepositoryProvider = Provider<TailorRepository>((ref) {
-  return TailorRepository(ref.watch(supabaseClientProvider));
+  return TailorRepository(
+    ref.watch(supabaseClientProvider),
+    ref.watch(storageServiceProvider),
+  );
 });
 
 // ===========================================================================
@@ -73,13 +79,12 @@ class TailorManagementNotifier extends AsyncNotifier<void> {
 
   /// Create new tailor
   Future<TailorModel> createTailor({
-    required String namaLengkap,
-    required String email,
+    required String name,
     required String noTelp,
-    String? alamat,
-    String? spesialisasi,
+    required String address,
+    String? tailorImages,
   }) async {
-    _log('Creating new tailor: $namaLengkap ($email)');
+    _log('Creating new tailor: $name');
 
     state = const AsyncValue.loading();
 
@@ -87,23 +92,22 @@ class TailorManagementNotifier extends AsyncNotifier<void> {
       final repository = ref.read(tailorRepositoryProvider);
 
       final tailor = await repository.createTailor(
-        namaLengkap: namaLengkap,
-        email: email,
+        name: name,
         noTelp: noTelp,
-        alamat: alamat,
-        spesialisasi: spesialisasi,
+        address: address,
+        tailorImages: tailorImages,
       );
 
       // Invalidate list provider to refresh the list
       ref.invalidate(tailorsListProvider);
       ref.invalidate(tailorCountProvider);
 
-      _log('Successfully created tailor: ${tailor.namaLengkap}');
+      _log('Successfully created tailor: ${tailor.name}');
       state = const AsyncValue.data(null);
 
       return tailor;
     } catch (e, st) {
-      _log('Error creating tailor $namaLengkap: $e', level: 'ERROR');
+      _log('Error creating tailor $name: $e', level: 'ERROR');
       state = AsyncValue.error(e, st);
       rethrow; // Lempar ulang error agar UI bisa menangkap
     }
@@ -112,13 +116,13 @@ class TailorManagementNotifier extends AsyncNotifier<void> {
   /// Update existing tailor
   Future<TailorModel> updateTailor({
     required String id,
-    required String namaLengkap,
-    required String email,
+    required String name,
     required String noTelp,
-    String? alamat,
-    String? spesialisasi,
+    required String address,
+    String? tailorImages,
+    String? oldImageUrl, // Add parameter to track old image
   }) async {
-    _log('Updating tailor: id=$id, nama=$namaLengkap');
+    _log('Updating tailor: id=$id, nama=$name');
 
     state = const AsyncValue.loading();
 
@@ -127,11 +131,11 @@ class TailorManagementNotifier extends AsyncNotifier<void> {
 
       final tailor = await repository.updateTailor(
         id: id,
-        namaLengkap: namaLengkap,
-        email: email,
+        name: name,
         noTelp: noTelp,
-        alamat: alamat,
-        spesialisasi: spesialisasi,
+        address: address,
+        tailorImages: tailorImages,
+        oldImageUrl: oldImageUrl,
       );
 
       // Invalidate list provider to refresh the list

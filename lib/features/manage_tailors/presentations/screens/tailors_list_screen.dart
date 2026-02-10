@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/tailor_model.dart';
 import '../../domain/providers/tailor_provider.dart';
-import 'tailor_form_screen.dart';
+import 'tailor_form_dialog.dart';
 
 /// Screen untuk menampilkan daftar tailor (penjahit)
 class TailorsListScreen extends ConsumerStatefulWidget {
@@ -24,306 +24,355 @@ class _TailorsListScreenState extends ConsumerState<TailorsListScreen> {
   @override
   Widget build(BuildContext context) {
     final tailorsAsync = ref.watch(tailorsListProvider);
-    final searchQuery = ref.watch(tailorSearchQueryProvider);
+    final actionState = ref.watch(tailorManagementProvider);
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Data Penjahit'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              ref.invalidate(tailorsListProvider);
-            },
+        title: const Text(
+          'Kelola Penjahit',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
           ),
-        ],
+        ),
+        backgroundColor: Colors.grey[200],
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
-      body: Column(
-        children: [
-          // Search Bar
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Cari penjahit...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          ref
-                              .read(tailorSearchQueryProvider.notifier)
-                              .clear();
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // --- TOMBOL TAMBAH ---
+              SizedBox(
+                width: double.infinity,
+                height: 60,
+                child: ElevatedButton(
+                  onPressed:
+                      actionState.isLoading
+                          ? null // Disable kalau lagi loading delete/create
+                          : () => _showAddTailorDialog(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green[400],
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'Tambah Penjahit',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
-              onChanged: (value) {
-                ref
-                    .read(tailorSearchQueryProvider.notifier)
-                    .setQuery(value);
-              },
-            ),
-          ),
 
-          // List Content
-          Expanded(
-            child: tailorsAsync.when(
-              data: (tailors) {
-                if (tailors.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.inbox_outlined,
-                          size: 64,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          searchQuery.isNotEmpty
-                              ? 'Tidak ada penjahit dengan nama "$searchQuery"'
-                              : 'Belum ada data penjahit',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
+              const SizedBox(height: 20),
 
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: tailors.length,
-                  itemBuilder: (context, index) {
-                    final tailor = tailors[index];
-                    return _TailorCard(
-                      tailor: tailor,
-                      onTap: () => _navigateToForm(tailor),
-                      onDelete: () => _confirmDelete(tailor),
-                    );
-                  },
-                );
-              },
-              loading: () => const Center(
-                child: CircularProgressIndicator(),
-              ),
-              error: (error, stack) => Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+              // --- SEARCH BAR ---
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
                   children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Colors.red[400],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Gagal memuat data',
-                      style: TextStyle(
-                        color: Colors.red[600],
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          hintText: 'Cari nama penjahit...',
+                        ),
+                        onChanged: (value) {
+                          // Update Query di Provider
+                          ref
+                              .read(tailorSearchQueryProvider.notifier)
+                              .setQuery(value);
+                        },
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      error.toString(),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        ref.invalidate(tailorsListProvider);
-                      },
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Coba Lagi'),
-                    ),
+                    // Tombol Clear Search (Opsional UX improvement)
+                    if (_searchController.text.isNotEmpty)
+                      IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.grey),
+                        onPressed: () {
+                          _searchController.clear();
+                          ref.read(tailorSearchQueryProvider.notifier).clear();
+                        },
+                      )
+                    else
+                      const Icon(Icons.search, color: Colors.grey),
                   ],
                 ),
               ),
-            ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _navigateToForm(null),
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
 
-  void _navigateToForm(TailorModel? tailor) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => TailorFormScreen(tailor: tailor),
-      ),
-    );
+              const SizedBox(height: 16),
 
-    // Refresh list if form returned success
-    if (result == true && mounted) {
-      ref.invalidate(tailorsListProvider);
-    }
-  }
-
-  void _confirmDelete(TailorModel tailor) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Konfirmasi Hapus'),
-        content: Text(
-          'Apakah Anda yakin ingin menghapus data penjahit "${tailor.namaLengkap}"?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _deleteTailor(tailor.id);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Hapus'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _deleteTailor(String id) async {
-    try {
-      await ref.read(tailorManagementProvider.notifier).deleteTailor(id);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Data penjahit berhasil dihapus'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal menghapus data: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-}
-
-/// Widget Card untuk menampilkan item tailor
-class _TailorCard extends StatelessWidget {
-  final TailorModel tailor;
-  final VoidCallback onTap;
-  final VoidCallback onDelete;
-
-  const _TailorCard({
-    required this.tailor,
-    required this.onTap,
-    required this.onDelete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Theme.of(context).primaryColor,
-          child: Text(
-            tailor.namaLengkap.isNotEmpty
-                ? tailor.namaLengkap[0].toUpperCase()
-                : '?',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        title: Text(
-          tailor.namaLengkap,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                const Icon(Icons.email, size: 14, color: Colors.grey),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    tailor.email,
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 2),
-            Row(
-              children: [
-                const Icon(Icons.phone, size: 14, color: Colors.grey),
-                const SizedBox(width: 4),
-                Text(
-                  tailor.noTelp,
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ],
-            ),
-            if (tailor.spesialisasi != null) ...[
-              const SizedBox(height: 2),
-              Row(
-                children: [
-                  const Icon(Icons.work, size: 14, color: Colors.grey),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      tailor.spesialisasi!,
-                      style: const TextStyle(fontSize: 12),
+              // --- TOMBOL REFRESH ---
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () {
+                    // Paksa refresh data
+                    ref.invalidate(tailorsListProvider);
+                  },
+                  icon: const Icon(Icons.refresh, color: Colors.black),
+                  label: const Text(
+                    'Refresh Data',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ],
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // --- LIST VIEW ---
+              Expanded(
+                child: tailorsAsync.when(
+                  data: (tailors) {
+                    if (tailors.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.people_outline,
+                              size: 60,
+                              color: Colors.grey,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _searchController.text.isEmpty
+                                  ? 'Belum ada data Penjahit.'
+                                  : 'Penjahit "${_searchController.text}" tidak ditemukan.',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      itemCount: tailors.length,
+                      physics: const BouncingScrollPhysics(),
+                      itemBuilder: (context, index) {
+                        final tailor = tailors[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12.0),
+                          child: _buildTailorCard(context, tailor),
+                        );
+                      },
+                    );
+                  },
+                  loading:
+                      () => const Center(child: CircularProgressIndicator()),
+                  error:
+                      (error, stack) => Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              color: Colors.red,
+                              size: 40,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Gagal memuat: $error',
+                              textAlign: TextAlign.center,
+                            ),
+                            ElevatedButton(
+                              onPressed:
+                                  () => ref.invalidate(tailorsListProvider),
+                              child: const Text('Coba Lagi'),
+                            ),
+                          ],
+                        ),
+                      ),
+                ),
               ),
             ],
-          ],
+          ),
         ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.edit, color: Colors.blue),
-              onPressed: onTap,
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
-              onPressed: onDelete,
-            ),
-          ],
-        ),
-        onTap: onTap,
       ),
+    );
+  }
+
+  Widget _buildTailorCard(BuildContext context, TailorModel tailor) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.green[400],
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.2),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Avatar - Show image if available, otherwise show initial
+          CircleAvatar(
+            radius: 25,
+            backgroundColor: Colors.white,
+            backgroundImage:
+                tailor.tailorImages != null && tailor.tailorImages!.isNotEmpty
+                    ? NetworkImage(tailor.tailorImages!)
+                    : null,
+            child:
+                tailor.tailorImages == null || tailor.tailorImages!.isEmpty
+                    ? Text(
+                      tailor.name.isNotEmpty
+                          ? tailor.name[0].toUpperCase()
+                          : '?',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green[800],
+                      ),
+                    )
+                    : null,
+          ),
+          const SizedBox(width: 16),
+
+          // Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  tailor.name,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  tailor.noTelp,
+                  style: const TextStyle(fontSize: 12, color: Colors.white70),
+                ),
+              ],
+            ),
+          ),
+
+          // Edit Button
+          IconButton(
+            onPressed: () => _showEditTailorDialog(context, tailor),
+            icon: const Icon(Icons.edit_outlined, color: Colors.white),
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.black.withValues(alpha: 0.1),
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          // Delete Button
+          IconButton(
+            onPressed: () => _showDeleteConfirmation(context, tailor),
+            icon: const Icon(Icons.delete_outline, color: Colors.white),
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.red.withValues(
+                alpha: 0.8,
+              ), // Merah biar kelihatan bahaya
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- DIALOG FUNCTIONS (INTEGRATED) ---
+
+  void _showAddTailorDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => const TailorFormDialog(),
+    );
+  }
+
+  void _showEditTailorDialog(BuildContext context, TailorModel tailor) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => TailorFormDialog(
+            tailorToEdit: tailor,
+          ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context, TailorModel tailor) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Hapus Penjahit'),
+            content: Text('Yakin ingin menghapus penjahit ${tailor.name}?'),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Batal',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(context); // Tutup dialog konfirmasi
+
+                  // Panggil Provider Delete
+                  try {
+                    await ref
+                        .read(tailorManagementProvider.notifier)
+                        .deleteTailor(tailor.id);
+
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Penjahit berhasil dihapus'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                      // Refresh the list
+                      ref.invalidate(tailorsListProvider);
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Gagal hapus: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text('Hapus'),
+              ),
+            ],
+          ),
     );
   }
 }

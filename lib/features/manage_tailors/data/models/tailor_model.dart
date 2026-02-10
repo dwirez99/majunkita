@@ -2,23 +2,19 @@
 /// Menyimpan informasi tentang penjahit yang mengolah limbah tekstil
 class TailorModel {
   final String id;
-  final String namaLengkap;
-  final String email;
+  final String name;
   final String noTelp;
-  final String? alamat;
-  final String? spesialisasi;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
+  final String address;
+  final DateTime createdAt;
+  final String? tailorImages;
 
   TailorModel({
     required this.id,
-    required this.namaLengkap,
-    required this.email,
+    required this.name,
     required this.noTelp,
-    this.alamat,
-    this.spesialisasi,
-    this.createdAt,
-    this.updatedAt,
+    required this.address,
+    required this.createdAt,
+    this.tailorImages,
   });
 
   /// Factory method untuk membuat TailorModel dari JSON (Supabase response)
@@ -26,17 +22,13 @@ class TailorModel {
   factory TailorModel.fromJson(Map<String, dynamic> json) {
     return TailorModel(
       id: json['id'] as String? ?? '',
-      namaLengkap: json['nama_lengkap'] as String? ?? '',
-      email: json['email'] as String? ?? '',
+      name: json['name'] as String? ?? '',
       noTelp: json['no_telp'] as String? ?? '',
-      alamat: json['alamat'] as String?,
-      spesialisasi: json['spesialisasi'] as String?,
+      address: json['address'] as String? ?? '',
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
-          : null,
+          : DateTime.now(),
+      tailorImages: json['tailor_images'] as String?,
     );
   }
 
@@ -44,41 +36,36 @@ class TailorModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'nama_lengkap': namaLengkap,
-      'email': email,
+      'name': name,
       'no_telp': noTelp,
-      'alamat': alamat,
-      'spesialisasi': spesialisasi,
-      // created_at dan updated_at dihandle oleh database
+      'address': address,
+      'tailor_images': tailorImages,
+      // created_at dihandle oleh database
     };
   }
 
   /// Method untuk membuat copy dengan perubahan tertentu (immutable pattern)
   TailorModel copyWith({
     String? id,
-    String? namaLengkap,
-    String? email,
+    String? name,
     String? noTelp,
-    String? alamat,
-    String? spesialisasi,
+    String? address,
     DateTime? createdAt,
-    DateTime? updatedAt,
+    String? tailorImages,
   }) {
     return TailorModel(
       id: id ?? this.id,
-      namaLengkap: namaLengkap ?? this.namaLengkap,
-      email: email ?? this.email,
+      name: name ?? this.name,
       noTelp: noTelp ?? this.noTelp,
-      alamat: alamat ?? this.alamat,
-      spesialisasi: spesialisasi ?? this.spesialisasi,
+      address: address ?? this.address,
       createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      tailorImages: tailorImages ?? this.tailorImages,
     );
   }
 
   @override
   String toString() {
-    return 'TailorModel(id: $id, namaLengkap: $namaLengkap, email: $email, noTelp: $noTelp)';
+    return 'TailorModel(id: $id, name: $name, noTelp: $noTelp)';
   }
 
   @override
