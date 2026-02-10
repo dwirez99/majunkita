@@ -2,7 +2,7 @@
 class UserProfile {
   final String id;
   final String? username;
-  final String namaLengkap;
+  final String name;
   final String email;
   final String noTelp;
   final String role; // 'admin', 'driver', 'manager'
@@ -10,7 +10,7 @@ class UserProfile {
   UserProfile({
     required this.id,
     this.username,
-    required this.namaLengkap,
+    required this.name,
     required this.email,
     required this.noTelp,
     required this.role,
@@ -20,7 +20,7 @@ class UserProfile {
     return UserProfile(
       id: json['id'] as String,
       username: json['username'] as String?,
-      namaLengkap: json['nama_lengkap'] as String? ?? 'Tanpa Nama',
+      name: json['name'] as String? ?? 'Tanpa Nama',
       email: json['email'] as String? ?? '',
       noTelp: json['no_telp'] as String? ?? '-',
       role: json['role'] as String? ?? 'staff',
@@ -31,7 +31,7 @@ class UserProfile {
     return {
       'id': id,
       'username': username,
-      'nama_lengkap': namaLengkap,
+      'name': name,
       'email': email,
       'no_telp': noTelp,
       'role': role,
@@ -40,35 +40,32 @@ class UserProfile {
 }
 
 // Model untuk Karyawan Admin
-class KaryawanAdmin {
+class Admin {
   final String id;
   final String? username;
-  final String nama; // Alias untuk namaLengkap (untuk backward compatibility)
-  final String namaLengkap;
+  final String name;
   final String email;
   final String noTelp;
-  final String? alamat; // Deprecated, kept for backward compatibility
-
-  KaryawanAdmin({
+  final String? address;
+  
+  Admin({
     required this.id,
     this.username,
-    required this.nama,
-    required this.namaLengkap,
+    required this.name,
     required this.email,
     required this.noTelp,
-    this.alamat,
+    this.address,
   });
 
-  factory KaryawanAdmin.fromJson(Map<String, dynamic> json) {
-    final namaLengkap = json['nama_lengkap'] as String? ?? 'Tanpa Nama';
-    return KaryawanAdmin(
+  factory Admin.fromJson(Map<String, dynamic> json) {
+    final name = json['name'] as String? ?? 'Tanpa Nama';
+    return Admin(
       id: json['id'] as String,
       username: json['username'] as String?,
-      namaLengkap: namaLengkap,
-      nama: namaLengkap, // Use namaLengkap as nama
+      name: name, // Use name as nama
       email: json['email'] as String? ?? '',
       noTelp: json['no_telp'] as String? ?? '-',
-      alamat: json['alamat'] as String?, // Deprecated field
+      address: json['address'] as String?,
     );
   }
 
@@ -76,9 +73,10 @@ class KaryawanAdmin {
     return {
       'id': id,
       'username': username,
-      'nama_lengkap': namaLengkap,
+      'name': name,
       'email': email,
       'no_telp': noTelp,
+      'address': address, 
     };
   }
 }
@@ -87,32 +85,29 @@ class KaryawanAdmin {
 class Driver {
   final String id;
   final String? username;
-  final String nama; // Alias untuk namaLengkap (untuk backward compatibility)
-  final String namaLengkap;
+  final String name;
   final String email;
   final String noTelp;
-  final String? alamat; // Deprecated, kept for backward compatibility
+  final String? address;
 
   Driver({
     required this.id,
     this.username,
-    required this.nama,
-    required this.namaLengkap,
+    required this.name,
     required this.email,
     required this.noTelp,
-    this.alamat,
+    this.address,
   });
 
   factory Driver.fromJson(Map<String, dynamic> json) {
-    final namaLengkap = json['nama_lengkap'] as String? ?? 'Tanpa Nama';
+    final name = json['name'] as String? ?? 'Tanpa Nama';
     return Driver(
       id: json['id'] as String,
       username: json['username'] as String?,
-      namaLengkap: namaLengkap,
-      nama: namaLengkap, // Use namaLengkap as nama
+      name: name, // Use name as nama
       email: json['email'] as String? ?? '',
       noTelp: json['no_telp'] as String? ?? '-',
-      alamat: json['alamat'] as String?, // Deprecated field
+      address: json['address'] as String?, 
     );
   }
 
@@ -120,9 +115,10 @@ class Driver {
     return {
       'id': id,
       'username': username,
-      'nama_lengkap': namaLengkap,
+      'name': name,
       'email': email,
       'no_telp': noTelp,
+      'address': address,
     };
   }
 }

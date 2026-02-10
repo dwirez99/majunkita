@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/manage_partner_models.dart';
 
@@ -40,12 +42,12 @@ class ManagePartnerRepository {
       // 2. Tambahkan Filter Search (ilike) JIKA ADA
       // Dilakukan SEBELUM .order() agar tipe datanya masih Builder
       if (searchQuery != null && searchQuery.isNotEmpty) {
-        query = query.ilike('nama_lengkap', '%$searchQuery%');
+        query = query.ilike('name', '%$searchQuery%');
       }
 
       // 3. Terakhir: Baru lakukan Order (Pengurutan) dan eksekusi (await)
       // .order() mengubah Builder menjadi TransformBuilder (Final step)
-      final response = await query.order('nama_lengkap', ascending: true);
+      final response = await query.order('name', ascending: true);
 
       return (response as List).map((json) => fromJson(json)).toList();
     } catch (e) {
@@ -58,9 +60,10 @@ class ManagePartnerRepository {
     required String email,
     required String password,
     required String username,
-    required String namaLengkap,
+    required String name,
     required String role,
     required String noTelp,
+    String? address,
   }) async {
     try {
       final response = await _supabase.functions.invoke(
@@ -69,9 +72,10 @@ class ManagePartnerRepository {
           'email': email,
           'password': password,
           'username': username,
-          'nama_lengkap': namaLengkap,
+          'name': name,
           'role': role,
           'no_telp': noTelp,
+          'address': address ?? '',
         },
       );
 
@@ -87,12 +91,12 @@ class ManagePartnerRepository {
   // ADMIN OPERATIONS
   // ===========================================================================
 
-  Future<List<KaryawanAdmin>> getAllAdmins() async {
+  Future<List<Admin>> getAllAdmins() async {
     _log('Fetching all admins...');
     try {
       final result = await _getUsersByRole(
         role: AppRoles.admin,
-        fromJson: KaryawanAdmin.fromJson,
+        fromJson: Admin.fromJson,
       );
       _log('Successfully fetched ${result.length} admins');
       return result;
@@ -103,12 +107,12 @@ class ManagePartnerRepository {
   }
 
   // KEMBALIKAN FUNGSI INI (Tadi hilang)
-  Future<List<KaryawanAdmin>> searchAdmins(String query) async {
+  Future<List<Admin>> searchAdmins(String query) async {
     _log('Searching admins with query: "$query"');
     try {
       final result = await _getUsersByRole(
         role: AppRoles.admin,
-        fromJson: KaryawanAdmin.fromJson,
+        fromJson: Admin.fromJson,
         searchQuery: query,
       );
       _log('Search found ${result.length} admin(s) matching "$query"');
@@ -120,12 +124,13 @@ class ManagePartnerRepository {
   }
 
   Future<void> createAdmin({
-    required String namaLengkap,
+    required String name,
     required String email,
     required String noTelp,
     required String password,
+    String? address,
   }) async {
-    _log('Creating new admin: $namaLengkap ($email)');
+    _log('Creating new admin: $name ($email)');
     try {
       // Generate username from email (before @)
       final username = email.split('@')[0];
@@ -134,13 +139,14 @@ class ManagePartnerRepository {
         email: email,
         password: password,
         username: username,
-        namaLengkap: namaLengkap,
+        name: name,
         role: AppRoles.admin,
         noTelp: noTelp,
+        address: address ?? '', // Tambahkan address jika diperlukan
       );
-      _log('Successfully created admin: $namaLengkap ($email)');
+      _log('Successfully created admin: $name ($email)');
     } catch (e) {
-      _log('Error creating admin $namaLengkap: $e', level: 'ERROR');
+      _log('Error creating admin $name: $e', level: 'ERROR');
       rethrow;
     }
   }
@@ -181,12 +187,13 @@ class ManagePartnerRepository {
   }
 
   Future<void> createDriver({
-    required String namaLengkap,
+    required String name,
     required String email,
     required String noTelp,
     required String password,
+    String? address,
   }) async {
-    _log('Creating new driver: $namaLengkap ($email)');
+    _log('Creating new driver: $name ($email)');
     try {
       // Generate username from email (before @)
       final username = email.split('@')[0];
@@ -195,13 +202,14 @@ class ManagePartnerRepository {
         email: email,
         password: password,
         username: username,
-        namaLengkap: namaLengkap,
+        name: name,
         role: AppRoles.driver,
         noTelp: noTelp,
+        address: address ?? '', // Tambahkan address jika diperlukan
       );
-      _log('Successfully created driver: $namaLengkap ($email)');
+      _log('Successfully created driver: $name ($email)');
     } catch (e) {
-      _log('Error creating driver $namaLengkap: $e', level: 'ERROR');
+      _log('Error creating driver $name: $e', level: 'ERROR');
       rethrow;
     }
   }
@@ -212,19 +220,20 @@ class ManagePartnerRepository {
 
   Future<void> updateUser({
     required String id,
-    required String namaLengkap,
+    required String name,
     String? username,
     required String email,
     required String noTelp,
     String? password,
     String? role,
+    String? address,
   }) async {
-    _log('Updating user: id=$id, nama=$namaLengkap, email=$email');
+    _log('Updating user: id=$id, name=$name, email=$email, address=${address ?? 'N/A'}');
     try {
       // Build request body
       final body = <String, dynamic>{
         'user_id': id,
-        'nama_lengkap': namaLengkap,
+        'name': name,
         'email': email,
         'no_telp': noTelp,
       };
@@ -241,6 +250,10 @@ class ManagePartnerRepository {
         body['role'] = role;
       }
 
+      if (address != null && address.isNotEmpty) {
+        body['address'] = address;
+      }
+
       // Call Edge Function to update user
       final response = await _supabase.functions.invoke(
         'update-user',
@@ -251,7 +264,7 @@ class ManagePartnerRepository {
         throw Exception('Gagal mengupdate user: Status ${response.status}');
       }
 
-      _log('Successfully updated user: id=$id, nama=$namaLengkap');
+      _log('Successfully updated user: id=$id, nama=$name');
     } catch (e) {
       _log('Error updating user $id: $e', level: 'ERROR');
       rethrow;
