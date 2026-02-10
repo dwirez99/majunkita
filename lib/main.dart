@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'core/theme/app_theme.dart';
 import 'features/auth/presentations/screens/auth_wrapper.dart';
 
 void main() async {
@@ -64,10 +65,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Majunkita',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
+      theme: AppTheme.getLightTheme(),
       home: const AuthWrapper(), // Use AuthWrapper instead of LoginScreen
     );
   }

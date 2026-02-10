@@ -26,6 +26,9 @@ class ImageCaptureHelper {
 
       final File imageFile = File(imageXFile.path);
 
+      // Check if the context is still mounted before using it
+      if (!context.mounted) return;
+
       // 2. Tampilkan Pop-out Pratinjau
       final bool? shouldSubmit = await showDialog<bool>(
         context: context,
@@ -37,6 +40,9 @@ class ImageCaptureHelper {
       if (shouldSubmit == true) {
         // Pengguna menekan "Kirim Bukti"
         try {
+          // Check if the context is still mounted before using it
+          if (!context.mounted) return;
+          
           // Tampilkan loading indicator di atas layar
           showDialog(
             context: context,
@@ -47,14 +53,25 @@ class ImageCaptureHelper {
           // Jalankan fungsi onSubmit yang spesifik dari fitur
           await onSubmit(imageFile);
 
+          // Check if the context is still mounted before using it
+          if (!context.mounted) return;
+          
           // Tutup loading indicator
           Navigator.of(context).pop();
 
+          // Check if the context is still mounted before using it
+          if (!context.mounted) return;
+          
           // Tampilkan notifikasi sukses
           showSuccessDialog(context);
         } catch (e) {
+          // Check if the context is still mounted before using it
+          if (!context.mounted) return;
+          
           // Jika terjadi error saat submit, tutup loading dan tampilkan pesan
           Navigator.of(context).pop();
+          
+          if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Gagal mengirim: ${e.toString()}')),
           );
