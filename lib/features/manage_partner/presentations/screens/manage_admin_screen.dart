@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 // Sesuaikan import ini dengan struktur foldermu
 import '../../domain/providers/manage_partner_providers.dart';
-import '../../data/models/manage_partner_models.dart'; // Import Model KaryawanAdmin
+import '../../data/models/manage_partner_models.dart'; // Import Model Admin
 import '../widgets/staff_form_dialog.dart'; // Import Dialog Generic baru
 
 class ManageAdminScreen extends ConsumerStatefulWidget {
@@ -90,7 +90,7 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
                         controller: _searchController,
                         decoration: const InputDecoration(
                           border: InputBorder.none,
-                          hintText: 'Cari nama admin...',
+                          hintText: 'Cari name admin...',
                         ),
                         onChanged: (value) {
                           // Update Query di Provider
@@ -213,7 +213,7 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
     );
   }
 
-  Widget _buildAdminCard(BuildContext context, KaryawanAdmin admin) {
+  Widget _buildAdminCard(BuildContext context, Admin admin) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -221,7 +221,7 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
+            color: Colors.grey.withValues(alpha: 0.2),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 3),
@@ -235,7 +235,7 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
             radius: 25,
             backgroundColor: Colors.white,
             child: Text(
-              admin.nama.isNotEmpty ? admin.nama[0].toUpperCase() : '?',
+              admin.name.isNotEmpty ? admin.name[0].toUpperCase() : '?',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -251,7 +251,7 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  admin.nama,
+                  admin.name,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -272,7 +272,7 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
             onPressed: () => _showEditAdminDialog(context, admin),
             icon: const Icon(Icons.edit_outlined, color: Colors.white),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.black.withOpacity(0.1),
+              backgroundColor: Colors.black.withValues(alpha: 0.1),
             ),
           ),
 
@@ -283,8 +283,8 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
             onPressed: () => _showDeleteConfirmation(context, admin),
             icon: const Icon(Icons.delete_outline, color: Colors.white),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.red.withOpacity(
-                0.8,
+              backgroundColor: Colors.red.withValues(
+                alpha: 0.8,
               ), // Merah biar kelihatan bahaya
             ),
           ),
@@ -305,7 +305,7 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
     );
   }
 
-  void _showEditAdminDialog(BuildContext context, KaryawanAdmin admin) {
+  void _showEditAdminDialog(BuildContext context, Admin admin) {
     showDialog(
       context: context,
       builder:
@@ -317,13 +317,13 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, KaryawanAdmin admin) {
+  void _showDeleteConfirmation(BuildContext context, Admin admin) {
     showDialog(
       context: context,
       builder:
           (context) => AlertDialog(
             title: const Text('Hapus Admin'),
-            content: Text('Yakin ingin menghapus akses untuk ${admin.nama}?'),
+            content: Text('Yakin ingin menghapus akses untuk ${admin.name}?'),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
