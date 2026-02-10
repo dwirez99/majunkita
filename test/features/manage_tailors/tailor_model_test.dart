@@ -7,13 +7,11 @@ void main() {
       // Arrange
       final json = {
         'id': '123e4567-e89b-12d3-a456-426614174000',
-        'nama_lengkap': 'John Doe',
-        'email': 'john@example.com',
+        'name': 'John Doe',
         'no_telp': '081234567890',
-        'alamat': 'Jl. Test No. 1',
-        'spesialisasi': 'Jahit Baju',
+        'address': 'Jl. Test No. 1',
+        'tailor_images': 'https://example.com/image.jpg',
         'created_at': '2024-01-01T00:00:00.000Z',
-        'updated_at': '2024-01-01T00:00:00.000Z',
       };
 
       // Act
@@ -21,43 +19,43 @@ void main() {
 
       // Assert
       expect(tailor.id, '123e4567-e89b-12d3-a456-426614174000');
-      expect(tailor.namaLengkap, 'John Doe');
-      expect(tailor.email, 'john@example.com');
+      expect(tailor.name, 'John Doe');
       expect(tailor.noTelp, '081234567890');
-      expect(tailor.alamat, 'Jl. Test No. 1');
-      expect(tailor.spesialisasi, 'Jahit Baju');
+      expect(tailor.address, 'Jl. Test No. 1');
+      expect(tailor.tailorImages, 'https://example.com/image.jpg');
       expect(tailor.createdAt, isNotNull);
-      expect(tailor.updatedAt, isNotNull);
     });
 
-    test('should handle null values gracefully', () {
+    test('should handle null tailor_images gracefully', () {
       // Arrange
       final json = {
         'id': '123',
-        'nama_lengkap': 'Jane Doe',
-        'email': 'jane@example.com',
+        'name': 'Jane Doe',
         'no_telp': '081234567890',
+        'address': 'Jl. Test No. 2',
+        'tailor_images': null,
+        'created_at': '2024-01-01T00:00:00.000Z',
       };
 
       // Act
       final tailor = TailorModel.fromJson(json);
 
       // Assert
-      expect(tailor.alamat, isNull);
-      expect(tailor.spesialisasi, isNull);
-      expect(tailor.createdAt, isNull);
-      expect(tailor.updatedAt, isNull);
+      expect(tailor.name, 'Jane Doe');
+      expect(tailor.tailorImages, isNull);
+      expect(tailor.createdAt, isNotNull);
     });
 
     test('should convert TailorModel to JSON', () {
       // Arrange
+      final createdAt = DateTime(2024, 1, 1);
       final tailor = TailorModel(
         id: '123',
-        namaLengkap: 'John Doe',
-        email: 'john@example.com',
+        name: 'John Doe',
         noTelp: '081234567890',
-        alamat: 'Jl. Test No. 1',
-        spesialisasi: 'Jahit Baju',
+        address: 'Jl. Test No. 1',
+        createdAt: createdAt,
+        tailorImages: 'https://example.com/image.jpg',
       );
 
       // Act
@@ -65,56 +63,62 @@ void main() {
 
       // Assert
       expect(json['id'], '123');
-      expect(json['nama_lengkap'], 'John Doe');
-      expect(json['email'], 'john@example.com');
+      expect(json['name'], 'John Doe');
       expect(json['no_telp'], '081234567890');
-      expect(json['alamat'], 'Jl. Test No. 1');
-      expect(json['spesialisasi'], 'Jahit Baju');
+      expect(json['address'], 'Jl. Test No. 1');
+      expect(json['tailor_images'], 'https://example.com/image.jpg');
     });
 
     test('should create copy with modified fields', () {
       // Arrange
+      final createdAt = DateTime(2024, 1, 1);
       final original = TailorModel(
         id: '123',
-        namaLengkap: 'John Doe',
-        email: 'john@example.com',
+        name: 'John Doe',
         noTelp: '081234567890',
+        address: 'Jl. Test No. 1',
+        createdAt: createdAt,
       );
 
       // Act
       final modified = original.copyWith(
-        namaLengkap: 'Jane Doe',
-        email: 'jane@example.com',
+        name: 'Jane Doe',
+        address: 'Jl. Test No. 2',
       );
 
       // Assert
       expect(modified.id, original.id);
-      expect(modified.namaLengkap, 'Jane Doe');
-      expect(modified.email, 'jane@example.com');
+      expect(modified.name, 'Jane Doe');
+      expect(modified.address, 'Jl. Test No. 2');
       expect(modified.noTelp, original.noTelp);
+      expect(modified.createdAt, original.createdAt);
     });
 
     test('should compare TailorModels by id', () {
       // Arrange
+      final createdAt = DateTime(2024, 1, 1);
       final tailor1 = TailorModel(
         id: '123',
-        namaLengkap: 'John Doe',
-        email: 'john@example.com',
+        name: 'John Doe',
         noTelp: '081234567890',
+        address: 'Jl. Test No. 1',
+        createdAt: createdAt,
       );
 
       final tailor2 = TailorModel(
         id: '123',
-        namaLengkap: 'Different Name',
-        email: 'different@example.com',
+        name: 'Different Name',
         noTelp: '089876543210',
+        address: 'Jl. Test No. 2',
+        createdAt: createdAt,
       );
 
       final tailor3 = TailorModel(
         id: '456',
-        namaLengkap: 'John Doe',
-        email: 'john@example.com',
+        name: 'John Doe',
         noTelp: '081234567890',
+        address: 'Jl. Test No. 1',
+        createdAt: createdAt,
       );
 
       // Assert
