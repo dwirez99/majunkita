@@ -1,27 +1,27 @@
 // Model untuk data yang akan kita kirim ke tabel stok_perca
-class PercaStock {
-  final String idPabrik;
-  final DateTime tglMasuk;
-  final String jenis;
-  final double berat;
-  final String buktiAmbilUrl; // URL gambar setelah di-upload
+class PercasStock {
+  final String idFactory;
+  final DateTime dateEntry;
+  final String percaType;
+  final double weight;
+  final String deliveryProofUrl; // URL gambar setelah di-upload
 
-  PercaStock({
-    required this.idPabrik,
-    required this.tglMasuk,
-    required this.jenis,
-    required this.berat,
-    required this.buktiAmbilUrl,
+  PercasStock({
+    required this.idFactory,
+    required this.dateEntry,
+    required this.percaType,
+    required this.weight,
+    required this.deliveryProofUrl,
   });
 
   // Fungsi untuk mengubah objek menjadi Map/JSON untuk dikirim ke Supabase
   Map<String, dynamic> toJson() {
     return {
-      'id_pabrik': idPabrik,
-      'tgl_masuk': tglMasuk.toIso8601String(),
-      'jenis': jenis,
-      'berat': berat,
-      'bukti_ambil': buktiAmbilUrl,
+      'id_factory': idFactory,
+      'date_entry': dateEntry.toIso8601String(),
+      'perca_type': percaType,
+      'weight': weight,
+      'delivery_proof_url': deliveryProofUrl,
     };
   }
 }

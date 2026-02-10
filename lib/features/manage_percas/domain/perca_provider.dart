@@ -11,9 +11,9 @@ final percaRepositoryProvider = Provider<PercaRepository>((ref) {
   return PercaRepository(supabase);
 });
 
-// 2. Provider untuk mengambil daftar pabrik (untuk form dropdown)
-final pabrikListProvider = FutureProvider<List<Pabrik>>((ref) {
-  return ref.watch(percaRepositoryProvider).getPabrikList();
+// 2. Provider untuk mengambil daftar Factory (untuk form dropdown)
+final factoryListProvider = FutureProvider<List<Factory>>((ref) {
+  return ref.watch(percaRepositoryProvider).getFactoryList();
 });
 
 // 3. Notifier untuk menangani proses penambahan stok
@@ -27,7 +27,7 @@ class AddPercaNotifier extends AsyncNotifier<void> {
   }
 
   // Business logic: Menambah single stock
-  Future<void> addSinglePercaStock(PercaStock stockData, File imageFile) async {
+  Future<void> addSinglePercasStock(PercasStock data, File imageFile) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final repository = ref.read(percaRepositoryProvider);
@@ -36,12 +36,12 @@ class AddPercaNotifier extends AsyncNotifier<void> {
       final imageUrl = await repository.uploadImageToStorage(imageFile);
       
       // 2. Buat stock object final dengan URL gambar
-      final finalStock = PercaStock(
-        idPabrik: stockData.idPabrik,
-        tglMasuk: stockData.tglMasuk,
-        jenis: stockData.jenis,
-        berat: stockData.berat,
-        buktiAmbilUrl: imageUrl,
+      final finalStock = PercasStock(
+        idFactory: data.idFactory,
+        dateEntry: data.dateEntry,
+        percaType: data.percaType,
+        weight: data.weight,
+        deliveryProofUrl: imageUrl,
       );
       
       // 3. Simpan ke database
@@ -53,36 +53,37 @@ class AddPercaNotifier extends AsyncNotifier<void> {
   Future<void> addMultiplePercaStocks(List<Map<String, dynamic>> stockList, File imageFile) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      print("Starting to add multiple stocks: ${stockList.length} items");
+      // Logging untuk debug - akan dihapus di production
+      // print("Starting to add multiple stocks: ${stockList.length} items");
       
       final repository = ref.read(percaRepositoryProvider);
       
       // 1. Upload gambar sekali dan dapatkan URL
-      print("Uploading image to Supabase Storage...");
+      // print("Uploading image to Supabase Storage...");
       final imageUrl = await repository.uploadImageToStorage(imageFile);
-      print("Image uploaded successfully: $imageUrl");
+      // print("Image uploaded successfully: $imageUrl");
       
-      // 2. Konversi raw data menjadi PercaStock objects dengan URL yang sama
-      final List<PercaStock> stockObjects = [];
+      // 2. Konversi raw data menjadi PercasStock objects dengan URL yang sama
+      final List<PercasStock> stockObjects = [];
       for (int i = 0; i < stockList.length; i++) {
         final stockData = stockList[i];
-        print("Processing stock ${i + 1}/${stockList.length}: ${stockData['jenis']}");
+        // print("Processing stock ${i + 1}/${stockList.length}: ${stockData['jenis']}");
         
-        final percaStock = PercaStock(
-          idPabrik: stockData['idPabrik'],
-          tglMasuk: stockData['tglMasuk'],
-          jenis: stockData['jenis'],
-          berat: stockData['berat'],
-          buktiAmbilUrl: imageUrl, // URL yang sama untuk semua stok
+        final stock = PercasStock(
+          idFactory: stockData['idFactory'],
+          dateEntry: stockData['dateEntry'],
+          percaType: stockData['jenis'],
+          weight: stockData['weight'],
+          deliveryProofUrl: imageUrl, // URL yang sama untuk semua stok
         );
         
-        stockObjects.add(percaStock);
+        stockObjects.add(stock);
       }
       
       // 3. Simpan semua stocks ke database sekaligus
-      print("Saving all stocks to database...");
+      // print("Saving all stocks to database...");
       await repository.saveMultipleStocksToDatabase(stockObjects);
-      print("All stocks saved successfully!");
+      // print("All stocks saved successfully!");
     });
   }
 }
