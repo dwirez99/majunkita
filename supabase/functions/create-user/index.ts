@@ -1,5 +1,15 @@
 // Supabase Edge Function to create a new user
 // This function is called by admins/managers to create new users
+//
+// Profiles Table Structure:
+// - id (uuid, primary key, foreign key to auth.users)
+// - role (character varying, not null) - Allowed: 'admin', 'manager', 'driver', 'partner_pabrik', 'penjahit'
+// - no_telp (character varying, nullable)
+// - username (text, nullable, unique)
+// - name (text, nullable)
+// - email (text, nullable)
+// - address (text, nullable)
+// - updated_at (timestamp with time zone, auto-updated)
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
@@ -14,10 +24,21 @@ interface CreateUserRequest {
   email: string;
   password: string;
   username?: string;
-  nama_lengkap: string;
-  role: string;
+  name: string;
+  role: 'admin' | 'manager' | 'driver' | 'partner_pabrik' | 'penjahit';
   no_telp?: string;
-  alamat?: string;
+  address?: string;
+}
+
+interface ProfileData {
+  id: string;
+  role: string;
+  no_telp: string | null;
+  username: string | null;
+  name: string | null;
+  updated_at?: string;
+  email: string | null;
+  address: string | null;
 }
 
 serve(async (req) => {
@@ -94,14 +115,14 @@ serve(async (req) => {
 
     // Parse request body
     const requestData: CreateUserRequest = await req.json();
-    const { email, password, username, nama_lengkap, role, no_telp, alamat } =
+    const { email, password, username, name, role, no_telp, address } =
       requestData;
 
     // Validate required fields
-    if (!email || !password || !nama_lengkap || !role) {
+    if (!email || !password || !name || !role) {
       return new Response(
         JSON.stringify({
-          error: "Missing required fields: email, password, nama_lengkap, role",
+          error: "Missing required fields: email, password, name, role",
         }),
         {
           status: 400,
@@ -115,7 +136,6 @@ serve(async (req) => {
       "admin",
       "manager",
       "driver",
-      "karyawan_admin",
       "partner_pabrik",
       "penjahit",
     ];
@@ -139,10 +159,10 @@ serve(async (req) => {
         email_confirm: true, // Auto-confirm email
         user_metadata: {
           username: username || email.split("@")[0],
-          nama: nama_lengkap,
+          name: name,
           role: role,
-          no_telp: no_telp || "",
-          alamat: alamat || "",
+          no_telp: no_telp || null,
+          address: address || null,
         },
       });
 
@@ -171,16 +191,19 @@ serve(async (req) => {
     if (profileCheckError) {
       console.error("Profile not created by trigger:", profileCheckError);
       // Try to create profile manually as fallback
+      const profileData: ProfileData = {
+        id: newUser.user.id,
+        role: role,
+        no_telp: no_telp || null,
+        username: username || null,
+        name: name || null,
+        email: email || null,
+        address: address || null,
+      };
+
       const { error: manualProfileError } = await supabaseAdmin
         .from("profiles")
-        .insert({
-          id: newUser.user.id,
-          nama: nama_lengkap,
-          email: email,
-          role: role,
-          no_telp: no_telp || "",
-          alamat: alamat || "",
-        });
+        .insert(profileData);
 
       if (manualProfileError) {
         console.error("Failed to create profile manually:", manualProfileError);

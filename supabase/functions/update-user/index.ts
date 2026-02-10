@@ -1,5 +1,15 @@
 // Supabase Edge Function to update a user
 // This function is called by admins/managers to update user information
+//
+// Profiles Table Structure:
+// - id (uuid, primary key, foreign key to auth.users)
+// - role (character varying, not null)
+// - no_telp (character varying, nullable)
+// - username (text, nullable, unique)
+// - name (text, nullable)
+// - email (text, nullable)
+// - address (text, nullable)
+// - updated_at (timestamp with time zone, auto-updated)
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
@@ -15,9 +25,10 @@ interface UpdateUserRequest {
   email?: string;
   password?: string;
   username?: string;
-  nama_lengkap?: string;
+  name?: string;
   no_telp?: string;
   role?: string;
+  address?: string;
 }
 
 serve(async (req) => {
@@ -94,7 +105,7 @@ serve(async (req) => {
 
     // Parse request body
     const requestData: UpdateUserRequest = await req.json();
-    const { user_id, email, password, username, nama_lengkap, no_telp, role } =
+    const { user_id, email, password, username, name, no_telp, role, address } =
       requestData;
 
     // Validate required fields
@@ -116,7 +127,6 @@ serve(async (req) => {
         "admin",
         "manager",
         "driver",
-        "karyawan_admin",
         "partner_pabrik",
         "penjahit",
       ];
@@ -158,12 +168,16 @@ serve(async (req) => {
     }
 
     // Update user metadata if provided
-    if (username || nama_lengkap || no_telp || role) {
+    if (username || name || no_telp || role || address) {
       const userMetadata: any = {};
       if (username) userMetadata.username = username;
-      if (nama_lengkap) userMetadata.nama = nama_lengkap;
+      if (name) {
+        userMetadata.nama = name;
+        userMetadata.name = name;
+      }
       if (no_telp) userMetadata.no_telp = no_telp;
       if (role) userMetadata.role = role;
+      if (address) userMetadata.address = address;
 
       const { error: metadataError } =
         await supabaseAdmin.auth.admin.updateUserById(user_id, {
@@ -178,10 +192,11 @@ serve(async (req) => {
     // Update profile in profiles table
     const profileUpdateData: any = {};
     if (username !== undefined) profileUpdateData.username = username;
-    if (nama_lengkap !== undefined) profileUpdateData.nama_lengkap = nama_lengkap;
+    if (name !== undefined) profileUpdateData.name = name;
     if (email !== undefined) profileUpdateData.email = email;
     if (no_telp !== undefined) profileUpdateData.no_telp = no_telp;
     if (role !== undefined) profileUpdateData.role = role;
+    if (address !== undefined) profileUpdateData.address = address;
 
     if (Object.keys(profileUpdateData).length > 0) {
       const { error: profileUpdateError } = await supabaseAdmin

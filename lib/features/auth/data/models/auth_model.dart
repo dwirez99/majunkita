@@ -1,24 +1,24 @@
-class profiles {
+class Profiles {
   final String id;
-  final String namaLengkap;
+  final String name;
   final String? username;
   final String email;
   final String role;
   final String noTelp;
 
-  profiles({
+  Profiles({
     required this.id,
-    required this.namaLengkap,
+    required this.name,
     this.username,
     required this.email,
     required this.role,
     required this.noTelp,
   });
 
-  factory profiles.fromMap(Map<String, dynamic> map) {
-    return profiles(
+  factory Profiles.fromMap(Map<String, dynamic> map) {
+    return Profiles(
       id: map['id'],
-      namaLengkap: map['nama_lengkap'],
+      name: map['name'],
       username: map['username'],
       email: map['email'],
       role: map['role'],
@@ -29,7 +29,7 @@ class profiles {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'nama_lengkap': namaLengkap,
+      'name': name,
       'username': username,
       'email': email,
       'role': role,

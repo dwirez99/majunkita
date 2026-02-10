@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthRepository {
@@ -121,7 +123,7 @@ class AuthRepository {
   Future<void> createUserByAdmin({
     required String email,
     required String password,
-    required String namaLengkap,
+    required String name,
     required String role,
     required String noTelp,
   }) async {
@@ -132,7 +134,7 @@ class AuthRepository {
         body: {
           'email': email,
           'password': password,
-          'nama_lengkap': namaLengkap,
+          'name': name,
           'role': role,
           'no_telp': noTelp,
         },
