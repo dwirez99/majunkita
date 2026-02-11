@@ -41,7 +41,7 @@ class AddPercaNotifier extends AsyncNotifier<void> {
         dateEntry: data.dateEntry,
         percaType: data.percaType,
         weight: data.weight,
-        deliveryProofUrl: imageUrl,
+        deliveryProof: imageUrl,
       );
       
       // 3. Simpan ke database
@@ -74,7 +74,7 @@ class AddPercaNotifier extends AsyncNotifier<void> {
           dateEntry: stockData['dateEntry'],
           percaType: stockData['jenis'],
           weight: stockData['weight'],
-          deliveryProofUrl: imageUrl, // URL yang sama untuk semua stok
+          deliveryProof: imageUrl, // URL yang sama untuk semua stok
         );
         
         stockObjects.add(stock);

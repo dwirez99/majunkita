@@ -4,14 +4,14 @@ class PercasStock {
   final DateTime dateEntry;
   final String percaType;
   final double weight;
-  final String deliveryProofUrl; // URL gambar setelah di-upload
+  final String deliveryProof; // URL gambar setelah di-upload
 
   PercasStock({
     required this.idFactory,
     required this.dateEntry,
     required this.percaType,
     required this.weight,
-    required this.deliveryProofUrl,
+    required this.deliveryProof,
   });
 
   // Fungsi untuk mengubah objek menjadi Map/JSON untuk dikirim ke Supabase
@@ -21,7 +21,7 @@ class PercasStock {
       'date_entry': dateEntry.toIso8601String(),
       'perca_type': percaType,
       'weight': weight,
-      'delivery_proof_url': deliveryProofUrl,
+      'delivery_proof': deliveryProof,
     };
   }
 }
