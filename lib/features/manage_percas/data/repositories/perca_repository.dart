@@ -9,10 +9,10 @@ class PercaRepository {
   PercaRepository(this._supabase);
 
   // 1. Mengambil daftar Factory untuk dropdown
-  Future<List<Factory>> getFactoryList() async {
+  Future<List<FactoryModel>> getFactoryList() async {
     try {
-      final data = await _supabase.from('Factory').select('id, factoryName');
-      return data.map((item) => Factory.fromJson(item)).toList();
+      final data = await _supabase.from('factories').select('id, factory_name, address, no_telp');
+      return data.map((item) => FactoryModel.fromJson(item)).toList();
     } catch (e) {
       throw Exception('Gagal mengambil daftar Factory: $e');
     }
