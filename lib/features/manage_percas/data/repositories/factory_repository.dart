@@ -194,11 +194,11 @@ class FactoryRepository {
       // Check if factory is used in percas_stock
       final usageCheck = await _supabase
           .from('percas_stock')
-          .select('id')
+          .select('id', count: CountOption.exact)
           .eq('id_factory', id)
           .limit(1);
 
-      if (usageCheck.isNotEmpty) {
+      if (usageCheck.count > 0) {
         _log('Cannot delete factory $id: still referenced in percas_stock', level: 'WARN');
         throw Exception(
           'Tidak dapat menghapus pabrik ini karena masih memiliki data stok perca terkait. '
