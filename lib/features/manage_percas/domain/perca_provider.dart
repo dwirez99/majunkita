@@ -12,7 +12,7 @@ final percaRepositoryProvider = Provider<PercaRepository>((ref) {
 });
 
 // 2. Provider untuk mengambil daftar Factory (untuk form dropdown)
-final factoryListProvider = FutureProvider<List<Factory>>((ref) {
+final factoryListProvider = FutureProvider<List<FactoryModel>>((ref) {
   return ref.watch(percaRepositoryProvider).getFactoryList();
 });
 
