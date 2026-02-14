@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/api/supabase_client_api.dart';
-import '../data/models/factory_models.dart';
-import '../data/models/perca_stock_model.dart';
-import '../data/repositories/perca_repository.dart';
+import '../../../../core/api/supabase_client_api.dart';
+import '../../../manage_factories/data/models/factory_model.dart';
+import '../../data/models/perca_stock_model.dart';
+import '../../data/repositories/perca_repository.dart';
 
 // 1. Provider untuk Repository
 final percaRepositoryProvider = Provider<PercaRepository>((ref) {

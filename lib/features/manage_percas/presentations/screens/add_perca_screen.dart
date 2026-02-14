@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../manage_percas/domain/perca_provider.dart';
+import '../../domain/providers/perca_provider.dart';
 import '../../../../core/utils/image_capture_helper.dart';
 
 

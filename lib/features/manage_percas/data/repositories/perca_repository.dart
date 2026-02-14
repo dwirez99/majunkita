@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/factory_models.dart';
+import '../../../manage_factories/data/models/factory_model.dart';
 import '../models/perca_stock_model.dart';
 
 class PercaRepository {
