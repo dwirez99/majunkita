@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/api/supabase_client_api.dart';
-import '../data/models/factory_models.dart';
-import '../data/models/perca_stock_model.dart';
-import '../data/repositories/perca_repository.dart';
+import '../../../../core/api/supabase_client_api.dart';
+import '../../../manage_factories/data/models/factory_model.dart';
+import '../../data/models/perca_stock_model.dart';
+import '../../data/repositories/perca_repository.dart';
 
 // 1. Provider untuk Repository
 final percaRepositoryProvider = Provider<PercaRepository>((ref) {
@@ -12,7 +12,7 @@ final percaRepositoryProvider = Provider<PercaRepository>((ref) {
 });
 
 // 2. Provider untuk mengambil daftar Factory (untuk form dropdown)
-final factoryListProvider = FutureProvider<List<Factory>>((ref) {
+final factoryListProvider = FutureProvider<List<FactoryModel>>((ref) {
   return ref.watch(percaRepositoryProvider).getFactoryList();
 });
 
@@ -41,7 +41,7 @@ class AddPercaNotifier extends AsyncNotifier<void> {
         dateEntry: data.dateEntry,
         percaType: data.percaType,
         weight: data.weight,
-        deliveryProofUrl: imageUrl,
+        deliveryProof: imageUrl,
       );
       
       // 3. Simpan ke database
@@ -74,7 +74,7 @@ class AddPercaNotifier extends AsyncNotifier<void> {
           dateEntry: stockData['dateEntry'],
           percaType: stockData['jenis'],
           weight: stockData['weight'],
-          deliveryProofUrl: imageUrl, // URL yang sama untuk semua stok
+          deliveryProof: imageUrl, // URL yang sama untuk semua stok
         );
         
         stockObjects.add(stock);

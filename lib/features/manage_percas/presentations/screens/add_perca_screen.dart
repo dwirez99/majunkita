@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../manage_percas/domain/perca_provider.dart';
+import '../../domain/providers/perca_provider.dart';
 import '../../../../core/utils/image_capture_helper.dart';
 
 
@@ -50,10 +50,10 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
       
       setState(() {
         _stockList.add({
-          'idPabrik': _selectedPabrikId!,
-          'tglMasuk': _selectedDate,
+          'idFactory': _selectedPabrikId!,
+          'dateEntry': _selectedDate,
           'jenis': _selectedJenis!,
-          'berat': double.parse(_beratController.text),
+          'weight': double.parse(_beratController.text),
         });
         
         // Clear jenis dan berat untuk input berikutnya
@@ -182,8 +182,8 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
                 hint: const Text('Pilih Nama Pabrik'),
                 items: pabrikList.map<DropdownMenuItem<String>>((pabrik) {
                   return DropdownMenuItem<String>(
-                    value: pabrik.id.toString(),
-                    child: Text(pabrik.namaPabrik.toString()),
+                    value: pabrik.id,
+                    child: Text(pabrik.factoryName),
                   );
                 }).toList(),
                 onChanged: (value) => setState(() => _selectedPabrikId = value),

@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../manage_tailors/presentations/screens/tailors_list_screen.dart';
+import '../../../manage_factories/presentations/screens/factory_list_screen.dart';
+import '../../../manage_partner/presentations/screens/manage_partner_screen.dart';
 
 class ManagementMenuGrid extends StatelessWidget {
   const ManagementMenuGrid({super.key});
@@ -24,6 +26,11 @@ class ManagementMenuGrid extends StatelessWidget {
         'label': 'Kelola\nPenjahit',
         'color': AppColors.accent,
         'icon': Icons.person_2,
+      },
+      {
+        'label': 'Kelola\nPabrik',
+        'color': Colors.orange,
+        'icon': Icons.factory,
       },
       {
         'label': 'Kelola\nPengiriman',
@@ -131,10 +138,21 @@ class ManagementMenuGrid extends StatelessWidget {
         );
         break;
       case 3:
-        // TODO: Navigate to Kelola Pengiriman
+        // Navigate to Kelola Pabrik
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const FactoryListScreen()),
+        );
         break;
       case 4:
-        // TODO: Navigate to Kelola Partner
+        // TODO: Navigate to Kelola Pengiriman
+        break;
+      case 5:
+        // Navigate to Kelola Partner (Driver & Factory)
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ManagePartnerScreen()),
+        );
         break;
       default:
         break;
