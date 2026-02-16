@@ -4,6 +4,7 @@ import '../../../auth/domain/providers/auth_provider.dart';
 import '../../../manage_partner/presentations/screens/manage_partner_screen.dart';
 import '../widgets/dashboard_appbar.dart';
 import '../widgets/dashboard_bottom_bar.dart';
+import '../../../manage_percas/presentations/screens/manager_manage_perca.dart';
 
 class DashboardManagerScreen extends ConsumerStatefulWidget {
   const DashboardManagerScreen({super.key});
@@ -90,9 +91,15 @@ class _DashboardManagerScreenState
 
               // 5. ACTION BUTTONS (Menu Utama)
               _buildMenuButton(
-                label: 'RIWAYAT AMBIL DAN SETOR\nPERCA',
+                label: 'RENCANA AMBIL PERCA PABRIK',
                 onTap: () {
-                  // TODO: Navigasi ke Riwayat Perca
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const ManagePendingPercaPlansScreen(),
+                    ),
+                  );
                 },
               ),
               const SizedBox(height: 16),
@@ -100,7 +107,7 @@ class _DashboardManagerScreenState
               _buildMenuButton(
                 label: 'RIWAYAT PENGIRIMAN',
                 onTap: () {
-                  // TODO: Navigasi ke Riwayat Pengiriman
+                  
                 },
               ),
               const SizedBox(height: 16),

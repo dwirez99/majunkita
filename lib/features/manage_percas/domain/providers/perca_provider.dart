@@ -16,7 +16,12 @@ final factoryListProvider = FutureProvider<List<FactoryModel>>((ref) {
   return ref.watch(percaRepositoryProvider).getFactoryList();
 });
 
-// 3. Notifier untuk menangani proses penambahan stok
+// 3. Provider untuk mengambil statistik perca per bulan
+final percaMonthlyStatsProvider = FutureProvider<Map<String, double>>((ref) {
+  return ref.watch(percaRepositoryProvider).getMonthlyPercaStats();
+});
+
+// 4. Notifier untuk menangani proses penambahan stok
 final addPercaNotifierProvider =
     AsyncNotifierProvider<AddPercaNotifier, void>(AddPercaNotifier.new);
 

@@ -227,7 +227,7 @@ class _StaffFormDialogState extends ConsumerState<StaffFormDialog> {
                                   ),
                                 )
                                 : Text(
-                                  _isEdit ? 'Simpan Perubahan' : 'Buat Akun',
+                                  _isEdit ? 'Simpan' : 'Buat Akun',
                                 ),
                       ),
                     ),

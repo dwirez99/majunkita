@@ -2,11 +2,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/providers/perca_provider.dart';
+import '../../data/models/add_perca_plan_model.dart';
+import '../../domain/providers/perca_plan_providers.dart';
 import '../../../../core/utils/image_capture_helper.dart';
 
 
 class AddPercaScreen extends ConsumerStatefulWidget {
-  const AddPercaScreen({super.key});
+  final AddPercaPlanModel? plan;
+
+  const AddPercaScreen({super.key, this.plan});
 
   @override
   ConsumerState<AddPercaScreen> createState() => _AddPercaScreenState();
@@ -25,6 +29,16 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
   
   // Flag untuk menentukan apakah sedang dalam mode input stok atau upload bukti
   bool _isInputStockMode = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize dengan data plan jika ada
+    if (widget.plan != null) {
+      _selectedPabrikId = widget.plan!.idFactory;
+      _selectedDate = widget.plan!.plannedDate;
+    }
+  }
 
   // Fungsi untuk mengambil foto dengan kamera menggunakan ImageCaptureHelper
   Future<void> _pickImage() async {
@@ -119,14 +133,57 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
           );
         }
       } else {
-        // Jika berhasil, tampilkan pesan sukses dan kembali ke dashboard
+        // Jika berhasil, update status plan menjadi COMPLETED jika ada plan
+        if (widget.plan != null) {
+          try {
+            await ref.read(updatePlanProvider.notifier).updatePlan(
+              widget.plan!.id,
+              plannedDate: widget.plan!.plannedDate,
+              status: 'COMPLETED',
+            );
+            
+            // Check if update was successful
+            final updateState = ref.read(updatePlanProvider);
+            if (updateState.hasError) {
+              print('Error updating plan status: ${updateState.error}');
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Peringatan: Stok berhasil disimpan, tapi gagal update status rencana: ${updateState.error}'),
+                    backgroundColor: Colors.orange,
+                    duration: const Duration(seconds: 5),
+                  ),
+                );
+              }
+            }
+          } catch (planUpdateError) {
+            print('Warning: Failed to update plan status: $planUpdateError');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Peringatan: Stok berhasil disimpan, tapi gagal update status rencana: $planUpdateError'),
+                  backgroundColor: Colors.orange,
+                  duration: const Duration(seconds: 5),
+                ),
+              );
+            }
+          }
+        }
+        
+        // Tampilkan pesan sukses dan kembali ke dashboard
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Semua stok berhasil disimpan!')),
           );
           
+          // Invalidate providers to refresh data
+          ref.invalidate(allPlansProvider);
+          if (widget.plan != null) {
+            ref.invalidate(singlePlanProvider(widget.plan!.id));
+          }
+          
           // Kembali ke dashboard/halaman sebelumnya
-          Navigator.pop(context);
+          Navigator.pop(context, true); // Return true to indicate success
         }
       }
     } catch (e) {
@@ -174,58 +231,167 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Dropdown Nama Pabrik
-          pabrikListState.when(
-            data: (pabrikList) {
-              return DropdownButtonFormField<String>(
-                value: _selectedPabrikId,
-                hint: const Text('Pilih Nama Pabrik'),
-                items: pabrikList.map<DropdownMenuItem<String>>((pabrik) {
-                  return DropdownMenuItem<String>(
-                    value: pabrik.id,
-                    child: Text(pabrik.factoryName),
+          // Dropdown Nama Pabrik atau Read-only jika dari plan
+          if (widget.plan != null)
+            // Read-only display untuk plan
+            pabrikListState.when(
+              data: (pabrikList) {
+                try {
+                  final factory = pabrikList.firstWhere(
+                    (f) => f.id == _selectedPabrikId,
                   );
-                }).toList(),
-                onChanged: (value) => setState(() => _selectedPabrikId = value),
-                validator: (value) => value == null ? 'Pabrik tidak boleh kosong' : null,
-              );
-            },
-            loading: () => DropdownButtonFormField<String>(
-              items: const [],
-              onChanged: null,
-              decoration: const InputDecoration(
-                hintText: 'Loading pabrik...',
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.factory, color: Colors.grey.shade600),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                factory.factoryName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Dari Rencana (Tidak dapat diubah)',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                } catch (e) {
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Pabrik: ${_selectedPabrikId ?? "Unknown"}',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  );
+                }
+              },
+              loading: () => const Padding(
+                padding: EdgeInsets.all(16),
+                child: CircularProgressIndicator(),
+              ),
+              error: (err, stack) => Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text('Error: $err'),
+              ),
+            )
+          else
+            // Dropdown untuk create mode tanpa plan
+            pabrikListState.when(
+              data: (pabrikList) {
+                return DropdownButtonFormField<String>(
+                  initialValue: _selectedPabrikId,
+                  hint: const Text('Pilih Nama Pabrik'),
+                  items: pabrikList.map<DropdownMenuItem<String>>((pabrik) {
+                    return DropdownMenuItem<String>(
+                      value: pabrik.id,
+                      child: Text(pabrik.factoryName),
+                    );
+                  }).toList(),
+                  onChanged: (value) => setState(() => _selectedPabrikId = value),
+                  validator: (value) => value == null ? 'Pabrik tidak boleh kosong' : null,
+                );
+              },
+              loading: () => DropdownButtonFormField<String>(
+                items: const [],
+                onChanged: null,
+                decoration: const InputDecoration(
+                  hintText: 'Loading pabrik...',
+                ),
+              ),
+              error: (err, stack) => DropdownButtonFormField<String>(
+                items: const [],
+                onChanged: null,
+                decoration: InputDecoration(
+                  hintText: 'Error: $err',
+                ),
               ),
             ),
-            error: (err, stack) => DropdownButtonFormField<String>(
-              items: const [],
-              onChanged: null,
-              decoration: InputDecoration(
-                hintText: 'Error: $err',
-              ),
-            ),
-          ),
           const SizedBox(height: 16),
 
-          // Input Tanggal
-          ListTile(
-            title: Text('Tanggal Ambil: ${MaterialLocalizations.of(context).formatShortDate(_selectedDate)}'),
-            trailing: const Icon(Icons.calendar_today),
-            onTap: () async {
-              final pickedDate = await showDatePicker(
-                context: context,
-                initialDate: _selectedDate,
-                firstDate: DateTime(2020),
-                lastDate: DateTime(2100),
-              );
-              if (pickedDate != null) setState(() => _selectedDate = pickedDate);
-            },
-          ),
+          // Input Tanggal - Read-only jika dari plan
+          if (widget.plan != null)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.calendar_today, color: Colors.grey.shade600),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Tanggal Rencana: ${MaterialLocalizations.of(context).formatShortDate(_selectedDate)}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Dari Rencana (Tidak dapat diubah)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            // Editable date picker jika tanpa plan
+            ListTile(
+              title: Text('Tanggal Ambil: ${MaterialLocalizations.of(context).formatShortDate(_selectedDate)}'),
+              trailing: const Icon(Icons.calendar_today),
+              onTap: () async {
+                final pickedDate = await showDatePicker(
+                  context: context,
+                  initialDate: _selectedDate,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2100),
+                );
+                if (pickedDate != null) setState(() => _selectedDate = pickedDate);
+              },
+            ),
           const SizedBox(height: 16),
 
           // Dropdown Jenis Perca
           DropdownButtonFormField<String>(
-            value: _selectedJenis,
+            initialValue: _selectedJenis,
             hint: const Text('Pilih Jenis Perca'),
             items: jenisPercaList.map<DropdownMenuItem<String>>((jenis) {
               return DropdownMenuItem<String>(value: jenis, child: Text(jenis));
@@ -255,8 +421,8 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
               final stock = _stockList[index];
               return Card(
                 child: ListTile(
-                  title: Text('${stock['jenis']} - ${stock['berat']} KG'),
-                  subtitle: Text('Tanggal: ${MaterialLocalizations.of(context).formatShortDate(stock['tglMasuk'])}'),
+                  title: Text('${stock['jenis']} - ${stock['weight']} KG'),
+                  subtitle: Text('Tanggal: ${MaterialLocalizations.of(context).formatShortDate(stock['dateEntry'] as DateTime)}'),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),
                     onPressed: () => _removeStockFromList(index),
@@ -305,8 +471,8 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
           final stock = _stockList[index];
           return Card(
             child: ListTile(
-              title: Text('${stock['jenis']} - ${stock['berat']} KG'),
-              subtitle: Text('Tanggal: ${MaterialLocalizations.of(context).formatShortDate(stock['tglMasuk'])}'),
+              title: Text('${stock['jenis']} - ${stock['weight']} KG'),
+              subtitle: Text('Tanggal: ${MaterialLocalizations.of(context).formatShortDate(stock['dateEntry'])}'),
             ),
           );
         }),

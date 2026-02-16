@@ -161,7 +161,7 @@ class _TailorFormDialogState extends ConsumerState<TailorFormDialog> {
                                 )
                                 : Text(
                                   _isEdit
-                                      ? 'Simpan Perubahan'
+                                      ? 'Simpan'
                                       : 'Buat Penjahit',
                                 ),
                       ),

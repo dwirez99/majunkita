@@ -38,7 +38,8 @@ dependencies:
   supabase_flutter: ^2.10.3
   flutter_dotenv: ^6.0.0
   intl: ^0.20.2
-  image_picker: ^1.2.0
+  image_picker: ^1.2.0 # Chart library
+  fl_chart: ^0.65.0
 
 dev_dependencies:
   flutter_test:
@@ -52,7 +53,6 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   mockito: ^5.4.4
   build_runner: ^2.4.8
-
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 

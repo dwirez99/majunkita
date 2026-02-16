@@ -148,7 +148,7 @@ class _FactoryFormDialogState extends ConsumerState<FactoryFormDialog> {
                                 )
                                 : Text(
                                   _isEdit
-                                      ? 'Simpan Perubahan'
+                                      ? 'Simpan'
                                       : 'Buat Pabrik',
                                 ),
                       ),
