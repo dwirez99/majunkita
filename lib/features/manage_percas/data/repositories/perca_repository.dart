@@ -47,7 +47,7 @@ class PercaRepository {
   // 3. Simpan data stok ke database
   Future<void> saveStockToDatabase(PercasStock stockData) async {
     try {
-      await _supabase.from('stok_perca').insert(stockData.toJson());
+      await _supabase.from('percas_stock').insert(stockData.toJson());
     } catch (e) {
       throw Exception('Gagal menyimpan stok ke database: $e');
     }
@@ -57,9 +57,37 @@ class PercaRepository {
   Future<void> saveMultipleStocksToDatabase(List<PercasStock> stockList) async {
     try {
       final dataList = stockList.map((stock) => stock.toJson()).toList();
-      await _supabase.from('stok_perca').insert(dataList);
+      await _supabase.from('percas_stock').insert(dataList);
     } catch (e) {
       throw Exception('Gagal menyimpan multiple stocks ke database: $e');
+    }
+  }
+
+  // 5. Mengambil statistik perca per bulan
+  Future<Map<String, double>> getMonthlyPercaStats() async {
+    try {
+      // Ambil data dari 12 bulan terakhir
+      final thirteenMonthsAgo = DateTime.now().subtract(const Duration(days: 365));
+      
+      final data = await _supabase
+          .from('percas_stock')
+          .select('date_entry, weight')
+          .gte('date_entry', thirteenMonthsAgo.toIso8601String().split('T')[0]);
+      
+      // Group by month dan sum weight
+      final Map<String, double> monthlyStats = {};
+      
+      for (var item in data) {
+        final dateEntry = DateTime.parse(item['date_entry'] as String);
+        final monthKey = '${dateEntry.year}-${dateEntry.month.toString().padLeft(2, '0')}';
+        final weight = double.tryParse(item['weight'].toString()) ?? 0;
+        
+        monthlyStats[monthKey] = (monthlyStats[monthKey] ?? 0) + weight;
+      }
+      
+      return monthlyStats;
+    } catch (e) {
+      throw Exception('Gagal mengambil statistik perca: $e');
     }
   }
 }
