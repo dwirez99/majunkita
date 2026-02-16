@@ -76,6 +76,8 @@ class _AdminManagePlanState extends ConsumerState<AdminManagePlan> {
                       _buildStatusFilterChip('APPROVED', 'Disetujui'),
                       const SizedBox(width: 8),
                       _buildStatusFilterChip('REJECTED', 'Ditolak'),
+                      const SizedBox(width: 8),
+                      _buildStatusFilterChip('COMPLETED', 'Selesai'),
                     ],
                   ),
                 ),

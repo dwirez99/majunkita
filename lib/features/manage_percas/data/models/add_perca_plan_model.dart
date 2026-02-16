@@ -1,10 +1,10 @@
 /// Model untuk Rencana Pengambilan Perca (Procurement Plan)
-/// Status: PENDING (baru dibuat), APPROVED (disetujui manager), REJECTED (ditolak manager)
+/// Status: PENDING (baru dibuat), APPROVED (disetujui manager), REJECTED (ditolak manager), COMPLETED (perca sudah diambil)
 class AddPercaPlanModel {
   final String id;
   final String idFactory;
   final DateTime plannedDate;
-  final String status; // PENDING, APPROVED, REJECTED
+  final String status; // PENDING, APPROVED, REJECTED, COMPLETED
   final String? notes; // Catatan penolakan atau keterangan lainnya
   final String createdBy; // ID user yang membuat rencana
   final DateTime createdAt;

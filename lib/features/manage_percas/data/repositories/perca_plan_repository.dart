@@ -272,6 +272,7 @@ class PercaPlanRepository {
     String planId, {
     DateTime? plannedDate,
     String? notes,
+    String? status,
   }) async {
     _log('Updating plan: $planId...');
     try {
@@ -286,6 +287,10 @@ class PercaPlanRepository {
 
       if (notes != null) {
         updateData['notes'] = notes;
+      }
+
+      if (status != null) {
+        updateData['status'] = status;
       }
 
       final response = await _supabase

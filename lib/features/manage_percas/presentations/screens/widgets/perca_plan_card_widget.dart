@@ -54,6 +54,12 @@ class PercaPlanCardWidget extends ConsumerWidget {
         borderColor = Colors.red;
         statusLabel = 'DITOLAK';
         break;
+      case 'COMPLETED':
+        statusColor = Colors.blue[800]!;
+        statusBgColor = Colors.blue[100]!;
+        borderColor = Colors.blue;
+        statusLabel = 'SELESAI';
+        break;
       default:
         statusColor = Colors.grey[800]!;
         statusBgColor = Colors.grey[100]!;
@@ -283,7 +289,7 @@ class PercaPlanCardWidget extends ConsumerWidget {
                     // Ambil Perca button for APPROVED plans
                     if (plan.status == 'APPROVED')
                       ElevatedButton.icon(
-                        onPressed: () => _showTakeParcaDialog(context),
+                        onPressed: () => _showTakeParcaDialog(context, ref),
                         icon: const Icon(Icons.check_circle, size: 16),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
@@ -322,17 +328,17 @@ class PercaPlanCardWidget extends ConsumerWidget {
   }
 
   /// Show dialog untuk take parca (ambil perca)
-  void _showTakeParcaDialog(BuildContext context) {
+  void _showTakeParcaDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Ambil Perca'),
         content: const Text(
           'Apakah Anda ingin mengambil perca sesuai rencana ini?',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Batal'),
           ),
           ElevatedButton(
@@ -340,10 +346,23 @@ class PercaPlanCardWidget extends ConsumerWidget {
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
             ),
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(
-                builder: (context) => const AddPercaScreen(),
-              ));
+            onPressed: () async {
+              // Close dialog first
+              Navigator.pop(dialogContext);
+              
+              // Navigate to AddPercaScreen and wait for result
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AddPercaScreen(plan: plan),
+                ),
+              );
+              
+              // Refresh the plan data after returning if successful
+              if (result == true && context.mounted) {
+                ref.invalidate(allPlansProvider);
+                ref.invalidate(singlePlanProvider(plan.id));
+              }
             },
             child: const Text('Ambil'),
           ),
@@ -392,8 +411,10 @@ class PercaPlanCardWidget extends ConsumerWidget {
                 
                 if (!context.mounted) return;
                 
-                // Close loading
+                // Close loading dialog
                 Navigator.pop(context);
+                
+                if (!context.mounted) return;
                 
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -406,8 +427,10 @@ class PercaPlanCardWidget extends ConsumerWidget {
               } catch (e) {
                 if (!context.mounted) return;
                 
-                // Close loading
+                // Close loading dialog
                 Navigator.pop(context);
+                
+                if (!context.mounted) return;
                 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

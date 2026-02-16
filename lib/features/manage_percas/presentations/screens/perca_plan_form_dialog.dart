@@ -3,14 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/api/supabase_client_api.dart';
 import '../../../manage_factories/domain/providers/factory_provider.dart';
-import '../../data/models/add_perca_plan_model.dart';
 import '../../domain/providers/perca_plan_providers.dart';
 
 class PercaPlanFormDialog extends ConsumerStatefulWidget {
-  /// Jika null, berarti mode CREATE. Jika ada isi, berarti mode EDIT.
-  final AddPercaPlanModel? planToEdit;
-
-  const PercaPlanFormDialog({super.key, this.planToEdit});
+  const PercaPlanFormDialog({super.key});
 
   @override
   ConsumerState<PercaPlanFormDialog> createState() =>
@@ -26,19 +22,11 @@ class _PercaPlanFormDialogState extends ConsumerState<PercaPlanFormDialog> {
   String? _selectedFactoryName;
   final _notesController = TextEditingController();
 
-  bool get _isEdit => widget.planToEdit != null;
-
   @override
   void initState() {
     super.initState();
-    if (_isEdit) {
-      _selectedDate = widget.planToEdit!.plannedDate;
-      _selectedFactoryId = widget.planToEdit!.idFactory;
-      _notesController.text = widget.planToEdit!.notes ?? '';
-    } else {
-      _selectedDate = DateTime.now();
-      _selectedFactoryId = null;
-    }
+    _selectedDate = DateTime.now();
+    _selectedFactoryId = null;
   }
 
   @override
@@ -98,44 +86,24 @@ class _PercaPlanFormDialogState extends ConsumerState<PercaPlanFormDialog> {
     );
 
     try {
-      if (_isEdit) {
-        // Update plan
-        await ref.read(updatePlanProvider.notifier).updatePlan(
-              widget.planToEdit!.id,
-              plannedDate: _selectedDate,
-              notes:
-                  _notesController.text.isEmpty
-                      ? null
-                      : _notesController.text,
-            );
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Rencana berhasil diubah'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } else {
-        // Create plan
-        final userId = ref.read(currentUserProvider).value?.id;
-        if (userId == null) {
-          throw Exception('User tidak teridentifikasi');
-        }
+      // Create plan
+      final userId = ref.read(currentUserProvider).value?.id;
+      if (userId == null) {
+        throw Exception('User tidak teridentifikasi');
+      }
 
-        await ref.read(createPlanProvider.notifier).createPlan(
-              idFactory: _selectedFactoryId!,
-              plannedDate: _selectedDate,
-              createdBy: userId,
-            );
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Rencana berhasil dibuat'),
-              backgroundColor: Colors.green,
-            ),
+      await ref.read(createPlanProvider.notifier).createPlan(
+            idFactory: _selectedFactoryId!,
+            plannedDate: _selectedDate,
+            createdBy: userId,
           );
-        }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Rencana berhasil dibuat'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
 
       if (mounted) {
@@ -162,10 +130,6 @@ class _PercaPlanFormDialogState extends ConsumerState<PercaPlanFormDialog> {
   @override
   Widget build(BuildContext context) {
     final factoriesAsync = ref.watch(factoriesListProvider);
-    final String title =
-        _isEdit
-            ? 'Ubah Rencana Pengambilan Perca'
-            : 'Buat Rencana Pengambilan Perca';
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -178,18 +142,6 @@ class _PercaPlanFormDialogState extends ConsumerState<PercaPlanFormDialog> {
         ),
         child: factoriesAsync.when(
           data: (factories) {
-            // Get factory name for edit mode
-            if (_isEdit && _selectedFactoryName == null) {
-              try {
-                final factory = factories.firstWhere(
-                  (f) => f.id == _selectedFactoryId,
-                );
-                _selectedFactoryName = factory.factoryName;
-              } catch (_) {
-                _selectedFactoryName = 'Unknown Factory';
-              }
-            }
-
             return SingleChildScrollView(
               child: Form(
                 key: _formKey,
@@ -200,7 +152,7 @@ class _PercaPlanFormDialogState extends ConsumerState<PercaPlanFormDialog> {
                     // Header Title
                     Center(
                       child: Text(
-                        title,
+                        'Buat Rencana Pengambilan Perca',
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -211,105 +163,56 @@ class _PercaPlanFormDialogState extends ConsumerState<PercaPlanFormDialog> {
 
                     // 1. Pilih Pabrik
                     _buildLabel('Pilih Pabrik'),
-                    if (_isEdit)
-                      // Read-only display for edit mode
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(8),
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: _selectedFactoryId,
+                        hint: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 12),
+                          child: Text('Pilih pabrik...'),
                         ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.factory,
-                                color: Colors.grey.shade600),
-                            const SizedBox(width: 12),
-                            Expanded(
+                        items: factories.map((factory) {
+                          return DropdownMenuItem<String>(
+                            value: factory.id,
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
                               child: Column(
                                 crossAxisAlignment:
                                     CrossAxisAlignment.start,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    _selectedFactoryName ?? 'Unknown',
+                                    factory.factoryName,
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w600,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Pabrik tidak dapat diubah',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          ],
-                        ),
-                      )
-                    else
-                      // Dropdown for create mode
-                      Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: DropdownButton<String>(
-                          isExpanded: true,
-                          value: _selectedFactoryId,
-                          hint: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 12),
-                            child: Text('Pilih pabrik...'),
-                          ),
-                          items: factories.map((factory) {
-                            return DropdownMenuItem<String>(
-                              value: factory.id,
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 12),
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      factory.factoryName,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    Text(
-                                      factory.address,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          if (newValue != null) {
+                            final factory = factories.firstWhere(
+                              (f) => f.id == newValue,
                             );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            if (newValue != null) {
-                              final factory = factories.firstWhere(
-                                (f) => f.id == newValue,
-                              );
-                              setState(() {
-                                _selectedFactoryId = newValue;
-                                _selectedFactoryName =
-                                    factory.factoryName;
-                              });
-                            }
-                          },
-                          underline: const SizedBox(),
-                        ),
+                            setState(() {
+                              _selectedFactoryId = newValue;
+                              _selectedFactoryName =
+                                  factory.factoryName;
+                            });
+                          }
+                        },
+                        underline: const SizedBox(),
                       ),
+                    ),
 
                     // Selected factory info
                     if (_selectedFactoryId != null) ...[
@@ -376,30 +279,6 @@ class _PercaPlanFormDialogState extends ConsumerState<PercaPlanFormDialog> {
                       ),
                     ),
 
-                    // 3. Catatan (Optional)
-                    const SizedBox(height: 16),
-                    _buildLabel('Catatan (Opsional)'),
-                    TextField(
-                      controller: _notesController,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        hintText: 'Tambahkan catatan untuk rencana ini...',
-                        hintStyle: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: 14,
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                      ),
-                    ),
 
                     const SizedBox(height: 32),
 
@@ -427,7 +306,7 @@ class _PercaPlanFormDialogState extends ConsumerState<PercaPlanFormDialog> {
                               ),
                             ),
                             child: Text(
-                              _isEdit ? 'Simpan Perubahan' : 'Buat Rencana',
+                              'Buat Rencana',
                             ),
                           ),
                         ),

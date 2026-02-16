@@ -227,6 +227,7 @@ class UpdatePlanNotifier extends Notifier<AsyncValue<AddPercaPlanModel>> {
     String planId, {
     DateTime? plannedDate,
     String? notes,
+    String? status,
   }) async {
     state = const AsyncValue.loading();
     try {
@@ -235,6 +236,7 @@ class UpdatePlanNotifier extends Notifier<AsyncValue<AddPercaPlanModel>> {
         planId,
         plannedDate: plannedDate,
         notes: notes,
+        status: status,
       );
 
       state = AsyncValue.data(plan);
@@ -243,6 +245,11 @@ class UpdatePlanNotifier extends Notifier<AsyncValue<AddPercaPlanModel>> {
       ref.invalidate(allPlansProvider);
       ref.invalidate(pendingPlansProvider);
       ref.invalidate(singlePlanProvider(planId));
+      
+      // Invalidate status counts
+      if (status != null) {
+        ref.invalidate(planCountByStatusProvider(status));
+      }
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
     }
