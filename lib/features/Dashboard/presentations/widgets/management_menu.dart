@@ -4,6 +4,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../manage_tailors/presentations/screens/tailors_list_screen.dart';
 import '../../../manage_factories/presentations/screens/factory_list_screen.dart';
 import '../../../manage_partner/presentations/screens/manage_partner_screen.dart';
+import '../../../manage_percas/presentations/screens/manage_perca_screen.dart';
 
 class ManagementMenuGrid extends StatelessWidget {
   const ManagementMenuGrid({super.key});
@@ -125,7 +126,11 @@ class ManagementMenuGrid extends StatelessWidget {
   void _handleMenuTap(BuildContext context, int index) {
     switch (index) {
       case 0:
-        // TODO: Navigate to Kelola Stok Perca
+        // Navigate to Kelola Stok Perca
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ManagePercaScreen()),
+        );
         break;
       case 1:
         // TODO: Navigate to Kelola Stok Majun

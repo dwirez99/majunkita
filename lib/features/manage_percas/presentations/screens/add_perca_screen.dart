@@ -178,7 +178,7 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
           pabrikListState.when(
             data: (pabrikList) {
               return DropdownButtonFormField<String>(
-                value: _selectedPabrikId,
+                initialValue: _selectedPabrikId,
                 hint: const Text('Pilih Nama Pabrik'),
                 items: pabrikList.map<DropdownMenuItem<String>>((pabrik) {
                   return DropdownMenuItem<String>(
@@ -225,7 +225,7 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
 
           // Dropdown Jenis Perca
           DropdownButtonFormField<String>(
-            value: _selectedJenis,
+            initialValue: _selectedJenis,
             hint: const Text('Pilih Jenis Perca'),
             items: jenisPercaList.map<DropdownMenuItem<String>>((jenis) {
               return DropdownMenuItem<String>(value: jenis, child: Text(jenis));
@@ -255,8 +255,8 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
               final stock = _stockList[index];
               return Card(
                 child: ListTile(
-                  title: Text('${stock['jenis']} - ${stock['berat']} KG'),
-                  subtitle: Text('Tanggal: ${MaterialLocalizations.of(context).formatShortDate(stock['tglMasuk'])}'),
+                  title: Text('${stock['jenis']} - ${stock['weight']} KG'),
+                  subtitle: Text('Tanggal: ${MaterialLocalizations.of(context).formatShortDate(stock['dateEntry'] as DateTime)}'),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),
                     onPressed: () => _removeStockFromList(index),
@@ -305,8 +305,8 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
           final stock = _stockList[index];
           return Card(
             child: ListTile(
-              title: Text('${stock['jenis']} - ${stock['berat']} KG'),
-              subtitle: Text('Tanggal: ${MaterialLocalizations.of(context).formatShortDate(stock['tglMasuk'])}'),
+              title: Text('${stock['jenis']} - ${stock['weight']} KG'),
+              subtitle: Text('Tanggal: ${MaterialLocalizations.of(context).formatShortDate(stock['dateEntry'])}'),
             ),
           );
         }),
