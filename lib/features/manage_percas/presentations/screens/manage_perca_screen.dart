@@ -1,166 +1,201 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:majunkita/features/manage_percas/presentations/screens/admin_manage_plan.dart';
 import '../../domain/providers/perca_provider.dart';
+import 'widgets/chart.dart';
+import 'add_perca_history_screen.dart';
 
+/// Screen untuk menampilkan kategori manajemen penjahit
+/// Similar to ManagePartnerScreen
 class ManagePercaScreen extends ConsumerWidget {
   const ManagePercaScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final historyAsync = ref.watch(percaHistoryProvider);
-
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Riwayat Ambil Perca'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => ref.invalidate(percaHistoryProvider),
-          ),
-        ],
-      ),
-      body: historyAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              'Gagal memuat riwayat: $err',
-              textAlign: TextAlign.center,
-            ),
+        title: const Text(
+          'Manajemen Perca',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
           ),
         ),
-        data: (records) {
-          if (records.isEmpty) {
-            return const Center(
-              child: Text(
-                'Belum ada riwayat pengambilan perca.',
-                style: TextStyle(fontSize: 16),
+        backgroundColor: Colors.grey[200],
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.grey),
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+
+              // Daftar Perca Card
+              _buildPercaCard(
+                context: context,
+                icon: Icons.add,
+                title: 'Rencana Pengambilan Perca',
+                color: Colors.green[400]!,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AdminManagePlan(),
+                    ),
+                  );
+                },
               ),
-            );
-          }
 
-          // Group records by date + factory
-          final Map<String, List<Map<String, dynamic>>> grouped = {};
-          for (final record in records) {
-            final dateStr = record['date_entry'] as String? ?? '';
-            final factoryName =
-                (record['factories'] as Map<String, dynamic>?)?['factory_name']
-                    as String? ??
-                'Pabrik tidak diketahui';
-            final key = '$dateStr|$factoryName';
-            grouped.putIfAbsent(key, () => []).add(record);
-          }
+              const SizedBox(height: 20),
 
-          final keys = grouped.keys.toList();
+              _buildPercaCard(
+                context: context,
+                icon: Icons.history,
+                title: 'Riwayat Pengambilan Perca',
+                color: Colors.green[400]!,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AddPercaHistoryScreen(),
+                    ),
+                  );
+                },
+              ),
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: keys.length,
-            itemBuilder: (context, index) {
-              final key = keys[index];
-              final parts = key.split('|');
-              final dateStr = parts[0];
-              final factoryName = parts[1];
-              final items = grouped[key]!;
+              const SizedBox(height: 20),
 
-              final formattedDate = _formatDate(dateStr);
-              final totalWeight = items.fold<double>(
-                0,
-                (sum, item) =>
-                    sum + ((item['weight'] as num?)?.toDouble() ?? 0),
-              );
-
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ExpansionTile(
-                  tilePadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  title: Text(
-                    factoryName,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    '$formattedDate  •  Total: $totalWeight KG',
-                  ),
-                  children: items.map((item) {
-                    final proofUrl = item['delivery_proof'] as String? ?? '';
-                    return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 4,
-                      ),
-                      title: Text(item['perca_type'] as String? ?? '-'),
-                      trailing: Text(
-                        '${(item['weight'] as num?)?.toDouble() ?? 0} KG',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: proofUrl.isNotEmpty
-                          ? GestureDetector(
-                              onTap: () => _showProofImage(context, proofUrl),
-                              child: const Text(
-                                'Lihat Bukti Foto',
-                                style: TextStyle(
-                                  color: Colors.blue,
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ),
-                            )
-                          : null,
-                    );
-                  }).toList(),
+              // Statistic pengambilan perca berdasarkan bulan
+              const Text(
+                'Statistik Perca (12 Bulan Terakhir)',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
-              );
-            },
-          );
-        },
+              ),
+              const SizedBox(height: 12),
+              
+              // Enhanced Chart untuk statistik
+              Expanded(
+                child: ref.watch(percaMonthlyStatsProvider).when(
+                  data: (stats) {
+                    if (stats.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.bar_chart_outlined,
+                              size: 60,
+                              color: Colors.grey[300],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Belum ada data perca',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    
+                    return PercaChartWidget(monthlyData: stats);
+                  },
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  error: (error, stack) => Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 40,
+                          color: Colors.red[300],
+                        ),
+                        const SizedBox(height: 8),
+                        Text('Error: $error'),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  String _formatDate(String dateStr) {
-    try {
-      final date = DateTime.parse(dateStr);
-      return DateFormat('dd MMM yyyy').format(date);
-    } catch (_) {
-      return dateStr;
-    }
-  }
-
-  void _showProofImage(BuildContext context, String url) {
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppBar(
-              title: const Text('Bukti Foto'),
-              automaticallyImplyLeading: false,
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
+  Widget _buildPercaCard({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required Color color,
+    required VoidCallback onTap,
+  }){
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
             ),
-            Image.network(
-              url,
-              semanticLabel: 'Bukti foto pengambilan perca',
-              loadingBuilder: (ctx, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return const Padding(
-                  padding: EdgeInsets.all(32),
-                  child: CircularProgressIndicator(),
-                );
-              },
-              errorBuilder: (_, __, ___) => const Padding(
-                padding: EdgeInsets.all(32),
-                child: Text('Gagal memuat gambar'),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(10),
               ),
+              child: Icon(
+                icon,
+                size: 40,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.white,
+              size: 24,
             ),
           ],
         ),
