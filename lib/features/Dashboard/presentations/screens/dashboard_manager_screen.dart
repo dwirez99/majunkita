@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/domain/providers/auth_provider.dart';
 import '../../../manage_partner/presentations/screens/manage_partner_screen.dart';
-import '../../../manage_percas/presentations/screens/manage_perca_screen.dart';
+import '../../../manage_percas/presentations/screens/add_perca_history_screen.dart';
 import '../widgets/dashboard_appbar.dart';
 import '../widgets/dashboard_bottom_bar.dart';
 
@@ -96,7 +96,7 @@ class _DashboardManagerScreenState
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const ManagePercaScreen(),
+                      builder: (context) => const AddPercaHistoryScreen(),
                     ),
                   );
                 },

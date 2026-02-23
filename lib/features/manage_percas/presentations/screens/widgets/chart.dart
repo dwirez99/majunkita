@@ -363,8 +363,7 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
             enabled: true,
             handleBuiltInTouches: true,
             touchTooltipData: BarTouchTooltipData(
-              tooltipBgColor: Colors.grey[800]!,
-              tooltipRoundedRadius: 8,
+              getTooltipColor: (_) => Colors.grey[800]!,
               tooltipMargin: 10,
               getTooltipItem: (group, groupIndex, rod, rodIndex) {
                 return BarTooltipItem(
@@ -511,8 +510,7 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
             enabled: true,
             handleBuiltInTouches: true,
             touchTooltipData: LineTouchTooltipData(
-              tooltipBgColor: Colors.grey[800]!,
-              tooltipRoundedRadius: 8,
+              getTooltipColor: (_) => Colors.grey[800]!,
               getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                 return touchedBarSpots.map((barSpot) {
                   return LineTooltipItem(

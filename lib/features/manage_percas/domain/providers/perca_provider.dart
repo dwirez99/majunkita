@@ -21,6 +21,34 @@ final percaHistoryProvider = FutureProvider<List<Map<String, dynamic>>>((ref) {
   return ref.watch(percaRepositoryProvider).getPercaHistory();
 });
 
+// 2c. Provider untuk statistik bulanan
+final percaMonthlyStatsProvider = FutureProvider<Map<String, double>>((ref) async {
+  final history = await ref.watch(percaHistoryProvider.future);
+  
+  Map<String, double> stats = {};
+  
+  for (var item in history) {
+    if (item['date_entry'] != null && item['weight'] != null) {
+      try {
+        final date = DateTime.parse(item['date_entry'].toString());
+        final monthKey = '${date.year}-${date.month.toString().padLeft(2, '0')}';
+        
+        final weight = double.tryParse(item['weight'].toString()) ?? 0.0;
+        
+        if (stats.containsKey(monthKey)) {
+          stats[monthKey] = stats[monthKey]! + weight;
+        } else {
+          stats[monthKey] = weight;
+        }
+      } catch (e) {
+        // Skip invalid date
+      }
+    }
+  }
+  
+  return stats;
+});
+
 // 3. Notifier untuk menangani proses penambahan stok
 final addPercaNotifierProvider =
     AsyncNotifierProvider<AddPercaNotifier, void>(AddPercaNotifier.new);

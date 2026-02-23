@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:majunkita/features/manage_percas/presentations/screens/admin_manage_plan.dart';
+import 'package:majunkita/features/manage_percas/presentations/screens/add_perca_screen.dart';
 import '../../domain/providers/perca_provider.dart';
 import 'widgets/chart.dart';
 import 'add_perca_history_screen.dart';
@@ -38,13 +38,13 @@ class ManagePercaScreen extends ConsumerWidget {
               _buildPercaCard(
                 context: context,
                 icon: Icons.add,
-                title: 'Rencana Pengambilan Perca',
+                title: 'Tambah Stok Perca',
                 color: Colors.green[400]!,
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const AdminManagePlan(),
+                      builder: (context) => const AddPercaScreen(),
                     ),
                   );
                 },
@@ -61,7 +61,7 @@ class ManagePercaScreen extends ConsumerWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const AddPercaHistoryScreen(),
+                      builder: (context) => AddPercaHistoryScreen(),
                     ),
                   );
                 },
