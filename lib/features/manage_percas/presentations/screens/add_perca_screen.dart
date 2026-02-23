@@ -255,8 +255,8 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
               final stock = _stockList[index];
               return Card(
                 child: ListTile(
-                  title: Text('${stock['jenis']} - ${stock['berat']} KG'),
-                  subtitle: Text('Tanggal: ${MaterialLocalizations.of(context).formatShortDate(stock['tglMasuk'])}'),
+                  title: Text('${stock['jenis']} - ${stock['weight']} KG'),
+                  subtitle: Text('Tanggal: ${MaterialLocalizations.of(context).formatShortDate(stock['dateEntry'])}'),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),
                     onPressed: () => _removeStockFromList(index),
@@ -264,6 +264,11 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
                 ),
               );
             }),
+            const SizedBox(height: 8),
+            Text(
+              'Total Berat: ${_stockList.fold<double>(0, (sum, s) => sum + (s['weight'] as double))} KG',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 16),
           ],
 
@@ -305,11 +310,17 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
           final stock = _stockList[index];
           return Card(
             child: ListTile(
-              title: Text('${stock['jenis']} - ${stock['berat']} KG'),
-              subtitle: Text('Tanggal: ${MaterialLocalizations.of(context).formatShortDate(stock['tglMasuk'])}'),
+              title: Text('${stock['jenis']} - ${stock['weight']} KG'),
+              subtitle: Text('Tanggal: ${MaterialLocalizations.of(context).formatShortDate(stock['dateEntry'])}'),
             ),
           );
         }),
+
+        const SizedBox(height: 8),
+        Text(
+          'Total Berat: ${_stockList.fold<double>(0, (sum, s) => sum + (s['weight'] as double))} KG',
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
         
         const SizedBox(height: 24),
         

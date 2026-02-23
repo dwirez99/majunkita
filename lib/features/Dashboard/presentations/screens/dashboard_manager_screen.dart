@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/domain/providers/auth_provider.dart';
 import '../../../manage_partner/presentations/screens/manage_partner_screen.dart';
+import '../../../manage_percas/presentations/screens/manage_perca_screen.dart';
 import '../widgets/dashboard_appbar.dart';
 import '../widgets/dashboard_bottom_bar.dart';
 
@@ -92,7 +93,12 @@ class _DashboardManagerScreenState
               _buildMenuButton(
                 label: 'RIWAYAT AMBIL DAN SETOR\nPERCA',
                 onTap: () {
-                  // TODO: Navigasi ke Riwayat Perca
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ManagePercaScreen(),
+                    ),
+                  );
                 },
               ),
               const SizedBox(height: 16),

@@ -16,6 +16,11 @@ final factoryListProvider = FutureProvider<List<FactoryModel>>((ref) {
   return ref.watch(percaRepositoryProvider).getFactoryList();
 });
 
+// 2b. Provider untuk mengambil riwayat pengambilan perca
+final percaHistoryProvider = FutureProvider<List<Map<String, dynamic>>>((ref) {
+  return ref.watch(percaRepositoryProvider).getPercaHistory();
+});
+
 // 3. Notifier untuk menangani proses penambahan stok
 final addPercaNotifierProvider =
     AsyncNotifierProvider<AddPercaNotifier, void>(AddPercaNotifier.new);

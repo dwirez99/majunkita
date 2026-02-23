@@ -47,7 +47,7 @@ class PercaRepository {
   // 3. Simpan data stok ke database
   Future<void> saveStockToDatabase(PercasStock stockData) async {
     try {
-      await _supabase.from('stok_perca').insert(stockData.toJson());
+      await _supabase.from('percas_stock').insert(stockData.toJson());
     } catch (e) {
       throw Exception('Gagal menyimpan stok ke database: $e');
     }
@@ -57,9 +57,23 @@ class PercaRepository {
   Future<void> saveMultipleStocksToDatabase(List<PercasStock> stockList) async {
     try {
       final dataList = stockList.map((stock) => stock.toJson()).toList();
-      await _supabase.from('stok_perca').insert(dataList);
+      await _supabase.from('percas_stock').insert(dataList);
     } catch (e) {
       throw Exception('Gagal menyimpan multiple stocks ke database: $e');
+    }
+  }
+
+  // 5. Ambil riwayat pengambilan perca
+  Future<List<Map<String, dynamic>>> getPercaHistory() async {
+    try {
+      final data = await _supabase
+          .from('percas_stock')
+          .select('id, id_factory, date_entry, perca_type, weight, delivery_proof, created_at, factories(factory_name)')
+          .order('date_entry', ascending: false)
+          .order('created_at', ascending: false);
+      return List<Map<String, dynamic>>.from(data);
+    } catch (e) {
+      throw Exception('Gagal mengambil riwayat perca: $e');
     }
   }
 }
