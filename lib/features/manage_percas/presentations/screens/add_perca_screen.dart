@@ -15,10 +15,16 @@ class AddPercaScreen extends ConsumerStatefulWidget {
 class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
   final _formKey = GlobalKey<FormState>();
   String? _selectedPabrikId;
+  String? _selectedPabrikName; // untuk menampilkan nama pabrik di readonly field
   DateTime _selectedDate = DateTime.now();
   String? _selectedJenis;
   final _beratController = TextEditingController();
+  final _pabrikReadonlyController = TextEditingController();
+  final _tanggalReadonlyController = TextEditingController();
   File? _imageFile;
+
+  // Flag untuk mengunci pabrik & tanggal setelah stok pertama ditambahkan
+  bool _isLocked = false;
   
   // List untuk menyimpan semua stok yang sudah diinput
   final List<Map<String, dynamic>> _stockList = [];
@@ -56,6 +62,14 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
           'weight': double.parse(_beratController.text),
         });
         
+        // Kunci pabrik & tanggal setelah stok pertama ditambahkan
+        if (!_isLocked) {
+          _isLocked = true;
+          _pabrikReadonlyController.text = _selectedPabrikName ?? '';
+          _tanggalReadonlyController.text =
+              MaterialLocalizations.of(context).formatShortDate(_selectedDate);
+        }
+
         // Clear jenis dan berat untuk input berikutnya
         _selectedJenis = null;
         _beratController.clear();
@@ -149,6 +163,14 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
   }
 
   @override
+  void dispose() {
+    _beratController.dispose();
+    _pabrikReadonlyController.dispose();
+    _tanggalReadonlyController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final pabrikListState = ref.watch(factoryListProvider);
     final addPercaState = ref.watch(addPercaNotifierProvider);
@@ -174,53 +196,85 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Dropdown Nama Pabrik
-          pabrikListState.when(
-            data: (pabrikList) {
-              return DropdownButtonFormField<String>(
-                value: _selectedPabrikId,
-                hint: const Text('Pilih Nama Pabrik'),
-                items: pabrikList.map<DropdownMenuItem<String>>((pabrik) {
-                  return DropdownMenuItem<String>(
-                    value: pabrik.id,
-                    child: Text(pabrik.factoryName),
-                  );
-                }).toList(),
-                onChanged: (value) => setState(() => _selectedPabrikId = value),
-                validator: (value) => value == null ? 'Pabrik tidak boleh kosong' : null,
-              );
-            },
-            loading: () => DropdownButtonFormField<String>(
-              items: const [],
-              onChanged: null,
+          // ── Nama Pabrik ──────────────────────────────────────────────────
+          if (_isLocked)
+            // Readonly – sudah dikunci setelah stok pertama ditambahkan
+            TextFormField(
+              controller: _pabrikReadonlyController,
+              readOnly: true,
               decoration: const InputDecoration(
-                hintText: 'Loading pabrik...',
+                labelText: 'Nama Pabrik',
+                prefixIcon: Icon(Icons.factory),
+                filled: true,
+              ),
+            )
+          else
+            pabrikListState.when(
+              data: (pabrikList) {
+                return DropdownButtonFormField<String>(
+                  value: _selectedPabrikId,
+                  hint: const Text('Pilih Nama Pabrik'),
+                  items: pabrikList.map<DropdownMenuItem<String>>((pabrik) {
+                    return DropdownMenuItem<String>(
+                      value: pabrik.id,
+                      child: Text(pabrik.factoryName),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    final selected = pabrikList.firstWhere((p) => p.id == value);
+                    setState(() {
+                      _selectedPabrikId = value;
+                      _selectedPabrikName = selected.factoryName;
+                    });
+                  },
+                  validator: (value) => value == null ? 'Pabrik tidak boleh kosong' : null,
+                );
+              },
+              loading: () => DropdownButtonFormField<String>(
+                items: const [],
+                onChanged: null,
+                decoration: const InputDecoration(
+                  hintText: 'Loading pabrik...',
+                ),
+              ),
+              error: (err, stack) => DropdownButtonFormField<String>(
+                items: const [],
+                onChanged: null,
+                decoration: InputDecoration(
+                  hintText: 'Error: $err',
+                ),
               ),
             ),
-            error: (err, stack) => DropdownButtonFormField<String>(
-              items: const [],
-              onChanged: null,
-              decoration: InputDecoration(
-                hintText: 'Error: $err',
-              ),
-            ),
-          ),
           const SizedBox(height: 16),
 
-          // Input Tanggal
-          ListTile(
-            title: Text('Tanggal Ambil: ${MaterialLocalizations.of(context).formatShortDate(_selectedDate)}'),
-            trailing: const Icon(Icons.calendar_today),
-            onTap: () async {
-              final pickedDate = await showDatePicker(
-                context: context,
-                initialDate: _selectedDate,
-                firstDate: DateTime(2020),
-                lastDate: DateTime(2100),
-              );
-              if (pickedDate != null) setState(() => _selectedDate = pickedDate);
-            },
-          ),
+          // ── Tanggal Ambil ─────────────────────────────────────────────────
+          if (_isLocked)
+            // Readonly – sudah dikunci setelah stok pertama ditambahkan
+            TextFormField(
+              controller: _tanggalReadonlyController,
+              readOnly: true,
+              decoration: const InputDecoration(
+                labelText: 'Tanggal Ambil',
+                prefixIcon: Icon(Icons.calendar_today),
+                filled: true,
+              ),
+            )
+          else
+            ListTile(
+              title: Text(
+                'Tanggal Ambil: ${MaterialLocalizations.of(context).formatShortDate(_selectedDate)}',
+              ),
+              trailing: const Icon(Icons.calendar_today),
+              onTap: () async {
+                final pickedDate = await showDatePicker(
+                  context: context,
+                  initialDate: _selectedDate,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2100),
+                );
+                if (pickedDate != null) setState(() => _selectedDate = pickedDate);
+              },
+            ),
           const SizedBox(height: 16),
 
           // Dropdown Jenis Perca
@@ -255,8 +309,8 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
               final stock = _stockList[index];
               return Card(
                 child: ListTile(
-                  title: Text('${stock['jenis']} - ${stock['berat']} KG'),
-                  subtitle: Text('Tanggal: ${MaterialLocalizations.of(context).formatShortDate(stock['tglMasuk'])}'),
+                  title: Text('${stock['jenis']} - ${stock['weight']} KG'),
+                  subtitle: Text('Tanggal: ${MaterialLocalizations.of(context).formatShortDate(stock['dateEntry'])}'),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),
                     onPressed: () => _removeStockFromList(index),
@@ -264,6 +318,11 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
                 ),
               );
             }),
+            const SizedBox(height: 8),
+            Text(
+              'Total Berat: ${_stockList.fold<double>(0, (sum, s) => sum + (s['weight'] as double))} KG',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 16),
           ],
 
@@ -305,11 +364,17 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
           final stock = _stockList[index];
           return Card(
             child: ListTile(
-              title: Text('${stock['jenis']} - ${stock['berat']} KG'),
-              subtitle: Text('Tanggal: ${MaterialLocalizations.of(context).formatShortDate(stock['tglMasuk'])}'),
+              title: Text('${stock['jenis']} - ${stock['weight']} KG'),
+              subtitle: Text('Tanggal: ${MaterialLocalizations.of(context).formatShortDate(stock['dateEntry'])}'),
             ),
           );
         }),
+
+        const SizedBox(height: 8),
+        Text(
+          'Total Berat: ${_stockList.fold<double>(0, (sum, s) => sum + (s['weight'] as double))} KG',
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
         
         const SizedBox(height: 24),
         

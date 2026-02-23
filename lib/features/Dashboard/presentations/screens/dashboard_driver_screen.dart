@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/domain/providers/auth_provider.dart';
+import '../../../manage_percas/presentations/screens/add_perca_screen.dart';
 import '../widgets/dashboard_appbar.dart';
 import '../widgets/dashboard_bottom_bar.dart';
 
@@ -86,7 +87,12 @@ class _DashboardDriverScreenState
               _buildMenuButton(
                 label: 'TAMBAH STOK PERCA',
                 onTap: () {
-                  // TODO: Navigasi ke Tambah Stok Perca
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AddPercaScreen(),
+                    ),
+                  );
                 },
               ),
               const SizedBox(height: 16),
