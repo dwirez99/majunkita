@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/domain/providers/auth_provider.dart';
+import '../../../manage_expeditions/presentations/screens/expedition_history_screen.dart';
 import '../../../manage_partner/presentations/screens/manage_partner_screen.dart';
 import '../../../manage_percas/presentations/screens/add_perca_history_screen.dart';
 import '../widgets/dashboard_appbar.dart';
@@ -22,6 +23,27 @@ class _DashboardManagerScreenState
     setState(() {
       _selectedIndex = index;
     });
+    // Navigasi ke screen yang sesuai berdasarkan index bottom nav
+    switch (index) {
+      case 1:
+        // Riwayat Perca
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AddPercaHistoryScreen(),
+          ),
+        ).then((_) => setState(() => _selectedIndex = 0));
+        break;
+      case 2:
+        // Riwayat Pengiriman
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ExpeditionHistoryScreen(),
+          ),
+        ).then((_) => setState(() => _selectedIndex = 0));
+        break;
+    }
   }
 
   @override
@@ -106,7 +128,12 @@ class _DashboardManagerScreenState
               _buildMenuButton(
                 label: 'RIWAYAT PENGIRIMAN',
                 onTap: () {
-                  // TODO: Navigasi ke Riwayat Pengiriman
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ExpeditionHistoryScreen(),
+                    ),
+                  );
                 },
               ),
               const SizedBox(height: 16),
