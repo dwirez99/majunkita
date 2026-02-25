@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/domain/providers/auth_provider.dart';
+import '../../../manage_expeditions/presentations/screens/manage_expeditions_screen.dart';
 import '../../../manage_percas/presentations/screens/add_perca_screen.dart';
 import '../widgets/dashboard_appbar.dart';
 import '../widgets/dashboard_bottom_bar.dart';
@@ -21,6 +22,16 @@ class _DashboardDriverScreenState
     setState(() {
       _selectedIndex = index;
     });
+    // Navigasi ke screen yang sesuai berdasarkan index bottom nav
+    if (index == 1) {
+      // Riwayat Pengiriman
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const ManageExpeditionsScreen(),
+        ),
+      ).then((_) => setState(() => _selectedIndex = 0));
+    }
   }
 
   @override
@@ -108,7 +119,12 @@ class _DashboardDriverScreenState
               _buildMenuButton(
                 label: 'RENCANA PENGIRIMAN',
                 onTap: () {
-                  // TODO: Navigasi ke Rencana Pengiriman
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ManageExpeditionsScreen(),
+                    ),
+                  );
                 },
               ),
               const SizedBox(height: 16),
@@ -116,7 +132,12 @@ class _DashboardDriverScreenState
               _buildMenuButton(
                 label: 'RIWAYAT PENGIRIMAN',
                 onTap: () {
-                  // TODO: Navigasi ke Riwayat Pengiriman
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ManageExpeditionsScreen(),
+                    ),
+                  );
                 },
               ),
             ],

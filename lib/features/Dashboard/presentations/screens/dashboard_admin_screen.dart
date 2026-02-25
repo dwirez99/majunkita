@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../manage_expeditions/presentations/screens/manage_expeditions_screen.dart';
+import '../../../manage_percas/presentations/screens/add_perca_screen.dart';
 import '../widgets/dashboard_appbar.dart';
 import '../widgets/dashboard_bottom_bar.dart';
 import '../widgets/management_menu.dart';
@@ -23,7 +25,25 @@ class _DashboarAdminScreenState extends ConsumerState<DashboarAdminScreen> {
     setState(() {
       _selectedIndex = index;
     });
-    // TODO: Handle navigation based on index
+    // Navigasi ke screen yang sesuai berdasarkan index bottom nav
+    switch (index) {
+      case 1:
+        // Ambil Perca
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AddPercaScreen()),
+        ).then((_) => setState(() => _selectedIndex = 0));
+        break;
+      case 3:
+        // Pengiriman
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ManageExpeditionsScreen(),
+          ),
+        ).then((_) => setState(() => _selectedIndex = 0));
+        break;
+    }
   }
 
   @override
