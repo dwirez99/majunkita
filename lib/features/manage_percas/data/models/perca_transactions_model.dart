@@ -1,31 +1,103 @@
+/// Model untuk Perca Transactions (Transaksi Pengambilan Perca oleh Penjahit)
+/// Menyimpan informasi tentang perca yang diambil oleh penjahit
 class PercaTransactionsModel {
-  final String id;
-  final String idPercaStock;
-  final String idTransactionPerca;
-  final String idTailor;
+  final String? id;
+  final String idStockPerca;
+  final String idTailors;
   final DateTime dateEntry;
-  final String percaType;
+  final String percasType;
   final double weight;
+  final String? staffId;
+  final DateTime? createdAt;
 
   PercaTransactionsModel({
-    required this.id,
-    required this.idPercaStock,
-    required this.idTransactionPerca,
-    required this.idTailor,
+    this.id,
+    required this.idStockPerca,
+    required this.idTailors,
     required this.dateEntry,
-    required this.percaType,
+    required this.percasType,
     required this.weight,
+    this.staffId,
+    this.createdAt,
   });
 
+  /// Factory method untuk membuat PercaTransactionsModel dari JSON (Supabase response)
+  factory PercaTransactionsModel.fromJson(Map<String, dynamic> json) {
+    return PercaTransactionsModel(
+      id: json['id'] as String?,
+      idStockPerca: json['id_stock_perca'] as String? ?? '',
+      idTailors: json['id_tailors'] as String? ?? '',
+      dateEntry:
+          json['date_entry'] != null
+              ? DateTime.parse(json['date_entry'].toString())
+              : DateTime.now(),
+      percasType: json['percas_type'] as String? ?? '',
+      weight: double.tryParse(json['weight']?.toString() ?? '0') ?? 0.0,
+      staffId: json['staff_id'] as String?,
+      createdAt:
+          json['created_at'] != null
+              ? DateTime.parse(json['created_at'].toString())
+              : null,
+    );
+  }
+
+  /// Method untuk mengkonversi model ke JSON (untuk insert ke Supabase)
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'id_perca_stock': idPercaStock,
-      'id_transaction_perca': idTransactionPerca,
-      'id_tailor': idTailor,
-      'date_entry': dateEntry.toIso8601String(),
-      'perca_type': percaType,
+    final map = <String, dynamic>{
+      'id_stock_perca': idStockPerca,
+      'id_tailors': idTailors,
+      'date_entry': dateEntry.toIso8601String().split('T').first,
+      'percas_type': percasType,
       'weight': weight,
     };
+
+    // Hanya tambahkan id jika ada (untuk update)
+    if (id != null) {
+      map['id'] = id;
+    }
+
+    // Hanya tambahkan staff_id jika ada
+    if (staffId != null) {
+      map['staff_id'] = staffId;
+    }
+
+    return map;
   }
+
+  /// Method untuk membuat copy dengan perubahan tertentu (immutable pattern)
+  PercaTransactionsModel copyWith({
+    String? id,
+    String? idStockPerca,
+    String? idTailors,
+    DateTime? dateEntry,
+    String? percasType,
+    double? weight,
+    String? staffId,
+    DateTime? createdAt,
+  }) {
+    return PercaTransactionsModel(
+      id: id ?? this.id,
+      idStockPerca: idStockPerca ?? this.idStockPerca,
+      idTailors: idTailors ?? this.idTailors,
+      dateEntry: dateEntry ?? this.dateEntry,
+      percasType: percasType ?? this.percasType,
+      weight: weight ?? this.weight,
+      staffId: staffId ?? this.staffId,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'PercaTransactionsModel(id: $id, idTailors: $idTailors, percasType: $percasType, weight: $weight)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is PercaTransactionsModel && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }

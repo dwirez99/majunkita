@@ -1,10 +1,12 @@
-// Model untuk data yang akan kita kirim ke tabel stok_perca
+/// Model untuk data yang akan kita kirim ke tabel percas_stock
+/// sack_code di-generate otomatis: B-{weight} untuk Kain, K-{weight} untuk Kaos
 class PercasStock {
   final String idFactory;
   final DateTime dateEntry;
   final String percaType;
   final double weight;
   final String deliveryProof; // URL gambar setelah di-upload
+  final String sackCode; // Kode karung: B-25, K-45, dll.
 
   PercasStock({
     required this.idFactory,
@@ -12,7 +14,20 @@ class PercasStock {
     required this.percaType,
     required this.weight,
     required this.deliveryProof,
+    required this.sackCode,
   });
+
+  /// Generate sack_code otomatis dari jenis perca dan berat
+  /// Kain → B-{weight}, Kaos → K-{weight}
+  static String generateSackCode(String percaType, double weight) {
+    final prefix = percaType.toLowerCase() == 'kain' ? 'B' : 'K';
+    // Bulatkan weight untuk kode (tanpa desimal jika bulat)
+    final weightStr =
+        weight == weight.roundToDouble()
+            ? weight.toInt().toString()
+            : weight.toString();
+    return '$prefix-$weightStr';
+  }
 
   // Fungsi untuk mengubah objek menjadi Map/JSON untuk dikirim ke Supabase
   Map<String, dynamic> toJson() {
@@ -22,6 +37,7 @@ class PercasStock {
       'perca_type': percaType,
       'weight': weight,
       'delivery_proof': deliveryProof,
+      'sack_code': sackCode,
     };
   }
 }

@@ -11,7 +11,9 @@ class PercaRepository {
   // 1. Mengambil daftar Factory untuk dropdown
   Future<List<FactoryModel>> getFactoryList() async {
     try {
-      final data = await _supabase.from('factories').select('id, factory_name, address, no_telp');
+      final data = await _supabase
+          .from('factories')
+          .select('id, factory_name, address, no_telp');
       return data.map((item) => FactoryModel.fromJson(item)).toList();
     } catch (e) {
       throw Exception('Gagal mengambil daftar Factory: $e');
@@ -22,22 +24,23 @@ class PercaRepository {
   Future<String> uploadImageToStorage(File imageFile) async {
     try {
       // Generate unique filenamet: konsep Anda benar tapi ada beberapa detail yang perlu diperbaiki agar aman dan kompatibel dengan Supabase Flutter SDK.
-      final fileName = 'bukti_perca_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      
+      final fileName =
+          'bukti_perca_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
       // Upload ke bucket 'majunkita' folder 'stok_perca'
       final response = await _supabase.storage
           .from('majunkita')
           .upload('stok_perca/$fileName', imageFile);
-      
+
       if (response.isEmpty) {
         throw Exception("Failed to upload image to Supabase Storage");
       }
-      
+
       // Get public URL
       final publicUrl = _supabase.storage
           .from('majunkita')
           .getPublicUrl('stok_perca/$fileName');
-      
+
       return publicUrl;
     } catch (e) {
       throw Exception('Gagal upload gambar: $e');
@@ -68,7 +71,9 @@ class PercaRepository {
     try {
       final data = await _supabase
           .from('percas_stock')
-          .select('id, id_factory, date_entry, perca_type, weight, delivery_proof, created_at, factories(factory_name)')
+          .select(
+            'id, id_factory, date_entry, perca_type, weight, delivery_proof, sack_code, status, created_at, factories(factory_name)',
+          )
           .order('date_entry', ascending: false)
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(data);
