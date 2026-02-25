@@ -4,6 +4,8 @@ import 'package:majunkita/features/manage_percas/presentations/screens/add_perca
 import '../../domain/providers/perca_provider.dart';
 import 'widgets/chart.dart';
 import 'add_perca_history_screen.dart';
+import 'add_perca_transaction_screen.dart';
+import 'perca_transaction_history_screen.dart';
 
 /// Screen untuk menampilkan kategori manajemen penjahit
 /// Similar to ManagePartnerScreen
@@ -33,7 +35,6 @@ class ManagePercaScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               // Daftar Perca Card
               _buildPercaCard(
                 context: context,
@@ -69,67 +70,103 @@ class ManagePercaScreen extends ConsumerWidget {
 
               const SizedBox(height: 20),
 
-              // Statistic pengambilan perca berdasarkan bulan
-              const Text(
-                'Statistik Perca (12 Bulan Terakhir)',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              
-              // Enhanced Chart untuk statistik
-              Expanded(
-                child: ref.watch(percaMonthlyStatsProvider).when(
-                  data: (stats) {
-                    if (stats.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.bar_chart_outlined,
-                              size: 60,
-                              color: Colors.grey[300],
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Belum ada data perca',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    
-                    return PercaChartWidget(monthlyData: stats);
-                  },
-                  loading: () => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                  error: (error, stack) => Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 40,
-                          color: Colors.red[300],
-                        ),
-                        const SizedBox(height: 8),
-                        Text('Error: $error'),
-                      ],
+              // Tambah Transaksi Perca Card
+              _buildPercaCard(
+                context: context,
+                icon: Icons.swap_horiz,
+                title: 'Tambah Transaksi Perca',
+                color: Colors.orange[400]!,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AddPercaTransactionScreen(),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
 
               const SizedBox(height: 20),
 
+              // Riwayat Transaksi Perca Card
+              _buildPercaCard(
+                context: context,
+                icon: Icons.receipt_long,
+                title: 'Riwayat Transaksi Perca',
+                color: Colors.blue[400]!,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => const PercaTransactionHistoryScreen(),
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              // Statistic pengambilan perca berdasarkan bulan
+              const Text(
+                'Statistik Perca (12 Bulan Terakhir)',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+
+              // Enhanced Chart untuk statistik
+              Expanded(
+                child: ref
+                    .watch(percaMonthlyStatsProvider)
+                    .when(
+                      data: (stats) {
+                        if (stats.isEmpty) {
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.bar_chart_outlined,
+                                  size: 60,
+                                  color: Colors.grey[300],
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Belum ada data perca',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
+                        return PercaChartWidget(monthlyData: stats);
+                      },
+                      loading:
+                          () =>
+                              const Center(child: CircularProgressIndicator()),
+                      error:
+                          (error, stack) => Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  size: 40,
+                                  color: Colors.red[300],
+                                ),
+                                const SizedBox(height: 8),
+                                Text('Error: $error'),
+                              ],
+                            ),
+                          ),
+                    ),
+              ),
+
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -143,7 +180,7 @@ class ManagePercaScreen extends ConsumerWidget {
     required String title,
     required Color color,
     required VoidCallback onTap,
-  }){
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -169,11 +206,7 @@ class ManagePercaScreen extends ConsumerWidget {
                 color: Colors.white.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(
-                icon,
-                size: 40,
-                color: Colors.white,
-              ),
+              child: Icon(icon, size: 40, color: Colors.white),
             ),
             const SizedBox(width: 20),
             Expanded(
@@ -192,11 +225,7 @@ class ManagePercaScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white,
-              size: 24,
-            ),
+            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 24),
           ],
         ),
       ),
