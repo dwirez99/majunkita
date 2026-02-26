@@ -29,6 +29,21 @@ class ManagePercaScreen extends ConsumerWidget {
         backgroundColor: Colors.grey[200],
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.grey),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.grey),
+            tooltip: 'Muat Ulang Data',
+            onPressed: () {
+              ref.invalidate(percaMonthlyStatsProvider);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Data sedang dimuat ulang...'),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(

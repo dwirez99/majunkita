@@ -241,6 +241,22 @@ class _AddPercaTransactionScreenState
         title: const Text('Tambah Transaksi Perca'),
         backgroundColor: Colors.green[400],
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Muat Ulang Data',
+            onPressed: () {
+              ref.invalidate(tailorListForTransactionProvider);
+              ref.invalidate(availableSackSummaryProvider);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Data sedang dimuat ulang...'),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body:
           notifierState.isLoading
