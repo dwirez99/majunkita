@@ -1,12 +1,12 @@
 /// Model untuk data yang akan kita kirim ke tabel percas_stock
-/// sack_code di-generate otomatis: B-{weight} untuk Kain, K-{weight} untuk Kaos
+/// sack_code di-generate otomatis: K-{weight} untuk Kaos, B-{weight} untuk Kain
 class PercasStock {
   final String idFactory;
   final DateTime dateEntry;
   final String percaType;
   final double weight;
   final String deliveryProof; // URL gambar setelah di-upload
-  final String sackCode; // Kode karung: B-25, K-45, dll.
+  final String sackCode; // Kode karung: K-45, B-25, dll.
 
   PercasStock({
     required this.idFactory,
@@ -18,9 +18,9 @@ class PercasStock {
   });
 
   /// Generate sack_code otomatis dari jenis perca dan berat
-  /// Kain → B-{weight}, Kaos → K-{weight}
+  /// Kaos → K-{weight}, Kain → B-{weight}
   static String generateSackCode(String percaType, double weight) {
-    final prefix = percaType.toLowerCase() == 'kain' ? 'B' : 'K';
+    final prefix = percaType.toLowerCase() == 'kaos' ? 'K' : 'B';
     // Bulatkan weight untuk kode (tanpa desimal jika bulat)
     final weightStr =
         weight == weight.roundToDouble()

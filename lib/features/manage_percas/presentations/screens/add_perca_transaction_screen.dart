@@ -2,6 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/providers/perca_transactions_provider.dart';
 
+/// Konversi kode karung dari DB (K-45, B-25) ke tampilan UI (Kaos-45, Kain-25)
+String _readableSackCode(String code) {
+  if (code.startsWith('K-')) {
+    return 'Kaos-${code.substring(2)}';
+  } else if (code.startsWith('B-')) {
+    return 'Kain-${code.substring(2)}';
+  }
+  return code;
+}
+
 class AddPercaTransactionScreen extends ConsumerStatefulWidget {
   const AddPercaTransactionScreen({super.key});
 
@@ -24,6 +34,22 @@ class _AddPercaTransactionScreenState
   // Info dari stok tersedia (akan di-update saat sack_code dipilih)
   int _availableSacks = 0;
   double _availableWeight = 0;
+  double _weightPerSack = 0; // Berat per karung
+  double _calculatedWeight = 0; // Total berat otomatis dihitung
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-hitung total berat saat jumlah karung berubah
+    _sackCountController.addListener(_calculateWeight);
+  }
+
+  void _calculateWeight() {
+    final count = int.tryParse(_sackCountController.text) ?? 0;
+    setState(() {
+      _calculatedWeight = _weightPerSack * count;
+    });
+  }
 
   // List transaksi yang sudah diinput (sebelum submit)
   final List<Map<String, dynamic>> _transactionList = [];
@@ -42,10 +68,15 @@ class _AddPercaTransactionScreenState
       orElse: () => {},
     );
 
+    final totalSacks = (match['total_sacks'] as num?)?.toInt() ?? 0;
+    final totalWeight = (match['total_weight'] as num?)?.toDouble() ?? 0;
+
     setState(() {
       _selectedSackCode = sackCode;
-      _availableSacks = (match['total_sacks'] as num?)?.toInt() ?? 0;
-      _availableWeight = (match['total_weight'] as num?)?.toDouble() ?? 0;
+      _availableSacks = totalSacks;
+      _availableWeight = totalWeight;
+      _weightPerSack = totalSacks > 0 ? totalWeight / totalSacks : 0;
+      _calculatedWeight = 0;
       _sackCountController.clear();
     });
   }
@@ -63,11 +94,7 @@ class _AddPercaTransactionScreenState
           'sackCode': _selectedSackCode!,
           'sackCount': sackCount,
           'dateEntry': _selectedDate,
-          // Estimasi berat = (total_weight / total_sacks) * sack_count
-          'estimatedWeight':
-              _availableSacks > 0
-                  ? (_availableWeight / _availableSacks) * sackCount
-                  : 0.0,
+          'totalWeight': _calculatedWeight,
         });
 
         // Lock tailor & tanggal after first entry
@@ -84,6 +111,8 @@ class _AddPercaTransactionScreenState
         _sackCountController.clear();
         _availableSacks = 0;
         _availableWeight = 0;
+        _weightPerSack = 0;
+        _calculatedWeight = 0;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -194,6 +223,7 @@ class _AddPercaTransactionScreenState
 
   @override
   void dispose() {
+    _sackCountController.removeListener(_calculateWeight);
     _sackCountController.dispose();
     _tailorReadonlyController.dispose();
     _tanggalReadonlyController.dispose();
@@ -413,6 +443,44 @@ class _AddPercaTransactionScreenState
                             );
                           }
 
+                          // Filter: hilangkan kode karung yang sudah ditambahkan ke daftar
+                          final addedCodes =
+                              _transactionList
+                                  .map((t) => t['sackCode'] as String)
+                                  .toSet();
+                          final filteredList =
+                              summaryList
+                                  .where(
+                                    (item) =>
+                                        !addedCodes.contains(item['sack_code']),
+                                  )
+                                  .toList();
+
+                          if (filteredList.isEmpty) {
+                            return Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.grey[300]!),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.check_circle,
+                                    color: Colors.green[700],
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Expanded(
+                                    child: Text(
+                                      'Semua kode karung sudah ditambahkan ke daftar.',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+
                           return DropdownButtonFormField<String>(
                             value: _selectedSackCode,
                             hint: const Text('Pilih Kode Karung'),
@@ -424,13 +492,11 @@ class _AddPercaTransactionScreenState
                               ),
                             ),
                             items:
-                                summaryList.map<DropdownMenuItem<String>>((
+                                filteredList.map<DropdownMenuItem<String>>((
                                   item,
                                 ) {
                                   final code =
                                       item['sack_code'] as String? ?? '-';
-                                  final type =
-                                      item['perca_type'] as String? ?? '-';
                                   final sacks =
                                       (item['total_sacks'] as num?)?.toInt() ??
                                       0;
@@ -442,7 +508,7 @@ class _AddPercaTransactionScreenState
                                   return DropdownMenuItem<String>(
                                     value: code,
                                     child: Text(
-                                      '$code ($type) — $sacks karung, ${weight.toStringAsFixed(1)} KG',
+                                      '${_readableSackCode(code)} — $sacks karung, ${weight.toStringAsFixed(1)} KG',
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   );
@@ -517,7 +583,7 @@ class _AddPercaTransactionScreenState
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      '${_availableWeight.toStringAsFixed(1)}',
+                                      _availableWeight.toStringAsFixed(1),
                                       style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
@@ -526,6 +592,38 @@ class _AddPercaTransactionScreenState
                                     ),
                                     Text(
                                       'KG Total Tersedia',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.blue[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                width: 1,
+                                height: 50,
+                                color: Colors.blue[200],
+                              ),
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.monitor_weight,
+                                      color: Colors.blue[700],
+                                      size: 28,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _weightPerSack.toStringAsFixed(1),
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue[800],
+                                      ),
+                                    ),
+                                    Text(
+                                      'KG / Karung',
                                       style: TextStyle(
                                         fontSize: 11,
                                         color: Colors.blue[600],
@@ -573,6 +671,52 @@ class _AddPercaTransactionScreenState
                           return null;
                         },
                       ),
+                      const SizedBox(height: 12),
+
+                      // ── Auto-Sum Total Berat ──
+                      if (_calculatedWeight > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green[50],
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.green[200]!),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.calculate,
+                                    color: Colors.green[700],
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Total Berat:',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.green[800],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Text(
+                                '${_calculatedWeight.toStringAsFixed(1)} KG',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green[800],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       const SizedBox(height: 24),
 
                       // ── Tombol Tambah ke Daftar ──
@@ -658,13 +802,13 @@ class _AddPercaTransactionScreenState
                                       ),
                                     ),
                                     title: Text(
-                                      '${trx['sackCode']} — ${trx['sackCount']} karung',
+                                      '${_readableSackCode(trx['sackCode'] as String)} — ${trx['sackCount']} karung',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                     subtitle: Text(
-                                      '± ${(trx['estimatedWeight'] as double).toStringAsFixed(1)} KG',
+                                      '${(trx['totalWeight'] as double).toStringAsFixed(1)} KG',
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: Colors.grey[600],
@@ -718,14 +862,14 @@ class _AddPercaTransactionScreenState
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     const Text(
-                                      'Estimasi Berat:',
+                                      'Total Berat:',
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     Text(
-                                      '± ${_transactionList.fold<double>(0, (sum, t) => sum + (t['estimatedWeight'] as double)).toStringAsFixed(1)} KG',
+                                      '${_transactionList.fold<double>(0, (sum, t) => sum + (t['totalWeight'] as double)).toStringAsFixed(1)} KG',
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
