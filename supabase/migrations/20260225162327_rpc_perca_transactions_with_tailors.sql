@@ -3,6 +3,25 @@
 ALTER TABLE public.percas_stock 
 ADD COLUMN sack_code VARCHAR NOT NULL DEFAULT '-';
 
+-- Backfill sack_code untuk baris yang sudah ada berdasarkan perca_type dan weight
+-- Kaos → K-{weight}, Kain → B-{weight}
+-- Format konsisten dengan generateSackCode() di Dart:
+--   integer weight → no decimal (e.g. 45), non-integer → 2 decimal places (e.g. 12.50)
+UPDATE public.percas_stock
+SET sack_code = CASE
+  WHEN lower(perca_type) = 'kaos' THEN
+    'K-' || CASE
+      WHEN weight = trunc(weight) THEN trunc(weight)::text
+      ELSE ltrim(to_char(weight, '999990.00'))
+    END
+  ELSE
+    'B-' || CASE
+      WHEN weight = trunc(weight) THEN trunc(weight)::text
+      ELSE ltrim(to_char(weight, '999990.00'))
+    END
+END
+WHERE sack_code = '-';
+
 -- 2. Tambah kolom status pada percas_stock  
 -- 'tersedia' = masih di gudang, 'diambil_penjahit' = sudah diberikan ke penjahit
 ALTER TABLE public.percas_stock 
@@ -23,6 +42,16 @@ DECLARE
   v_sacks_available INT;
   v_total_weight NUMERIC := 0;
 BEGIN
+  -- 0. Validasi jumlah karung
+  IF p_sack_count <= 0 THEN
+    RAISE EXCEPTION 'Jumlah karung harus lebih dari 0, diterima: %.', p_sack_count;
+  END IF;
+
+  -- 0b. Pastikan pemanggil adalah staff yang terautentikasi dan p_staff_id cocok dengan sesi
+  IF auth.uid() IS NULL OR auth.uid() != p_staff_id THEN
+    RAISE EXCEPTION 'Akses ditolak: staff_id tidak sesuai dengan pengguna yang sedang login.';
+  END IF;
+
   -- 1. Cek apakah jumlah karung DENGAN KODE TERSEBUT mencukupi
   SELECT count(*) INTO v_sacks_available
   FROM public.percas_stock
@@ -32,12 +61,13 @@ BEGIN
     RAISE EXCEPTION 'Stok karung % di gudang tidak cukup! Hanya sisa % karung.', p_sack_code, v_sacks_available;
   END IF;
 
-  -- 2. Loop FIFO: Cari N karung terlama DENGAN KODE TERSEBUT
+  -- 2. Loop FIFO: Cari N karung terlama DENGAN KODE TERSEBUT, kunci baris untuk konkurensi aman
   FOR v_sack IN
     SELECT * FROM public.percas_stock
     WHERE status = 'tersedia' AND sack_code = p_sack_code
     ORDER BY created_at ASC
     LIMIT p_sack_count
+    FOR UPDATE SKIP LOCKED
   LOOP
     -- 3. Insert ke perca_transactions
     INSERT INTO public.perca_transactions (
@@ -62,7 +92,11 @@ BEGIN
     'total_weight_kg', v_total_weight
   );
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Batasi EXECUTE hanya untuk role 'authenticated' (bukan public)
+REVOKE EXECUTE ON FUNCTION public.process_transaction_by_sack_code(UUID, UUID, VARCHAR, INT, DATE) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.process_transaction_by_sack_code(UUID, UUID, VARCHAR, INT, DATE) TO authenticated;
 
 -- 4. RPC: Ambil ringkasan stok tersedia per sack_code (untuk UI info)
 CREATE OR REPLACE FUNCTION public.get_available_sack_summary()

@@ -70,15 +70,12 @@ class PercaTransactionHistoryScreen extends ConsumerWidget {
             );
           }
 
-          // Group records by date + tailor
+          // Group records by date + tailor id (not name, to avoid merging different tailors with same name)
           final Map<String, List<Map<String, dynamic>>> grouped = {};
           for (final record in records) {
             final dateStr = record['date_entry'] as String? ?? '';
-            final tailorName =
-                (record['tailors'] as Map<String, dynamic>?)?['name']
-                    as String? ??
-                'Penjahit tidak diketahui';
-            final key = '$dateStr|$tailorName';
+            final tailorId = record['id_tailors'] as String? ?? '';
+            final key = '$dateStr|$tailorId';
             grouped.putIfAbsent(key, () => []).add(record);
           }
 
@@ -91,8 +88,12 @@ class PercaTransactionHistoryScreen extends ConsumerWidget {
               final key = keys[index];
               final parts = key.split('|');
               final dateStr = parts[0];
-              final tailorName = parts[1];
               final items = grouped[key]!;
+              // Derive tailor name from the first record in the group
+              final tailorName =
+                  (items.first['tailors'] as Map<String, dynamic>?)?['name']
+                      as String? ??
+                  'Penjahit tidak diketahui';
 
               final formattedDate = _formatDate(dateStr);
               double totalWeight = 0;

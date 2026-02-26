@@ -21,11 +21,12 @@ class PercasStock {
   /// Kaos → K-{weight}, Kain → B-{weight}
   static String generateSackCode(String percaType, double weight) {
     final prefix = percaType.toLowerCase() == 'kaos' ? 'K' : 'B';
-    // Bulatkan weight untuk kode (tanpa desimal jika bulat)
+    // Bulatkan weight untuk kode (tanpa desimal jika bulat), dan
+    // gunakan representasi desimal stabil untuk nilai non-integer.
     final weightStr =
         weight == weight.roundToDouble()
             ? weight.toInt().toString()
-            : weight.toString();
+            : weight.toStringAsFixed(2);
     return '$prefix-$weightStr';
   }
 

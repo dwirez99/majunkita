@@ -108,7 +108,12 @@ class PercaTransactionNotifier extends AsyncNotifier<void> {
       final repository = ref.read(percaTransactionsRepositoryProvider);
 
       // Ambil staff_id dari user yang sedang login
-      final staffId = Supabase.instance.client.auth.currentUser?.id ?? '';
+      final staffId = Supabase.instance.client.auth.currentUser?.id;
+      if (staffId == null) {
+        throw Exception(
+          'Pengguna tidak terautentikasi. Silakan login ulang.',
+        );
+      }
 
       // Panggil RPC
       result = await repository.processTransactionBySackCode(
@@ -125,6 +130,11 @@ class PercaTransactionNotifier extends AsyncNotifier<void> {
       ref.invalidate(percaWeightPerTailorProvider);
       ref.invalidate(availableSackSummaryProvider);
     });
+
+    // Rethrow error agar caller dapat mendeteksi kegagalan per-transaksi
+    if (state.hasError) {
+      throw state.error!;
+    }
 
     return result;
   }

@@ -162,11 +162,13 @@ class _AddPercaTransactionScreenState
         builder: (ctx) => const Center(child: CircularProgressIndicator()),
       );
 
-      // Proses setiap transaksi via RPC
+      // Proses setiap transaksi via RPC - berhenti jika ada yang gagal
       final notifier = ref.read(percaTransactionNotifierProvider.notifier);
       final List<Map<String, dynamic>> results = [];
 
       for (var trx in _transactionList) {
+        // processTransaction akan melempar exception jika gagal,
+        // sehingga loop berhenti dan error ditangani di catch block.
         final result = await notifier.processTransaction(
           idTailor: trx['idTailor'],
           sackCode: trx['sackCode'],
@@ -176,40 +178,26 @@ class _AddPercaTransactionScreenState
         results.add(result);
       }
 
-      // Cek error
-      final state = ref.read(percaTransactionNotifierProvider);
-
       if (mounted) Navigator.of(context).pop(); // Tutup loading
 
-      if (state.hasError) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Gagal menyimpan: ${state.error}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      } else {
-        // Hitung total
-        double totalWeight = 0;
-        int totalSacks = 0;
-        for (var r in results) {
-          totalWeight += (r['total_weight_kg'] as num?)?.toDouble() ?? 0;
-          totalSacks += (r['sacks_taken'] as num?)?.toInt() ?? 0;
-        }
+      // Hitung total dari semua transaksi yang berhasil
+      double totalWeight = 0;
+      int totalSacks = 0;
+      for (var r in results) {
+        totalWeight += (r['total_weight_kg'] as num?)?.toDouble() ?? 0;
+        totalSacks += (r['sacks_taken'] as num?)?.toInt() ?? 0;
+      }
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Berhasil! $totalSacks karung ($totalWeight KG) diberikan ke penjahit.',
-              ),
-              backgroundColor: Colors.green,
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Berhasil! $totalSacks karung ($totalWeight KG) diberikan ke penjahit.',
             ),
-          );
-          Navigator.pop(context);
-        }
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) Navigator.of(context).pop();

@@ -95,9 +95,39 @@ class PercaTransactionsModel {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is PercaTransactionsModel && other.id == id;
+    if (other is! PercaTransactionsModel) return false;
+
+    // Jika kedua objek memiliki id, gunakan id sebagai identitas utama
+    if (id != null && other.id != null) {
+      return id == other.id;
+    }
+
+    // Jika salah satu/both id null, bandingkan berdasarkan field lainnya
+    return other.idStockPerca == idStockPerca &&
+        other.idTailors == idTailors &&
+        other.dateEntry == dateEntry &&
+        other.percasType == percasType &&
+        other.weight == weight &&
+        other.staffId == staffId &&
+        other.createdAt == createdAt;
   }
 
   @override
-  int get hashCode => id.hashCode;
+  int get hashCode {
+    // Jika id tersedia, gunakan sebagai sumber hash utama
+    if (id != null) {
+      return id.hashCode;
+    }
+
+    // Jika id null, gunakan kombinasi field lain untuk hashCode
+    return Object.hash(
+      idStockPerca,
+      idTailors,
+      dateEntry,
+      percasType,
+      weight,
+      staffId,
+      createdAt,
+    );
+  }
 }
