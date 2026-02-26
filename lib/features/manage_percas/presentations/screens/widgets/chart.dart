@@ -4,12 +4,9 @@ import 'package:fl_chart/fl_chart.dart';
 enum ChartType { bar, pie, line }
 
 class PercaChartWidget extends StatefulWidget {
-  final Map<String, double> monthlyData;
+  final Map<String, Map<String, double>> monthlyData;
 
-  const PercaChartWidget({
-    super.key,
-    required this.monthlyData,
-  });
+  const PercaChartWidget({super.key, required this.monthlyData});
 
   @override
   State<PercaChartWidget> createState() => _PercaChartWidgetState();
@@ -17,16 +14,17 @@ class PercaChartWidget extends StatefulWidget {
 
 class _PercaChartWidgetState extends State<PercaChartWidget> {
   late ChartType _selectedChartType;
-  late List<MapEntry<String, double>> _allEntries;
-  late List<MapEntry<String, double>> _filteredEntries;
+  late List<MapEntry<String, Map<String, double>>> _allEntries;
+  late List<MapEntry<String, Map<String, double>>> _filteredEntries;
   String? _selectedMonth;
 
   @override
   void initState() {
     super.initState();
     _selectedChartType = ChartType.bar;
-    _allEntries = widget.monthlyData.entries.toList()
-      ..sort((a, b) => a.key.compareTo(b.key));
+    _allEntries =
+        widget.monthlyData.entries.toList()
+          ..sort((a, b) => a.key.compareTo(b.key));
     _filteredEntries = _allEntries;
   }
 
@@ -34,9 +32,10 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
     if (_selectedMonth == null) {
       _filteredEntries = _allEntries;
     } else {
-      _filteredEntries = _allEntries
-          .where((entry) => entry.key.contains(_selectedMonth!))
-          .toList();
+      _filteredEntries =
+          _allEntries
+              .where((entry) => entry.key.contains(_selectedMonth!))
+              .toList();
     }
     setState(() {});
   }
@@ -56,7 +55,7 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
       'Sep',
       'Oct',
       'Nov',
-      'Dec'
+      'Dec',
     ];
     final month = int.tryParse(parts[1]) ?? 1;
     return '${months[month]}\n${parts[0].substring(2)}';
@@ -74,7 +73,10 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
   double get _maxY {
     if (_filteredEntries.isEmpty) return 100;
     final max = _filteredEntries.fold<double>(
-        0, (prev, entry) => entry.value > prev ? entry.value : prev);
+      0,
+      (prev, entry) =>
+          entry.value['total']! > prev ? entry.value['total']! : prev,
+    );
     return (max * 1.2).ceil().toDouble();
   }
 
@@ -226,10 +228,18 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
   }
 
   Widget _buildStatisticsInfo() {
-    final total = _filteredEntries.fold<double>(0, (sum, e) => sum + e.value);
-    final average = _filteredEntries.isEmpty ? 0 : total / _filteredEntries.length;
-    final maxValue = _filteredEntries.fold<double>(
-        0, (max, e) => e.value > max ? e.value : max);
+    final total = _filteredEntries.fold<double>(
+      0,
+      (sum, e) => sum + e.value['total']!,
+    );
+    final totalKain = _filteredEntries.fold<double>(
+      0,
+      (sum, e) => sum + (e.value['kain'] ?? 0.0),
+    );
+    final totalKaos = _filteredEntries.fold<double>(
+      0,
+      (sum, e) => sum + (e.value['kaos'] ?? 0.0),
+    );
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -241,10 +251,21 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatCard('Total', '${total.toStringAsFixed(2)} KG', Colors.blue),
           _buildStatCard(
-              'Rata-rata', '${average.toStringAsFixed(2)} KG', Colors.orange),
-          _buildStatCard('Max', '${maxValue.toStringAsFixed(2)} KG', Colors.red),
+            'Total',
+            '${total.toStringAsFixed(2)} KG',
+            Colors.green[700]!,
+          ),
+          _buildStatCard(
+            'Kain',
+            '${totalKain.toStringAsFixed(2)} KG',
+            Colors.blue[600]!,
+          ),
+          _buildStatCard(
+            'Kaos',
+            '${totalKaos.toStringAsFixed(2)} KG',
+            Colors.orange[600]!,
+          ),
         ],
       ),
     );
@@ -253,10 +274,7 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
   Widget _buildStatCard(String label, String value, Color color) {
     return Column(
       children: [
-        Text(
-          label,
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-        ),
+        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
         const SizedBox(height: 4),
         Text(
           value,
@@ -306,24 +324,37 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
       child: BarChart(
         BarChartData(
           maxY: _maxY,
-          barGroups: _filteredEntries.asMap().entries.map((entry) {
-            return BarChartGroupData(
-              x: entry.key,
-              barRods: [
-                BarChartRodData(
-                  toY: entry.value.value,
-                  color: Colors.green[600],
-                  width: 20,
-                  borderRadius: BorderRadius.circular(6),
-                  backDrawRodData: BackgroundBarChartRodData(
-                    show: true,
-                    toY: _maxY,
-                    color: Colors.grey[200],
-                  ),
-                ),
-              ],
-            );
-          }).toList(),
+          barGroups:
+              _filteredEntries.asMap().entries.map((entry) {
+                final total = entry.value.value['total']!;
+                final kain = entry.value.value['kain'] ?? 0.0;
+                final kaos = entry.value.value['kaos'] ?? 0.0;
+
+                return BarChartGroupData(
+                  x: entry.key,
+                  barRods: [
+                    BarChartRodData(
+                      toY: total,
+                      color: Colors.transparent,
+                      width: 20,
+                      borderRadius: BorderRadius.circular(6),
+                      rodStackItems: [
+                        BarChartRodStackItem(0, kain, Colors.blue[600]!),
+                        BarChartRodStackItem(
+                          kain,
+                          kain + kaos,
+                          Colors.orange[600]!,
+                        ),
+                      ],
+                      backDrawRodData: BackgroundBarChartRodData(
+                        show: true,
+                        toY: _maxY,
+                        color: Colors.grey[200],
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
           titlesData: FlTitlesData(
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
@@ -343,7 +374,9 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
                 reservedSize: 40,
                 getTitlesWidget: (value, meta) {
                   final idx = value.toInt();
-                  if (idx < 0 || idx >= _filteredEntries.length) return const SizedBox();
+                  if (idx < 0 || idx >= _filteredEntries.length) {
+                    return const SizedBox();
+                  }
                   return Padding(
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
@@ -366,9 +399,15 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
               getTooltipColor: (_) => Colors.grey[800]!,
               tooltipMargin: 10,
               getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                final k = _filteredEntries[groupIndex].value['kain'] ?? 0.0;
+                final o = _filteredEntries[groupIndex].value['kaos'] ?? 0.0;
+                final t = _filteredEntries[groupIndex].value['total']!;
                 return BarTooltipItem(
-                  '${_filteredEntries[groupIndex].value.toStringAsFixed(2)} KG',
-                  const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  'Total: ${t.toStringAsFixed(2)} KG\nKain: ${k.toStringAsFixed(2)} KG\nKaos: ${o.toStringAsFixed(2)} KG',
+                  const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 );
               },
             ),
@@ -379,40 +418,56 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
   }
 
   Widget _buildPieChart() {
-    final total = _filteredEntries.fold<double>(0, (sum, e) => sum + e.value);
+    final totalKain = _filteredEntries.fold<double>(
+      0,
+      (sum, e) => sum + (e.value['kain'] ?? 0.0),
+    );
+    final totalKaos = _filteredEntries.fold<double>(
+      0,
+      (sum, e) => sum + (e.value['kaos'] ?? 0.0),
+    );
+    final total = totalKain + totalKaos;
+
+    if (total == 0) {
+      return const SizedBox();
+    }
+
+    final percentageKain = (totalKain / total) * 100;
+    final percentageKaos = (totalKaos / total) * 100;
 
     return AspectRatio(
       aspectRatio: 1.3,
       child: PieChart(
         PieChartData(
-          sections: _filteredEntries.asMap().entries.map((entry) {
-            final percentage = (entry.value.value / total) * 100;
-            final colors = [
-              Colors.green[600],
-              Colors.green[500],
-              Colors.green[400],
-              Colors.blue[600],
-              Colors.orange[600],
-            ];
-            return PieChartSectionData(
-              value: entry.value.value,
-              title: '${percentage.toStringAsFixed(1)}%',
-              color: colors[entry.key % colors.length],
+          sections: [
+            PieChartSectionData(
+              value: totalKain,
+              title: 'Kain\n${percentageKain.toStringAsFixed(1)}%',
+              color: Colors.blue[600],
               radius: 100,
               titleStyle: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
               ),
-            );
-          }).toList(),
+            ),
+            PieChartSectionData(
+              value: totalKaos,
+              title: 'Kaos\n${percentageKaos.toStringAsFixed(1)}%',
+              color: Colors.orange[600],
+              radius: 100,
+              titleStyle: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ],
           centerSpaceRadius: 40,
           sectionsSpace: 2,
           pieTouchData: PieTouchData(
             enabled: true,
-            touchCallback: (FlTouchEvent event, pieTouchResponse) {
-              // Optional: Handle touch events
-            },
+            touchCallback: (FlTouchEvent event, pieTouchResponse) {},
           ),
         ),
       ),
@@ -431,16 +486,10 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
             horizontalInterval: _maxY / 5,
             verticalInterval: 1,
             getDrawingHorizontalLine: (value) {
-              return FlLine(
-                color: Colors.grey[200],
-                strokeWidth: 1,
-              );
+              return FlLine(color: Colors.grey[200], strokeWidth: 1);
             },
             getDrawingVerticalLine: (value) {
-              return FlLine(
-                color: Colors.grey[200],
-                strokeWidth: 1,
-              );
+              return FlLine(color: Colors.grey[200], strokeWidth: 1);
             },
           ),
           titlesData: FlTitlesData(
@@ -462,7 +511,9 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
                 reservedSize: 40,
                 getTitlesWidget: (value, meta) {
                   final idx = value.toInt();
-                  if (idx < 0 || idx >= _filteredEntries.length) return const SizedBox();
+                  if (idx < 0 || idx >= _filteredEntries.length) {
+                    return const SizedBox();
+                  }
                   return Padding(
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
@@ -480,11 +531,17 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
           borderData: FlBorderData(show: false),
           lineBarsData: [
             LineChartBarData(
-              spots: _filteredEntries
-                  .asMap()
-                  .entries
-                  .map((entry) => FlSpot(entry.key.toDouble(), entry.value.value))
-                  .toList(),
+              spots:
+                  _filteredEntries
+                      .asMap()
+                      .entries
+                      .map(
+                        (entry) => FlSpot(
+                          entry.key.toDouble(),
+                          entry.value.value['total']!,
+                        ),
+                      )
+                      .toList(),
               isCurved: true,
               color: Colors.green[600],
               barWidth: 3,
@@ -500,9 +557,61 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
                   );
                 },
               ),
-              belowBarData: BarAreaData(
+            ),
+            LineChartBarData(
+              spots:
+                  _filteredEntries
+                      .asMap()
+                      .entries
+                      .map(
+                        (entry) => FlSpot(
+                          entry.key.toDouble(),
+                          entry.value.value['kain'] ?? 0.0,
+                        ),
+                      )
+                      .toList(),
+              isCurved: true,
+              color: Colors.blue[600],
+              barWidth: 3,
+              isStrokeCapRound: true,
+              dotData: FlDotData(
                 show: true,
-                color: Colors.green[200]!.withValues(alpha: 0.3),
+                getDotPainter: (spot, percent, barData, index) {
+                  return FlDotCirclePainter(
+                    radius: 5,
+                    color: Colors.blue[600]!,
+                    strokeColor: Colors.white,
+                    strokeWidth: 2,
+                  );
+                },
+              ),
+            ),
+            LineChartBarData(
+              spots:
+                  _filteredEntries
+                      .asMap()
+                      .entries
+                      .map(
+                        (entry) => FlSpot(
+                          entry.key.toDouble(),
+                          entry.value.value['kaos'] ?? 0.0,
+                        ),
+                      )
+                      .toList(),
+              isCurved: true,
+              color: Colors.orange[600],
+              barWidth: 3,
+              isStrokeCapRound: true,
+              dotData: FlDotData(
+                show: true,
+                getDotPainter: (spot, percent, barData, index) {
+                  return FlDotCirclePainter(
+                    radius: 5,
+                    color: Colors.orange[600]!,
+                    strokeColor: Colors.white,
+                    strokeWidth: 2,
+                  );
+                },
               ),
             ),
           ],
@@ -513,8 +622,14 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
               getTooltipColor: (_) => Colors.grey[800]!,
               getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                 return touchedBarSpots.map((barSpot) {
+                  final title =
+                      barSpot.barIndex == 0
+                          ? 'Total'
+                          : barSpot.barIndex == 1
+                          ? 'Kain'
+                          : 'Kaos';
                   return LineTooltipItem(
-                    '${barSpot.y.toStringAsFixed(2)} KG',
+                    '$title: ${barSpot.y.toStringAsFixed(2)} KG',
                     const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

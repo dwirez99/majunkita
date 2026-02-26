@@ -21,13 +21,12 @@ final percaHistoryProvider = FutureProvider<List<Map<String, dynamic>>>((ref) {
   return ref.watch(percaRepositoryProvider).getPercaHistory();
 });
 
-// 2c. Provider untuk statistik bulanan
-final percaMonthlyStatsProvider = FutureProvider<Map<String, double>>((
-  ref,
-) async {
+final percaMonthlyStatsProvider = FutureProvider<
+  Map<String, Map<String, double>>
+>((ref) async {
   final history = await ref.watch(percaHistoryProvider.future);
 
-  Map<String, double> stats = {};
+  Map<String, Map<String, double>> stats = {};
 
   for (var item in history) {
     if (item['date_entry'] != null && item['weight'] != null) {
@@ -37,11 +36,17 @@ final percaMonthlyStatsProvider = FutureProvider<Map<String, double>>((
             '${date.year}-${date.month.toString().padLeft(2, '0')}';
 
         final weight = double.tryParse(item['weight'].toString()) ?? 0.0;
+        final type = item['perca_type']?.toString().toLowerCase() ?? 'unknown';
 
-        if (stats.containsKey(monthKey)) {
-          stats[monthKey] = stats[monthKey]! + weight;
-        } else {
-          stats[monthKey] = weight;
+        if (!stats.containsKey(monthKey)) {
+          stats[monthKey] = {'total': 0.0, 'kain': 0.0, 'kaos': 0.0};
+        }
+
+        stats[monthKey]!['total'] = stats[monthKey]!['total']! + weight;
+        if (type == 'kain') {
+          stats[monthKey]!['kain'] = (stats[monthKey]!['kain'] ?? 0.0) + weight;
+        } else if (type == 'kaos') {
+          stats[monthKey]!['kaos'] = (stats[monthKey]!['kaos'] ?? 0.0) + weight;
         }
       } catch (e) {
         // Skip invalid date

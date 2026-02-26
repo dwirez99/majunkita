@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:majunkita/features/manage_percas/presentations/screens/add_perca_screen.dart';
 import '../../domain/providers/perca_provider.dart';
+import '../../../../core/theme/app_theme.dart';
 import 'widgets/chart.dart';
 import 'add_perca_history_screen.dart';
 import 'add_perca_transaction_screen.dart';
@@ -35,74 +36,75 @@ class ManagePercaScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Daftar Perca Card
-              _buildPercaCard(
-                context: context,
-                icon: Icons.add,
-                title: 'Tambah Stok Perca',
-                color: Colors.green[400]!,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const AddPercaScreen(),
-                    ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 20),
-
-              _buildPercaCard(
-                context: context,
-                icon: Icons.history,
-                title: 'Riwayat Pengambilan Perca',
-                color: Colors.green[400]!,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AddPercaHistoryScreen(),
-                    ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 20),
-
-              // Tambah Transaksi Perca Card
-              _buildPercaCard(
-                context: context,
-                icon: Icons.swap_horiz,
-                title: 'Tambah Transaksi Perca',
-                color: Colors.orange[400]!,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const AddPercaTransactionScreen(),
-                    ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 20),
-
-              // Riwayat Transaksi Perca Card
-              _buildPercaCard(
-                context: context,
-                icon: Icons.receipt_long,
-                title: 'Riwayat Transaksi Perca',
-                color: Colors.blue[400]!,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) => const PercaTransactionHistoryScreen(),
-                    ),
-                  );
-                },
+              // Menu Grid
+              GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 1.5,
+                children: [
+                  _buildMenuCard(
+                    context: context,
+                    icon: Icons.add_box,
+                    title: 'Tambah\nStok Perca',
+                    color: AppColors.primary,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AddPercaScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildMenuCard(
+                    context: context,
+                    icon: Icons.history,
+                    title: 'Riwayat\nAmbil Perca',
+                    color: AppColors.secondary,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AddPercaHistoryScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildMenuCard(
+                    context: context,
+                    icon: Icons.swap_horiz,
+                    title: 'Tambah\nTransaksi',
+                    color: AppColors.accent,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => const AddPercaTransactionScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildMenuCard(
+                    context: context,
+                    icon: Icons.receipt_long,
+                    title: 'Riwayat\nTransaksi',
+                    color: Colors.orange,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) =>
+                                  const PercaTransactionHistoryScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
 
               const SizedBox(height: 20),
@@ -174,59 +176,52 @@ class ManagePercaScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPercaCard({
+  Widget _buildMenuCard({
     required BuildContext context,
     required IconData icon,
     required String title,
     required Color color,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppColors.cardBorder, width: 1),
+      ),
+      color: AppColors.cardBackground,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                color.withValues(alpha: 0.1),
+                color.withValues(alpha: 0.05),
+              ],
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(10),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(icon, size: 32, color: color),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: AppColors.black,
+                ),
               ),
-              child: Icon(icon, size: 40, color: Colors.white),
-            ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                ],
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 24),
-          ],
+            ],
+          ),
         ),
       ),
     );
