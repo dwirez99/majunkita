@@ -32,10 +32,9 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
     if (_selectedMonth == null) {
       _filteredEntries = _allEntries;
     } else {
+      // _selectedMonth is stored in YYYY-MM format; filter by exact key match.
       _filteredEntries =
-          _allEntries
-              .where((entry) => entry.key.contains(_selectedMonth!))
-              .toList();
+          _allEntries.where((entry) => entry.key == _selectedMonth).toList();
     }
     setState(() {});
   }
@@ -64,10 +63,16 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
   List<String> _getMonthOptions() {
     final months = <String>{};
     for (var entry in _allEntries) {
-      final parts = entry.key.split('-');
-      months.add('${parts[1]}/${parts[0]}');
+      months.add(entry.key); // YYYY-MM format (same as map keys)
     }
     return months.toList()..sort();
+  }
+
+  /// Convert YYYY-MM key to MM/YYYY for display
+  String _monthKeyToLabel(String monthKey) {
+    final parts = monthKey.split('-');
+    if (parts.length == 2) return '${parts[1]}/${parts[0]}';
+    return monthKey;
   }
 
   double get _maxY {
@@ -129,7 +134,10 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
                     children: [
                       _buildMonthFilterButton(null, 'semua bulan'),
                       ..._getMonthOptions().map((month) {
-                        return _buildMonthFilterButton(month, month);
+                        return _buildMonthFilterButton(
+                          month,
+                          _monthKeyToLabel(month),
+                        );
                       }),
                     ],
                   ),
