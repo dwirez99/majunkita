@@ -59,6 +59,17 @@ class _AddPercaTransactionScreenState
   final _tailorReadonlyController = TextEditingController();
   final _tanggalReadonlyController = TextEditingController();
 
+  /// Hitung jumlah karung yang sudah ditambahkan ke daftar transaksi per kode
+  int _addedSacksForCode(String sackCode) {
+    int count = 0;
+    for (var trx in _transactionList) {
+      if (trx['sackCode'] == sackCode) {
+        count += (trx['sackCount'] as int);
+      }
+    }
+    return count;
+  }
+
   void _onSackCodeSelected(
     String sackCode,
     List<Map<String, dynamic>> summaryList,
@@ -71,11 +82,17 @@ class _AddPercaTransactionScreenState
     final totalSacks = (match['total_sacks'] as num?)?.toInt() ?? 0;
     final totalWeight = (match['total_weight'] as num?)?.toDouble() ?? 0;
 
+    // Kurangi dengan jumlah yang sudah ditambahkan ke daftar
+    final alreadyAdded = _addedSacksForCode(sackCode);
+    final remainingSacks = totalSacks - alreadyAdded;
+    final weightPerSack = totalSacks > 0 ? totalWeight / totalSacks : 0.0;
+    final remainingWeight = weightPerSack * remainingSacks;
+
     setState(() {
       _selectedSackCode = sackCode;
-      _availableSacks = totalSacks;
-      _availableWeight = totalWeight;
-      _weightPerSack = totalSacks > 0 ? totalWeight / totalSacks : 0;
+      _availableSacks = remainingSacks;
+      _availableWeight = remainingWeight;
+      _weightPerSack = weightPerSack;
       _calculatedWeight = 0;
       _sackCountController.clear();
     });
@@ -447,18 +464,15 @@ class _AddPercaTransactionScreenState
                             );
                           }
 
-                          // Filter: hilangkan kode karung yang sudah ditambahkan ke daftar
-                          final addedCodes =
-                              _transactionList
-                                  .map((t) => t['sackCode'] as String)
-                                  .toSet();
+                          // Filter: hitung sisa karung setelah dikurangi yang sudah ditambahkan
                           final filteredList =
-                              summaryList
-                                  .where(
-                                    (item) =>
-                                        !addedCodes.contains(item['sack_code']),
-                                  )
-                                  .toList();
+                              summaryList.where((item) {
+                                final code = item['sack_code'] as String? ?? '';
+                                final totalSacks =
+                                    (item['total_sacks'] as num?)?.toInt() ?? 0;
+                                final alreadyAdded = _addedSacksForCode(code);
+                                return (totalSacks - alreadyAdded) > 0;
+                              }).toList();
 
                           if (filteredList.isEmpty) {
                             return Container(
@@ -501,18 +515,29 @@ class _AddPercaTransactionScreenState
                                 ) {
                                   final code =
                                       item['sack_code'] as String? ?? '-';
-                                  final sacks =
+                                  final totalSacks =
                                       (item['total_sacks'] as num?)?.toInt() ??
                                       0;
-                                  final weight =
+                                  final totalWeight =
                                       (item['total_weight'] as num?)
                                           ?.toDouble() ??
                                       0;
 
+                                  // Hitung sisa setelah dikurangi yang sudah ditambahkan
+                                  final alreadyAdded = _addedSacksForCode(code);
+                                  final remainingSacks =
+                                      totalSacks - alreadyAdded;
+                                  final weightPerSack =
+                                      totalSacks > 0
+                                          ? totalWeight / totalSacks
+                                          : 0.0;
+                                  final remainingWeight =
+                                      weightPerSack * remainingSacks;
+
                                   return DropdownMenuItem<String>(
                                     value: code,
                                     child: Text(
-                                      '${_readableSackCode(code)} — $sacks karung, ${weight.toStringAsFixed(1)} KG',
+                                      '${_readableSackCode(code)} — $remainingSacks karung, ${remainingWeight.toStringAsFixed(1)} KG',
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   );
