@@ -156,10 +156,16 @@ class MajunRepository {
   // RIWAYAT (via RPC untuk join nama penjahit)
   // ============================================================
 
-  /// Ambil riwayat setor majun
-  Future<List<MajunTransactionsModel>> getMajunHistory() async {
+  /// Ambil riwayat setor majun (paginated)
+  Future<List<MajunTransactionsModel>> getMajunHistory({
+    int limit = 50,
+    int offset = 0,
+  }) async {
     try {
-      final response = await _supabase.rpc('rpc_get_majun_history');
+      final response = await _supabase.rpc(
+        'rpc_get_majun_history',
+        params: {'p_limit': limit, 'p_offset': offset},
+      );
       if (response is List) {
         return response
             .map(
@@ -175,10 +181,16 @@ class MajunRepository {
     }
   }
 
-  /// Ambil riwayat setor limbah
-  Future<List<LimbahTransactionsModel>> getLimbahHistory() async {
+  /// Ambil riwayat setor limbah (paginated)
+  Future<List<LimbahTransactionsModel>> getLimbahHistory({
+    int limit = 50,
+    int offset = 0,
+  }) async {
     try {
-      final response = await _supabase.rpc('rpc_get_limbah_history');
+      final response = await _supabase.rpc(
+        'rpc_get_limbah_history',
+        params: {'p_limit': limit, 'p_offset': offset},
+      );
       if (response is List) {
         return response
             .map(
@@ -198,25 +210,20 @@ class MajunRepository {
   // STATISTIK
   // ============================================================
 
-  /// Ambil statistik bulanan setor majun
+  /// Ambil statistik bulanan setor majun (server-side aggregation)
   Future<Map<String, double>> getMonthlyMajunStats() async {
     try {
-      final data = await _supabase
-          .from('majun_transactions')
-          .select('date_entry, weight_majun')
-          .order('date_entry', ascending: true);
+      final response = await _supabase.rpc('rpc_get_monthly_majun_stats');
 
       Map<String, double> stats = {};
-      for (var item in data) {
-        if (item['date_entry'] != null && item['weight_majun'] != null) {
-          try {
-            final date = DateTime.parse(item['date_entry'].toString());
-            final monthKey =
-                '${date.year}-${date.month.toString().padLeft(2, '0')}';
-            final weight =
-                double.tryParse(item['weight_majun'].toString()) ?? 0.0;
-            stats[monthKey] = (stats[monthKey] ?? 0) + weight;
-          } catch (_) {}
+      if (response is List) {
+        for (var item in response) {
+          final monthKey = item['month_key']?.toString() ?? '';
+          final totalWeight =
+              double.tryParse(item['total_weight']?.toString() ?? '0') ?? 0.0;
+          if (monthKey.isNotEmpty) {
+            stats[monthKey] = totalWeight;
+          }
         }
       }
       return stats;

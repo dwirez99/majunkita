@@ -8,26 +8,48 @@
 --   3. DROP old RPCs (rpc_setor_majun), ganti dengan triggers
 --   4. CREATE triggers untuk otomasi stock & balance
 --   5. CREATE rpc_get_limbah_history
+--
+-- NOTE: Made idempotent — 20260302090000 already defines
+-- limbah_transactions and uses weight_majun, so the duplicate
+-- DDL below is guarded with DO blocks / IF NOT EXISTS.
 -- ============================================================
 
 -- ============================================================
 -- 1. ALTER majun_transactions: rename weight → weight_majun, DROP waste
+--    (Guarded: skip if column 'weight' doesn't exist)
 -- ============================================================
-
--- Rename 'weight' to 'weight_majun'
-ALTER TABLE public.majun_transactions
-  RENAME COLUMN weight TO weight_majun;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'majun_transactions'
+      AND column_name = 'weight'
+  ) THEN
+    ALTER TABLE public.majun_transactions RENAME COLUMN weight TO weight_majun;
+  END IF;
+END $$;
 
 -- Drop 'waste' column (limbah sekarang di tabel terpisah)
 ALTER TABLE public.majun_transactions
   DROP COLUMN IF EXISTS waste;
 
--- Add check constraint for weight_majun
-ALTER TABLE public.majun_transactions
-  ADD CONSTRAINT chk_weight_majun_positive CHECK (weight_majun > 0);
+-- Add check constraint for weight_majun (guarded)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'chk_weight_majun_positive'
+      AND conrelid = 'public.majun_transactions'::regclass
+  ) THEN
+    ALTER TABLE public.majun_transactions
+      ADD CONSTRAINT chk_weight_majun_positive CHECK (weight_majun > 0);
+  END IF;
+END $$;
 
 -- ============================================================
 -- 2. CREATE limbah_transactions (Setor Limbah - tabel baru)
+--    Guarded: table + policies may already exist from 20260302090000
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.limbah_transactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -42,6 +64,8 @@ CREATE TABLE IF NOT EXISTS public.limbah_transactions (
 ALTER TABLE public.limbah_transactions ENABLE ROW LEVEL SECURITY;
 COMMENT ON TABLE public.limbah_transactions IS 'Pencatatan setor limbah dari penjahit. Trigger mengurangi stok tanpa menambah upah.';
 
+-- Guard duplicate policies with DROP IF EXISTS
+DROP POLICY IF EXISTS "Admin Full Access Limbah Transactions" ON public.limbah_transactions;
 CREATE POLICY "Admin Full Access Limbah Transactions"
   ON public.limbah_transactions FOR ALL TO authenticated
   USING (EXISTS (
@@ -49,6 +73,7 @@ CREATE POLICY "Admin Full Access Limbah Transactions"
     WHERE profiles.id = auth.uid() AND (profiles.role)::text = 'admin'
   ));
 
+DROP POLICY IF EXISTS "Manager Monitor Limbah Transactions" ON public.limbah_transactions;
 CREATE POLICY "Manager Monitor Limbah Transactions"
   ON public.limbah_transactions FOR SELECT TO authenticated
   USING (EXISTS (
