@@ -123,8 +123,6 @@ using ((EXISTS ( SELECT 1
   WHERE ((profiles_1.id = auth.uid()) AND ((profiles_1.role)::text = ANY ((ARRAY['admin'::character varying, 'manager'::character varying])::text[]))))));
 
 
-CREATE TRIGGER protect_buckets_delete BEFORE DELETE ON storage.buckets FOR EACH STATEMENT EXECUTE FUNCTION storage.protect_delete();
-
-CREATE TRIGGER protect_objects_delete BEFORE DELETE ON storage.objects FOR EACH STATEMENT EXECUTE FUNCTION storage.protect_delete();
-
-
+-- NOTE: Removed storage.protect_delete() triggers — these are Supabase-internal
+-- and not available in the local Docker image. They are managed automatically
+-- on the hosted platform.

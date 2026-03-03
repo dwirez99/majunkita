@@ -16,6 +16,10 @@ class ManageMajunScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final priceState = ref.watch(majunPricePerKgProvider);
+    final currencyFormat = NumberFormat.currency(
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -39,6 +43,7 @@ class ManageMajunScreen extends ConsumerWidget {
               ref.invalidate(majunMonthlyStatsProvider);
               ref.invalidate(majunHistoryProvider);
               ref.invalidate(majunPricePerKgProvider);
+              ref.invalidate(tailorListForMajunProvider);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Data sedang dimuat ulang...'),
@@ -50,7 +55,7 @@ class ManageMajunScreen extends ConsumerWidget {
         ],
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,7 +126,12 @@ class ManageMajunScreen extends ConsumerWidget {
                 ],
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
+
+              // ── Stok Perca Penjahit ──
+              _buildTailorStockSection(ref, currencyFormat),
+
+              const SizedBox(height: 24),
 
               // Statistik
               const Text(
@@ -131,15 +141,15 @@ class ManageMajunScreen extends ConsumerWidget {
               const SizedBox(height: 12),
 
               // Stats chart area
-              Expanded(
-                child: ref
-                    .watch(majunMonthlyStatsProvider)
-                    .when(
-                      data: (stats) {
-                        if (stats.isEmpty) {
-                          return Center(
+              ref
+                  .watch(majunMonthlyStatsProvider)
+                  .when(
+                    data: (stats) {
+                      if (stats.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 40),
                             child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
                                   Icons.bar_chart_outlined,
@@ -156,18 +166,22 @@ class ManageMajunScreen extends ConsumerWidget {
                                 ),
                               ],
                             ),
-                          );
-                        }
+                          ),
+                        );
+                      }
 
-                        return _buildStatsView(stats);
-                      },
-                      loading:
-                          () =>
-                              const Center(child: CircularProgressIndicator()),
-                      error:
-                          (error, stack) => Center(
+                      return _buildStatsView(stats);
+                    },
+                    loading:
+                        () => const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 40),
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                    error:
+                        (error, stack) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 40),
+                          child: Center(
                             child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
                                   Icons.error_outline,
@@ -179,8 +193,8 @@ class ManageMajunScreen extends ConsumerWidget {
                               ],
                             ),
                           ),
-                    ),
-              ),
+                        ),
+                  ),
 
               const SizedBox(height: 20),
             ],
@@ -351,6 +365,296 @@ class ManageMajunScreen extends ConsumerWidget {
     );
   }
 
+  // ── Stok Perca Penjahit Section ──
+  Widget _buildTailorStockSection(WidgetRef ref, NumberFormat currencyFormat) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.inventory_2, size: 22, color: Colors.teal),
+            const SizedBox(width: 8),
+            const Text(
+              'Stok Perca Penjahit',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ref
+            .watch(tailorListForMajunProvider)
+            .when(
+              data: (tailors) {
+                if (tailors.isEmpty) {
+                  return Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[200]!),
+                    ),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.people_outline,
+                            size: 40,
+                            color: Colors.grey[300],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Belum ada data penjahit',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                // Sort tailors by stock (highest first)
+                final sorted = [...tailors]
+                  ..sort((a, b) => b.totalStock.compareTo(a.totalStock));
+
+                final totalStock = sorted.fold<double>(
+                  0,
+                  (s, t) => s + t.totalStock,
+                );
+                final totalBalance = sorted.fold<double>(
+                  0,
+                  (s, t) => s + t.balance,
+                );
+
+                return Column(
+                  children: [
+                    // Summary row
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.teal.withValues(alpha: 0.1),
+                            Colors.teal.withValues(alpha: 0.04),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.teal.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          Column(
+                            children: [
+                              const Icon(
+                                Icons.people,
+                                color: Colors.teal,
+                                size: 24,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${sorted.length}',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.teal,
+                                ),
+                              ),
+                              Text(
+                                'Penjahit',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            width: 1,
+                            height: 40,
+                            color: Colors.teal.withValues(alpha: 0.2),
+                          ),
+                          Column(
+                            children: [
+                              const Icon(
+                                Icons.scale,
+                                color: Colors.teal,
+                                size: 24,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${totalStock.toStringAsFixed(1)} KG',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.teal,
+                                ),
+                              ),
+                              Text(
+                                'Total Stok',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            width: 1,
+                            height: 40,
+                            color: Colors.teal.withValues(alpha: 0.2),
+                          ),
+                          Column(
+                            children: [
+                              const Icon(
+                                Icons.account_balance_wallet,
+                                color: Colors.teal,
+                                size: 24,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                currencyFormat.format(totalBalance),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.teal,
+                                ),
+                              ),
+                              Text(
+                                'Total Saldo',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Tailor list
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: sorted.length,
+                      itemBuilder: (context, index) {
+                        final tailor = sorted[index];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.grey[200]!),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withValues(alpha: 0.08),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              // Avatar
+                              CircleAvatar(
+                                radius: 20,
+                                backgroundColor: Colors.teal[50],
+                                backgroundImage:
+                                    tailor.tailorImages != null &&
+                                            tailor.tailorImages!.isNotEmpty
+                                        ? NetworkImage(tailor.tailorImages!)
+                                        : null,
+                                child:
+                                    tailor.tailorImages == null ||
+                                            tailor.tailorImages!.isEmpty
+                                        ? Text(
+                                          tailor.name.isNotEmpty
+                                              ? tailor.name[0].toUpperCase()
+                                              : '?',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.teal[700],
+                                          ),
+                                        )
+                                        : null,
+                              ),
+                              const SizedBox(width: 12),
+
+                              // Name
+                              Expanded(
+                                child: Text(
+                                  tailor.name,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+
+                              // Stock
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '${tailor.totalStock.toStringAsFixed(1)} KG',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color:
+                                          tailor.totalStock > 0
+                                              ? Colors.teal[700]
+                                              : Colors.grey[500],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    currencyFormat.format(tailor.balance),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color:
+                                          tailor.balance > 0
+                                              ? Colors.amber[800]
+                                              : Colors.grey[500],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                );
+              },
+              loading:
+                  () => const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+              error:
+                  (error, _) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text(
+                        'Error: $error',
+                        style: TextStyle(color: Colors.red[400]),
+                      ),
+                    ),
+                  ),
+            ),
+      ],
+    );
+  }
+
   Widget _buildStatsView(Map<String, double> stats) {
     // Sort by month key
     final sortedEntries =
@@ -441,74 +745,71 @@ class ManageMajunScreen extends ConsumerWidget {
         const SizedBox(height: 12),
 
         // Monthly list
-        Expanded(
-          child: ListView.builder(
-            itemCount: recentEntries.length,
-            itemBuilder: (context, index) {
-              // Display in reverse (newest first)
-              final entry = recentEntries[recentEntries.length - 1 - index];
-              final monthLabel = _formatMonthKey(entry.key);
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: recentEntries.length,
+          itemBuilder: (context, index) {
+            // Display in reverse (newest first)
+            final entry = recentEntries[recentEntries.length - 1 - index];
+            final monthLabel = _formatMonthKey(entry.key);
 
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[200]!),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.calendar_today,
-                          size: 16,
-                          color: Colors.grey[500],
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey[200]!),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today,
+                        size: 16,
+                        color: Colors.grey[500],
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        monthLabel,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          monthLabel,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        '${entry.value.toStringAsFixed(1)} KG',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.secondary,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 60,
+                        child: LinearProgressIndicator(
+                          value:
+                              totalWeight > 0 ? entry.value / totalWeight : 0,
+                          backgroundColor: Colors.grey[200],
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.secondary,
                           ),
                         ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        Text(
-                          '${entry.value.toStringAsFixed(1)} KG',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.secondary,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          width: 60,
-                          child: LinearProgressIndicator(
-                            value:
-                                totalWeight > 0 ? entry.value / totalWeight : 0,
-                            backgroundColor: Colors.grey[200],
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              AppColors.secondary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ],
     );
