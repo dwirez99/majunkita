@@ -6,6 +6,7 @@ import '../../../manage_tailors/presentations/screens/tailors_list_screen.dart';
 import '../../../manage_factories/presentations/screens/factory_list_screen.dart';
 import '../../../manage_partner/presentations/screens/manage_partner_screen.dart';
 import '../../../manage_percas/presentations/screens/manage_perca_screen.dart';
+import '../../../manage_majun/presentations/screens/manage_majun_screen.dart';
 
 class ManagementMenuGrid extends StatelessWidget {
   const ManagementMenuGrid({super.key});
@@ -135,7 +136,11 @@ class ManagementMenuGrid extends StatelessWidget {
         );
         break;
       case 1:
-        // TODO: Navigate to Kelola Stok Majun
+        // Navigate to Kelola Stok Majun
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ManageMajunScreen()),
+        );
         break;
       case 2:
         // Navigate to Kelola Penjahit

@@ -1,0 +1,10 @@
+--
+-- NOTE:
+--   Definisi final untuk function public.process_transaction_by_sack_code
+--   sudah diterapkan di migration sebelumnya
+--   (20260226065028_fix_perca_stock_status.sql).
+--   Migration ini sengaja dikosongkan untuk menghindari
+--   duplikasi CREATE OR REPLACE FUNCTION yang identik,
+--   agar riwayat schema lebih mudah dibaca dan dianalisis.
+--
+--   Tidak ada perubahan schema tambahan yang dilakukan di file ini.

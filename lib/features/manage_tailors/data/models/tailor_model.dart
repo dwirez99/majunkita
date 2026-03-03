@@ -7,6 +7,8 @@ class TailorModel {
   final String address;
   final DateTime createdAt;
   final String? tailorImages;
+  final double totalStock;
+  final double balance;
 
   TailorModel({
     required this.id,
@@ -15,6 +17,8 @@ class TailorModel {
     required this.address,
     required this.createdAt,
     this.tailorImages,
+    this.totalStock = 0,
+    this.balance = 0,
   });
 
   /// Factory method untuk membuat TailorModel dari JSON (Supabase response)
@@ -25,10 +29,13 @@ class TailorModel {
       name: json['name'] as String? ?? '',
       noTelp: json['no_telp'] as String? ?? '',
       address: json['address'] as String? ?? '',
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
-          : DateTime.now(),
+      createdAt:
+          json['created_at'] != null
+              ? DateTime.parse(json['created_at'] as String)
+              : DateTime.now(),
       tailorImages: json['tailor_images'] as String?,
+      totalStock: double.tryParse(json['total_stock']?.toString() ?? '0') ?? 0,
+      balance: double.tryParse(json['balance']?.toString() ?? '0') ?? 0,
     );
   }
 
@@ -40,7 +47,7 @@ class TailorModel {
       'no_telp': noTelp,
       'address': address,
       'tailor_images': tailorImages,
-      // created_at dihandle oleh database
+      // total_stock, balance, created_at are managed by the database
     };
   }
 
@@ -52,6 +59,8 @@ class TailorModel {
     String? address,
     DateTime? createdAt,
     String? tailorImages,
+    double? totalStock,
+    double? balance,
   }) {
     return TailorModel(
       id: id ?? this.id,
@@ -60,12 +69,14 @@ class TailorModel {
       address: address ?? this.address,
       createdAt: createdAt ?? this.createdAt,
       tailorImages: tailorImages ?? this.tailorImages,
+      totalStock: totalStock ?? this.totalStock,
+      balance: balance ?? this.balance,
     );
   }
 
   @override
   String toString() {
-    return 'TailorModel(id: $id, name: $name, noTelp: $noTelp)';
+    return 'TailorModel(id: $id, name: $name, noTelp: $noTelp, stock: $totalStock, balance: $balance)';
   }
 
   @override
