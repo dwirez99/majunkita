@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../manage_percas/presentations/screens/add_perca_screen.dart';
+import '../../../manage_majun/presentations/screens/setor_majun_screen.dart';
 
 class QuickAccessButtons extends StatelessWidget {
   const QuickAccessButtons({super.key});
@@ -50,7 +51,14 @@ class QuickAccessButtons extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SetorMajunScreen(),
+                    ),
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.secondary,
                   foregroundColor: AppColors.white,

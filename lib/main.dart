@@ -3,12 +3,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentations/screens/auth_wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting();
 
   try {
     // Load environment variables
@@ -93,11 +95,12 @@ class _MainScreenState extends State<MainScreen> {
   Future<void> _loadUserRole() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
-      final response = await Supabase.instance.client
-          .from('users')
-          .select('role')
-          .eq('id', user.id)
-          .single();
+      final response =
+          await Supabase.instance.client
+              .from('users')
+              .select('role')
+              .eq('id', user.id)
+              .single();
       setState(() {
         userRole = response['role'] as String?;
       });
@@ -113,10 +116,7 @@ class _MainScreenState extends State<MainScreen> {
   List<BottomNavigationBarItem> _getNavigationItems() {
     if (userRole == 'admin') {
       return const <BottomNavigationBarItem>[
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home),
-          label: 'Menu Awal',
-        ),
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Menu Awal'),
         BottomNavigationBarItem(
           icon: Icon(Icons.inventory_2),
           label: 'Ambil Perca',
@@ -132,18 +132,12 @@ class _MainScreenState extends State<MainScreen> {
       ];
     } else if (userRole == 'manager') {
       return const <BottomNavigationBarItem>[
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home),
-          label: 'Menu Awal',
-        ),
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Menu Awal'),
         BottomNavigationBarItem(
           icon: Icon(Icons.dashboard),
           label: 'Dashboard',
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.analytics),
-          label: 'Laporan',
-        ),
+        BottomNavigationBarItem(icon: Icon(Icons.analytics), label: 'Laporan'),
       ];
     }
     return [];
@@ -152,21 +146,21 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-         body: Center(
-           child: Text('Selected Index: $_selectedIndex'),
-         ),
-      bottomNavigationBar: userRole != null
-          ? BottomNavigationBar(
-              type: BottomNavigationBarType
-                  .fixed, // This ensures all tabs are visible
-              items: _getNavigationItems(),
-              currentIndex: _selectedIndex,
-              selectedItemColor: Theme.of(context).primaryColor,
-              unselectedItemColor: Colors.green,
-              showUnselectedLabels: true,
-              onTap: _onItemTapped,
-            )
-          : null,
+      body: Center(child: Text('Selected Index: $_selectedIndex')),
+      bottomNavigationBar:
+          userRole != null
+              ? BottomNavigationBar(
+                type:
+                    BottomNavigationBarType
+                        .fixed, // This ensures all tabs are visible
+                items: _getNavigationItems(),
+                currentIndex: _selectedIndex,
+                selectedItemColor: Theme.of(context).primaryColor,
+                unselectedItemColor: Colors.green,
+                showUnselectedLabels: true,
+                onTap: _onItemTapped,
+              )
+              : null,
     );
   }
 }

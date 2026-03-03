@@ -41,13 +41,14 @@ class TailorRepository {
       // Gunakan .select() dengan kolom spesifik, BUKAN .select(*)
       final response = await _supabase
           .from('tailors')
-          .select('id, name, no_telp, address, tailor_images, created_at')
+          .select(
+            'id, name, no_telp, address, tailor_images, created_at, total_stock, balance',
+          )
           .order('created_at', ascending: false)
           .range(offset, offset + limit - 1);
 
-      final tailors = (response as List)
-          .map((json) => TailorModel.fromJson(json))
-          .toList();
+      final tailors =
+          (response as List).map((json) => TailorModel.fromJson(json)).toList();
 
       _log('Successfully fetched ${tailors.length} tailors');
       return tailors;
@@ -71,9 +72,8 @@ class TailorRepository {
           .ilike('name', '%$query%')
           .order('name', ascending: true);
 
-      final tailors = (response as List)
-          .map((json) => TailorModel.fromJson(json))
-          .toList();
+      final tailors =
+          (response as List).map((json) => TailorModel.fromJson(json)).toList();
 
       _log('Search found ${tailors.length} tailor(s) matching "$query"');
       return tailors;
@@ -87,11 +87,12 @@ class TailorRepository {
   Future<TailorModel?> getTailorById(String id) async {
     _log('Fetching tailor by ID: $id');
     try {
-      final response = await _supabase
-          .from('tailors')
-          .select('id, name, no_telp, address, tailor_images, created_at')
-          .eq('id', id)
-          .maybeSingle();
+      final response =
+          await _supabase
+              .from('tailors')
+              .select('id, name, no_telp, address, tailor_images, created_at')
+              .eq('id', id)
+              .maybeSingle();
 
       if (response == null) {
         _log('Tailor not found with ID: $id', level: 'WARN');
@@ -120,16 +121,17 @@ class TailorRepository {
   }) async {
     _log('Creating new tailor: $name');
     try {
-      final response = await _supabase
-          .from('tailors')
-          .insert({
-            'name': name,
-            'no_telp': noTelp,
-            'address': address,
-            'tailor_images': tailorImages,
-          })
-          .select('id, name, no_telp, address, tailor_images, created_at')
-          .single();
+      final response =
+          await _supabase
+              .from('tailors')
+              .insert({
+                'name': name,
+                'no_telp': noTelp,
+                'address': address,
+                'tailor_images': tailorImages,
+              })
+              .select('id, name, no_telp, address, tailor_images, created_at')
+              .single();
 
       final tailor = TailorModel.fromJson(response);
       _log('Successfully created tailor: ${tailor.name} (ID: ${tailor.id})');
@@ -140,7 +142,9 @@ class TailorRepository {
       // Provide user-friendly error messages
       if (e.toString().contains('duplicate key') ||
           e.toString().contains('unique constraint')) {
-        throw Exception('Data penjahit sudah terdaftar. Gunakan data yang berbeda.');
+        throw Exception(
+          'Data penjahit sudah terdaftar. Gunakan data yang berbeda.',
+        );
       }
 
       throw Exception('Gagal membuat data penjahit: $e');
@@ -178,17 +182,18 @@ class TailorRepository {
         }
       }
 
-      final response = await _supabase
-          .from('tailors')
-          .update({
-            'name': name,
-            'no_telp': noTelp,
-            'address': address,
-            'tailor_images': tailorImages,
-          })
-          .eq('id', id)
-          .select('id, name, no_telp, address, tailor_images, created_at')
-          .single();
+      final response =
+          await _supabase
+              .from('tailors')
+              .update({
+                'name': name,
+                'no_telp': noTelp,
+                'address': address,
+                'tailor_images': tailorImages,
+              })
+              .eq('id', id)
+              .select('id, name, no_telp, address, tailor_images, created_at')
+              .single();
 
       final tailor = TailorModel.fromJson(response);
       _log('Successfully updated tailor: ${tailor.name} (ID: $id)');
@@ -239,7 +244,10 @@ class TailorRepository {
         try {
           await _storageService.deleteTailorImageFolder(id);
         } catch (e) {
-          _log('Warning: Failed to delete tailor image folder: $e', level: 'WARN');
+          _log(
+            'Warning: Failed to delete tailor image folder: $e',
+            level: 'WARN',
+          );
         }
       }
 
