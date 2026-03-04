@@ -97,38 +97,138 @@ class _DashboarAdminScreenState extends ConsumerState<DashboarAdminScreen> {
                         (error, stackTrace) =>
                             Center(child: Text(error.toString())),
                     data: (summary) {
-                      // 'summary' adalah objek AdminDashboardSummary yang sudah terisi data!
                       return Column(
                         children: [
+                          // ── Perca ───────────────────────────────────────
                           SummaryCard(
-                            title: 'Ringkasan Perca',
+                            title: '🧵 Perca',
                             children: [
-                              Text(
-                                'Stok Perca Saat Ini : ${summary.percaSummary.stockSaatIni} KG',
+                              _SummaryRow(
+                                icon: Icons.warehouse_outlined,
+                                label: 'Stok gudang',
+                                value: summary.perca.fmtStokGudang,
                               ),
-                              Text(
-                                'Stok pada penjahit : ${summary.stockAtTailor} KG',
+                              _SummaryRow(
+                                icon: Icons.people_outline,
+                                label: 'Diberikan ke penjahit',
+                                value: summary.perca.fmtTotalDiberikan,
                               ),
-                              // Tambahkan data lain jika ada
+                              _SummaryRow(
+                                icon: Icons.calendar_month_outlined,
+                                label: 'Distribusi bulan ini',
+                                value: summary.perca.fmtDistribusiBulanIni,
+                                isHighlighted: true,
+                              ),
                             ],
                           ),
+
+                          // ── Majun ───────────────────────────────────────
                           SummaryCard(
-                            title: 'Ringkasan Majun',
+                            title: '🧺 Majun',
                             children: [
-                              Text(
-                                'Stok majun Saat Ini : ${summary.majunSummary.stockSaatIni} KG',
+                              _SummaryRow(
+                                icon: Icons.input_outlined,
+                                label: 'Total diterima',
+                                value: summary.majun.fmtTotalDiterima,
                               ),
-                              // Tambahkan data lain jika ada
+                              _SummaryRow(
+                                icon: Icons.local_shipping_outlined,
+                                label: 'Total terkirim',
+                                value: summary.majun.fmtTotalTerkirim,
+                              ),
+                              _SummaryRow(
+                                icon: Icons.inventory_2_outlined,
+                                label: 'Stok tersedia di gudang',
+                                value: summary.majun.fmtStokEfektif,
+                                isHighlighted: true,
+                              ),
+                              _SummaryRow(
+                                icon: Icons.calendar_month_outlined,
+                                label: 'Diterima bulan ini',
+                                value: summary.majun.fmtDiterimaBulanIni,
+                              ),
+                              _SummaryRow(
+                                icon: Icons.payments_outlined,
+                                label: 'Total upah dibayarkan',
+                                value: summary.majun.fmtTotalUpah,
+                              ),
                             ],
                           ),
+
+                          // ── Expedisi ────────────────────────────────────
                           SummaryCard(
-                            title: 'Ringkasan Penjahit',
+                            title: '🚚 Expedisi',
                             children: [
-                              Text(
-                                'Jumlah Penjahit Aktif : ${summary.tailorSummary.jumlahAktif}',
+                              _SummaryRow(
+                                icon: Icons.receipt_long_outlined,
+                                label: 'Total pengiriman',
+                                value:
+                                    '${summary.expedisi.totalPengiriman} kali',
                               ),
-                              Text(
-                                'Upah belum dibayarkan : ${summary.tailorSummary.formattedUnpaidWages}',
+                              _SummaryRow(
+                                icon: Icons.inventory_outlined,
+                                label: 'Total karung dikirim',
+                                value:
+                                    '${summary.expedisi.totalKarung} karung',
+                              ),
+                              _SummaryRow(
+                                icon: Icons.scale_outlined,
+                                label: 'Total berat dikirim',
+                                value: summary.expedisi.fmtTotalBerat,
+                              ),
+                              _SummaryRow(
+                                icon: Icons.calendar_month_outlined,
+                                label: 'Pengiriman bulan ini',
+                                value:
+                                    '${summary.expedisi.pengirimanBulanIni} kali',
+                                isHighlighted: true,
+                              ),
+                              _SummaryRow(
+                                icon: Icons.monitor_weight_outlined,
+                                label: 'Berat bulan ini',
+                                value: summary.expedisi.fmtBeratBulanIni,
+                              ),
+                            ],
+                          ),
+
+                          // ── Penjahit ────────────────────────────────────
+                          SummaryCard(
+                            title: '👗 Penjahit',
+                            children: [
+                              _SummaryRow(
+                                icon: Icons.people_outlined,
+                                label: 'Jumlah penjahit terdaftar',
+                                value:
+                                    '${summary.penjahit.jumlahAktif} orang',
+                              ),
+                              _SummaryRow(
+                                icon: Icons.inventory_2_outlined,
+                                label: 'Total stok di penjahit',
+                                value: summary.penjahit.fmtTotalStok,
+                              ),
+                              _SummaryRow(
+                                icon: Icons.account_balance_wallet_outlined,
+                                label: 'Total saldo belum ditarik',
+                                value: summary.penjahit.fmtSaldoBelumDitarik,
+                                isHighlighted: true,
+                              ),
+                            ],
+                          ),
+
+                          // ── Limbah ──────────────────────────────────────
+                          SummaryCard(
+                            title: '♻️ Limbah',
+                            children: [
+                              _SummaryRow(
+                                icon: Icons.delete_outline,
+                                label: 'Total diterima',
+                                value: summary.limbah.fmtTotalDiterima,
+                              ),
+                              _SummaryRow(
+                                icon: Icons.calendar_month_outlined,
+                                label: 'Diterima bulan ini',
+                                value: summary.limbah.fmtDiterimaBulanIni,
+                                isHighlighted: true,
                               ),
                             ],
                           ),
@@ -145,6 +245,54 @@ class _DashboarAdminScreenState extends ConsumerState<DashboarAdminScreen> {
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         userRole: 'admin',
+      ),
+    );
+  }
+}
+
+// ── Shared row widget for summary cards ──────────────────────────────────────
+
+class _SummaryRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final bool isHighlighted;
+
+  const _SummaryRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.isHighlighted = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isHighlighted ? AppColors.secondary : AppColors.greyDark;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5.0),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.grey,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight:
+                  isHighlighted ? FontWeight.bold : FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }
