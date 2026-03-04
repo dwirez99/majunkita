@@ -14,3 +14,10 @@ final adminDashboardProvider = FutureProvider<AdminDashboardSummary>((ref) {
   final repository = ref.watch(dashboardRepositoryProvider);
   return repository.getAdminDashboardSummary();
 });
+
+// Provider untuk Data Summary Dashboard Driver
+final driverDashboardProvider =
+    FutureProvider.autoDispose<Map<String, dynamic>>((ref) {
+  final repository = ref.watch(dashboardRepositoryProvider);
+  return repository.getDriverExpeditionSummary();
+});
