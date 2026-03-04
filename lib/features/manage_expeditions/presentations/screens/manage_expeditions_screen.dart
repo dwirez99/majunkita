@@ -7,6 +7,7 @@ import '../../data/models/expedition_model.dart';
 import '../../domain/expedition_provider.dart';
 import 'add_expedition_screen.dart';
 import 'expedition_history_screen.dart';
+import 'manage_expedition_partners_screen.dart';
 
 /// Screen hub untuk Manage Expeditions.
 /// Menampilkan menu navigasi dan ringkasan statistik pengiriman,
@@ -98,6 +99,18 @@ class ManageExpeditionsScreen extends ConsumerWidget {
                       context,
                       ref,
                       weightAsync.value ?? 50,
+                    ),
+                  ),
+                  _buildMenuCard(
+                    context: context,
+                    icon: Icons.business_outlined,
+                    title: 'Mitra\nExpedisi',
+                    color: Colors.indigo,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ManageExpeditionPartnersScreen(),
+                      ),
                     ),
                   ),
                 ],

@@ -4,7 +4,9 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/supabase_client_api.dart';
 import '../data/models/expedition_model.dart';
+import '../data/models/expedition_partner_model.dart';
 import '../data/repositories/expedition_repository.dart';
+import '../data/repositories/expedition_partner_repository.dart';
 
 // ===========================================================================
 // REPOSITORY PROVIDER
@@ -103,7 +105,7 @@ class ManageExpeditionNotifier extends AsyncNotifier<void> {
   Future<void> deleteExpedition(String id, String imageUrl) async {
     _log('Deleting expedition: id=$id');
 
-    // Set state ke loading agar UI menampilkan indikator proses
+    // Set state ke loading agar UI menampilkan indikator prosesthere 
     state = const AsyncValue.loading();
 
     try {
@@ -170,4 +172,116 @@ class UpdateWeightPerSackNotifier extends AsyncNotifier<void> {
 final updateWeightPerSackProvider =
     AsyncNotifierProvider<UpdateWeightPerSackNotifier, void>(
   UpdateWeightPerSackNotifier.new,
+);
+
+// ===========================================================================
+// EXPEDITION PARTNER PROVIDERS
+// ===========================================================================
+
+/// Provider untuk ExpeditionPartnerRepository
+final expeditionPartnerRepositoryProvider =
+    Provider<ExpeditionPartnerRepository>((ref) {
+  return ExpeditionPartnerRepository(ref.watch(supabaseClientProvider));
+});
+
+/// State untuk search query mitra expedisi
+class _SearchQueryNotifier extends Notifier<String> {
+  @override
+  String build() => '';
+  void setQuery(String q) => state = q;
+  void clear() => state = '';
+}
+
+final expeditionPartnerSearchQueryProvider =
+    NotifierProvider<_SearchQueryNotifier, String>(_SearchQueryNotifier.new);
+
+/// FutureProvider untuk daftar mitra expedisi (dengan search otomatis)
+final expeditionPartnerListProvider =
+    FutureProvider.autoDispose<List<ExpeditionPartnerModel>>((ref) async {
+  final repo = ref.watch(expeditionPartnerRepositoryProvider);
+  final query = ref.watch(expeditionPartnerSearchQueryProvider);
+  if (query.isEmpty) return repo.getAll();
+  return repo.search(query);
+});
+
+/// FutureProvider.autoDispose untuk opsi dropdown di form tambah expedisi
+final expeditionPartnerOptionsProvider =
+    FutureProvider.autoDispose<List<ExpeditionPartnerModel>>((ref) {
+  return ref.watch(expeditionPartnerRepositoryProvider).getAll();
+});
+
+// ===========================================================================
+// EXPEDITION PARTNER CRUD NOTIFIER
+// ===========================================================================
+
+class ManageExpeditionPartnerNotifier extends AsyncNotifier<void> {
+  @override
+  Future<void> build() async {}
+
+  void _log(String msg, {String level = 'INFO'}) {
+    print('[${DateTime.now()}] [$level] EXPEDITION_PARTNER_NOTIFIER: $msg');
+  }
+
+  Future<void> createPartner({
+    required String name,
+    String? noTelp,
+    String? address,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      await ref
+          .read(expeditionPartnerRepositoryProvider)
+          .create(name: name, noTelp: noTelp, address: address);
+      ref.invalidate(expeditionPartnerListProvider);
+      ref.invalidate(expeditionPartnerOptionsProvider);
+      _log('Created partner: $name');
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      _log('Error creating partner: $e', level: 'ERROR');
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
+  Future<void> updatePartner({
+    required String id,
+    required String name,
+    String? noTelp,
+    String? address,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      await ref
+          .read(expeditionPartnerRepositoryProvider)
+          .update(id: id, name: name, noTelp: noTelp, address: address);
+      ref.invalidate(expeditionPartnerListProvider);
+      ref.invalidate(expeditionPartnerOptionsProvider);
+      _log('Updated partner: id=$id');
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      _log('Error updating partner $id: $e', level: 'ERROR');
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
+  Future<void> deletePartner(String id) async {
+    state = const AsyncValue.loading();
+    try {
+      await ref.read(expeditionPartnerRepositoryProvider).delete(id);
+      ref.invalidate(expeditionPartnerListProvider);
+      ref.invalidate(expeditionPartnerOptionsProvider);
+      _log('Deleted partner: id=$id');
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      _log('Error deleting partner $id: $e', level: 'ERROR');
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+}
+
+final manageExpeditionPartnerNotifierProvider =
+    AsyncNotifierProvider<ManageExpeditionPartnerNotifier, void>(
+  ManageExpeditionPartnerNotifier.new,
 );

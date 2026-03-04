@@ -28,11 +28,14 @@ class ExpeditionRepository {
   Future<List<ExpeditionModel>> getExpeditions() async {
     _log('Fetching all expeditions...');
     try {
-      // Lakukan query dengan JOIN ke tabel profiles untuk mendapatkan nama partner
+      // Lakukan query dengan JOIN ke tabel profiles untuk mendapatkan nama driver
+      // dan JOIN ke expedition_partners untuk mendapatkan nama mitra expedisi
       final response = await _supabase
           .from('expeditions')
           .select(
-            'id, id_partner, expedition_date, destination, sack_number, total_weight, proof_of_delivery, profiles(name)',
+            'id, id_partner, id_expedition_partner, expedition_date, destination, '
+            'sack_number, total_weight, proof_of_delivery, '
+            'profiles(name), expedition_partners(name)',
           )
           .order('expedition_date', ascending: false);
 
@@ -92,7 +95,9 @@ class ExpeditionRepository {
           .from('expeditions')
           .insert(expeditionWithProof.toJson()..remove('id'))
           .select(
-            'id, id_partner, expedition_date, destination, sack_number, total_weight, proof_of_delivery, profiles(name)',
+            'id, id_partner, id_expedition_partner, expedition_date, destination, '
+            'sack_number, total_weight, proof_of_delivery, '
+            'profiles(name), expedition_partners(name)',
           )
           .single();
 

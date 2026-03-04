@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/expedition_model.dart';
 import '../../domain/expedition_provider.dart';
+import 'manage_expedition_partners_screen.dart';
 
 /// Screen untuk menambah expedisi baru (pencatatan pengiriman).
 /// Merupakan full-screen terpisah yang dipanggil dari ManageExpeditionsScreen.
@@ -24,8 +25,14 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
   final _destinationController = TextEditingController();
   final _sackNumberController = TextEditingController();
 
+  // Driver yang mengantarkan barang (FK → profiles)
   String? _selectedDriverId;
   String? _selectedDriverName;
+
+  // Mitra/perusahaan expedisi (FK → expedition_partners)
+  String? _selectedExpeditionPartnerId;
+  String? _selectedExpeditionPartnerName;
+
   DateTime _selectedDate = DateTime.now();
   File? _proofImage;
 
@@ -81,6 +88,16 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
       return;
     }
 
+    if (_selectedExpeditionPartnerId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Harap pilih mitra expedisi terlebih dahulu.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     if (_proofImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -116,6 +133,8 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
                 'Tujuan', _destinationController.text.trim()),
             const SizedBox(height: 6),
             _buildConfirmRow('Driver', _selectedDriverName ?? '-'),
+            const SizedBox(height: 6),
+            _buildConfirmRow('Mitra Expedisi', _selectedExpeditionPartnerName ?? '-'),
             const SizedBox(height: 6),
             _buildConfirmRow(
               'Tanggal',
@@ -167,6 +186,7 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
         sackNumber: int.tryParse(_sackNumberController.text.trim()) ?? 0,
         totalWeight: _calculatedWeight,
         proofOfDelivery: '',
+        idExpeditionPartner: _selectedExpeditionPartnerId,
       );
 
       await ref
@@ -254,6 +274,12 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
                       // ── Driver ───────────────────────────────────────────
                       _buildSectionLabel('Driver'),
                       _buildDriverDropdown(isLoading),
+
+                      const SizedBox(height: 16),
+
+                      // ── Mitra Expedisi ───────────────────────────────────
+                      _buildSectionLabel('Mitra Expedisi'),
+                      _buildExpeditionPartnerDropdown(isLoading),
 
                       const SizedBox(height: 16),
 
@@ -480,6 +506,145 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
         validator: (v) =>
             v == null ? 'Harap pilih driver' : null,
       ),
+    );
+  }
+
+  /// Dropdown mitra expedisi yang memuat data dari tabel expedition_partners
+  Widget _buildExpeditionPartnerDropdown(bool isLoading) {
+    final partnersAsync = ref.watch(expeditionPartnerOptionsProvider);
+
+    return partnersAsync.when(
+      loading: () => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.greyLighter,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: AppColors.secondary),
+            ),
+            SizedBox(width: 10),
+            Text('Memuat daftar mitra expedisi...',
+                style: TextStyle(color: AppColors.grey)),
+          ],
+        ),
+      ),
+      error: (e, _) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.error.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Gagal memuat mitra expedisi: $e',
+              style: const TextStyle(color: AppColors.error, fontSize: 13),
+            ),
+            TextButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ManageExpeditionPartnersScreen(),
+                ),
+              ).then((_) => ref.invalidate(expeditionPartnerOptionsProvider)),
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('Tambah mitra expedisi'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.secondary,
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          ],
+        ),
+      ),
+      data: (partners) => partners.isEmpty
+          ? Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: AppColors.greyLighter,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline,
+                      size: 16, color: AppColors.grey),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Belum ada mitra expedisi.',
+                      style: TextStyle(color: AppColors.grey, fontSize: 13),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const ManageExpeditionPartnersScreen(),
+                      ),
+                    ).then(
+                      (_) =>
+                          ref.invalidate(expeditionPartnerOptionsProvider),
+                    ),
+                    child: const Text('Tambah'),
+                  ),
+                ],
+              ),
+            )
+          : DropdownButtonFormField<String>(
+              value: _selectedExpeditionPartnerId,
+              isExpanded: true,
+              hint: const Text(
+                'Pilih mitra expedisi',
+                style: TextStyle(color: AppColors.grey),
+              ),
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.local_shipping_outlined,
+                    color: AppColors.grey, size: 20),
+                filled: true,
+                fillColor: AppColors.greyLighter,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(
+                      color: AppColors.secondary, width: 1.5),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 14),
+              ),
+              items: partners
+                  .map(
+                    (p) => DropdownMenuItem(
+                      value: p.id,
+                      child: Text(p.name, overflow: TextOverflow.ellipsis),
+                    ),
+                  )
+                  .toList(),
+              onChanged: isLoading
+                  ? null
+                  : (value) {
+                      final partner =
+                          partners.firstWhere((p) => p.id == value);
+                      setState(() {
+                        _selectedExpeditionPartnerId = value;
+                        _selectedExpeditionPartnerName = partner.name;
+                      });
+                    },
+              validator: (v) =>
+                  v == null ? 'Harap pilih mitra expedisi' : null,
+            ),
     );
   }
 
