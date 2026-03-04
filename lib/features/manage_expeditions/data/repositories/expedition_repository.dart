@@ -32,7 +32,7 @@ class ExpeditionRepository {
       final response = await _supabase
           .from('expeditions')
           .select(
-            'id, id_partner, expedition_date, destination, sack_number, total_weight, proof_of_delivery, profiles(full_name)',
+            'id, id_partner, expedition_date, destination, sack_number, total_weight, proof_of_delivery, profiles(name)',
           )
           .order('expedition_date', ascending: false);
 
@@ -92,7 +92,7 @@ class ExpeditionRepository {
           .from('expeditions')
           .insert(expeditionWithProof.toJson()..remove('id'))
           .select(
-            'id, id_partner, expedition_date, destination, sack_number, total_weight, proof_of_delivery, profiles(full_name)',
+            'id, id_partner, expedition_date, destination, sack_number, total_weight, proof_of_delivery, profiles(name)',
           )
           .single();
 
@@ -154,6 +154,67 @@ class ExpeditionRepository {
     } catch (e) {
       _log('Error deleting expedition $id: $e', level: 'ERROR');
       throw Exception('Gagal menghapus data expedisi: $e');
+    }
+  }
+
+  // ===========================================================================
+  // STOCK CHECK — RPC
+  // ===========================================================================
+
+  /// Memanggil RPC get_majun_available_stock() untuk mendapatkan stok gudang saat ini.
+  /// Hasilnya adalah: SUM(majun_transactions.weight_majun) - SUM(expeditions.total_weight)
+  Future<double> getAvailableStock() async {
+    _log('Fetching available majun stock via RPC...');
+    try {
+      final result = await _supabase.rpc('get_majun_available_stock');
+      final stock = double.tryParse(result?.toString() ?? '0') ?? 0.0;
+      _log('Available stock = $stock kg');
+      return stock;
+    } catch (e) {
+      _log('Error fetching available stock: $e', level: 'ERROR');
+      throw Exception('Gagal mengambil stok tersedia: $e');
+    }
+  }
+
+  // ===========================================================================
+  // APP SETTINGS — WEIGHT PER SACK
+  // ===========================================================================
+
+  /// Ambil berat standar per karung dari app_settings
+  Future<int> getWeightPerSack() async {
+    _log('Fetching weight_per_sack from app_settings...');
+    try {
+      final data = await _supabase
+          .from('app_settings')
+          .select('value')
+          .eq('key', 'weight_per_sack')
+          .single();
+      final parsed = int.tryParse(data['value']?.toString() ?? '50') ?? 50;
+      _log('weight_per_sack = $parsed kg');
+      return parsed;
+    } catch (e) {
+      _log('Error fetching weight_per_sack: $e', level: 'ERROR');
+      throw Exception('Gagal mengambil berat per karung: $e');
+    }
+  }
+
+  /// Update berat standar per karung di app_settings
+  Future<void> updateWeightPerSack(int newWeight) async {
+    _log('Updating weight_per_sack to $newWeight kg...');
+    try {
+      final staffId = _supabase.auth.currentUser?.id;
+      await _supabase
+          .from('app_settings')
+          .update({
+            'value': newWeight.toString(),
+            'updated_at': DateTime.now().toIso8601String(),
+            'updated_by': staffId,
+          })
+          .eq('key', 'weight_per_sack');
+      _log('weight_per_sack updated successfully');
+    } catch (e) {
+      _log('Error updating weight_per_sack: $e', level: 'ERROR');
+      throw Exception('Gagal mengubah berat per karung: $e');
     }
   }
 }

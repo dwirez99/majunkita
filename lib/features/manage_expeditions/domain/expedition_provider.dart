@@ -27,6 +27,37 @@ final expeditionListProvider =
 });
 
 // ===========================================================================
+// DRIVER LIST PROVIDER
+// ===========================================================================
+
+/// Simple data class untuk menampung id dan nama driver di dropdown form
+class DriverOption {
+  final String id;
+  final String name;
+  DriverOption({required this.id, required this.name});
+}
+
+/// FutureProvider untuk mengambil daftar driver dari tabel profiles
+final driverOptionsProvider =
+    FutureProvider.autoDispose<List<DriverOption>>((ref) async {
+  final supabase = ref.watch(supabaseClientProvider);
+  final response = await supabase
+      .from('profiles')
+      .select('id, name')
+      .eq('role', 'driver')
+      .order('name', ascending: true);
+
+  return (response as List)
+      .map(
+        (json) => DriverOption(
+          id: json['id'] as String,
+          name: (json['name'] as String?) ?? 'Tanpa Nama',
+        ),
+      )
+      .toList();
+});
+
+// ===========================================================================
 // CRUD NOTIFIER
 // ===========================================================================
 
@@ -98,4 +129,45 @@ class ManageExpeditionNotifier extends AsyncNotifier<void> {
 final manageExpeditionNotifierProvider =
     AsyncNotifierProvider<ManageExpeditionNotifier, void>(
   ManageExpeditionNotifier.new,
+);
+
+// ===========================================================================
+// WEIGHT PER SACK PROVIDERS
+// ===========================================================================
+
+/// FutureProvider untuk membaca nilai weight_per_sack dari app_settings
+final weightPerSackProvider = FutureProvider<int>((ref) {
+  return ref.watch(expeditionRepositoryProvider).getWeightPerSack();
+});
+
+// ===========================================================================
+// AVAILABLE STOCK PROVIDER
+// ===========================================================================
+
+/// FutureProvider.autoDispose untuk membaca stok majun tersedia dari RPC.
+/// autoDispose agar stok di-refresh setiap kali form dibuka.
+final availableStockProvider = FutureProvider.autoDispose<double>((ref) {
+  return ref.read(expeditionRepositoryProvider).getAvailableStock();
+});
+
+/// Notifier untuk memperbarui weight_per_sack di app_settings
+class UpdateWeightPerSackNotifier extends AsyncNotifier<void> {
+  @override
+  Future<void> build() async {}
+
+  Future<void> updateWeight(int newWeight) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      await ref
+          .read(expeditionRepositoryProvider)
+          .updateWeightPerSack(newWeight);
+      ref.invalidate(weightPerSackProvider);
+    });
+    if (state.hasError) throw state.error!;
+  }
+}
+
+final updateWeightPerSackProvider =
+    AsyncNotifierProvider<UpdateWeightPerSackNotifier, void>(
+  UpdateWeightPerSackNotifier.new,
 );

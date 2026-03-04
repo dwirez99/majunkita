@@ -40,7 +40,7 @@ class ExpeditionModel {
       proofOfDelivery: json['proof_of_delivery'] as String? ?? '',
       // Ambil nama partner dari hasil JOIN dengan tabel profiles
       partnerName: json['profiles'] != null
-          ? (json['profiles'] as Map<String, dynamic>)['full_name'] as String?
+          ? (json['profiles'] as Map<String, dynamic>)['name'] as String?
           : null,
     );
   }
