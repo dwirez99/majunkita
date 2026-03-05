@@ -1,6 +1,7 @@
 // lib/features/dashboard/presentation/widgets/management_menu_grid.dart
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../manage_expeditions/presentations/screens/manage_expeditions_screen.dart';
 import '../../../manage_tailors/presentations/screens/tailors_list_screen.dart';
 import '../../../manage_factories/presentations/screens/factory_list_screen.dart';
 import '../../../manage_partner/presentations/screens/manage_partner_screen.dart';
@@ -156,7 +157,13 @@ class ManagementMenuGrid extends StatelessWidget {
         );
         break;
       case 4:
-        // TODO: Navigate to Kelola Pengiriman
+        // Navigate to Kelola Pengiriman
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ManageExpeditionsScreen(),
+          ),
+        );
         break;
       case 5:
         // Navigate to Kelola Partner (Driver & Factory)
