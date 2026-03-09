@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/tailor_model.dart';
 import '../../domain/providers/tailor_provider.dart';
+import 'tailor_detail_screen.dart';
 import 'tailor_form_dialog.dart';
 
 /// Screen untuk menampilkan daftar tailor (penjahit)
@@ -211,90 +212,130 @@ class _TailorsListScreenState extends ConsumerState<TailorsListScreen> {
   }
 
   Widget _buildTailorCard(BuildContext context, TailorModel tailor) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.green[400],
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.2),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 3),
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TailorDetailScreen(tailor: tailor),
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Avatar - Show image if available, otherwise show initial
-          CircleAvatar(
-            radius: 25,
-            backgroundColor: Colors.white,
-            backgroundImage:
-                tailor.tailorImages != null && tailor.tailorImages!.isNotEmpty
-                    ? NetworkImage(tailor.tailorImages!)
-                    : null,
-            child:
-                tailor.tailorImages == null || tailor.tailorImages!.isEmpty
-                    ? Text(
-                      tailor.name.isNotEmpty
-                          ? tailor.name[0].toUpperCase()
-                          : '?',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green[800],
-                      ),
-                    )
-                    : null,
-          ),
-          const SizedBox(width: 16),
+        );
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.green[400],
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withValues(alpha: 0.2),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Avatar - Show image if available, otherwise show initial
+            CircleAvatar(
+              radius: 25,
+              backgroundColor: Colors.white,
+              backgroundImage:
+                  tailor.tailorImages != null && tailor.tailorImages!.isNotEmpty
+                      ? NetworkImage(tailor.tailorImages!)
+                      : null,
+              child:
+                  tailor.tailorImages == null || tailor.tailorImages!.isEmpty
+                      ? Text(
+                        tailor.name.isNotEmpty
+                            ? tailor.name[0].toUpperCase()
+                            : '?',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green[800],
+                        ),
+                      )
+                      : null,
+            ),
+            const SizedBox(width: 16),
 
-          // Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tailor.name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+            // Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tailor.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  tailor.noTelp,
-                  style: const TextStyle(fontSize: 12, color: Colors.white70),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  Text(
+                    tailor.noTelp,
+                    style: const TextStyle(fontSize: 12, color: Colors.white70),
+                  ),
+                  if (tailor.totalStock > 0) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          tailor.totalStock > 5
+                              ? Icons.warning_amber_rounded
+                              : Icons.home_outlined,
+                          color: tailor.totalStock > 5
+                              ? Colors.amber[300]
+                              : Colors.white70,
+                          size: 13,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Sisa: ${tailor.totalStock % 1 == 0 ? tailor.totalStock.toStringAsFixed(0) : tailor.totalStock.toStringAsFixed(1)} Kg',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: tailor.totalStock > 5
+                                ? Colors.amber[300]
+                                : Colors.white70,
+                            fontWeight: tailor.totalStock > 5
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
             ),
-          ),
 
-          // Edit Button
-          IconButton(
-            onPressed: () => _showEditTailorDialog(context, tailor),
-            icon: const Icon(Icons.edit_outlined, color: Colors.white),
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.black.withValues(alpha: 0.1),
+            // Edit Button
+            IconButton(
+              onPressed: () => _showEditTailorDialog(context, tailor),
+              icon: const Icon(Icons.edit_outlined, color: Colors.white),
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.black.withValues(alpha: 0.1),
+              ),
             ),
-          ),
 
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
 
-          // Delete Button
-          IconButton(
-            onPressed: () => _showDeleteConfirmation(context, tailor),
-            icon: const Icon(Icons.delete_outline, color: Colors.white),
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.red.withValues(
-                alpha: 0.8,
-              ), // Merah biar kelihatan bahaya
+            // Delete Button
+            IconButton(
+              onPressed: () => _showDeleteConfirmation(context, tailor),
+              icon: const Icon(Icons.delete_outline, color: Colors.white),
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.red.withValues(
+                  alpha: 0.8,
+                ), // Merah biar kelihatan bahaya
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

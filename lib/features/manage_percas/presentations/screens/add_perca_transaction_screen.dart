@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../manage_tailors/data/models/tailor_model.dart';
 import '../../domain/providers/perca_transactions_provider.dart';
 
 /// Konversi kode karung dari DB (K-45, B-25) ke tampilan UI (Kaos-45, Kain-25)
@@ -159,6 +160,69 @@ class _AddPercaTransactionScreenState
         _tanggalReadonlyController.clear();
       }
     });
+  }
+
+  /// Tampilkan dialog peringatan jika sisa perca penjahit > [threshold] Kg.
+  /// Mengembalikan [true] jika admin memilih "Lanjutkan", [false] jika "Batal".
+  Future<bool> _showSisaPercaWarning(
+    TailorModel tailor, {
+    double threshold = 5.0,
+  }) async {
+    if (tailor.totalStock <= threshold) return true; // tidak perlu peringatan
+
+    final sisaFmt = tailor.totalStock % 1 == 0
+        ? tailor.totalStock.toStringAsFixed(0)
+        : tailor.totalStock.toStringAsFixed(1);
+
+    final proceed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        icon: Icon(Icons.warning_amber_rounded,
+            color: Colors.amber[700], size: 48),
+        title: const Text(
+          'Peringatan: Sisa Bahan Cukup Banyak',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Penjahit "${tailor.name}" masih memiliki estimasi sisa bahan/limbah '
+          'sebanyak $sisaFmt Kg.\n\n'
+          'Pastikan menanyakan sisa bahan tersebut sebelum memberikan bahan baru.',
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 14),
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.grey[700],
+              side: BorderSide(color: Colors.grey[400]!),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Batal'),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber[700],
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Lanjutkan Tetap'),
+          ),
+        ],
+      ),
+    );
+
+    return proceed ?? false;
   }
 
   Future<void> _submitTransactions() async {
@@ -342,10 +406,15 @@ class _AddPercaTransactionScreenState
                                       child: Text(tailor.name),
                                     );
                                   }).toList(),
-                              onChanged: (value) {
+                              onChanged: (value) async {
                                 final selected = tailorList.firstWhere(
                                   (t) => t.id == value,
                                 );
+                                // Tampilkan peringatan jika sisa perca > 5 Kg
+                                final proceed = await _showSisaPercaWarning(
+                                  selected,
+                                );
+                                if (!proceed) return; // Admin batalkan
                                 setState(() {
                                   _selectedTailorId = value;
                                   _selectedTailorName = selected.name;
