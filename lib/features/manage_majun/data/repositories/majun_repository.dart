@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../manage_tailors/data/models/tailor_model.dart';
 import '../model/majun_transactions_model.dart';
+import '../../../../core/utils/image_compressor.dart';
 
 class MajunRepository {
   final SupabaseClient _supabase;
@@ -70,12 +71,15 @@ class MajunRepository {
     String folder = 'majun_photos',
   }) async {
     try {
+      // Compress image before uploading
+      final compressedFile = await ImageCompressor.compressImage(imageFile);
+
       final fileName =
           '${folder}_${tailorId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
       final response = await _supabase.storage
           .from('majunkita')
-          .upload('$folder/$fileName', imageFile);
+          .upload('$folder/$fileName', compressedFile);
 
       if (response.isEmpty) {
         throw Exception('Gagal upload foto ke Supabase Storage');

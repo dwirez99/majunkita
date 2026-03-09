@@ -8,18 +8,20 @@ class ImageCaptureHelper {
   /// Fungsi utama yang mengorkestrasi seluruh proses.
   ///
   /// [context]: BuildContext untuk menampilkan dialog.
+  /// [source]: Sumber gambar (kamera atau galeri). Default: kamera.
   /// [onSubmit]: Fungsi yang akan dijalankan saat tombol "Kirim Bukti" ditekan.
   ///            Fungsi ini harus menerima File gambar dan bersifat async.
   static Future<void> showCaptureFlow({
     required BuildContext context,
     required Future<void> Function(File imageFile) onSubmit,
+    ImageSource source = ImageSource.camera,
   }) async {
     final ImagePicker picker = ImagePicker();
 
     // Loop untuk handle "Foto Ulang"
     while (true) {
-      // 1. Buka Kamera
-      final XFile? imageXFile = await picker.pickImage(source: ImageSource.camera);
+      // 1. Buka Kamera atau Galeri
+      final XFile? imageXFile = await picker.pickImage(source: source);
 
       // Jika pengguna tidak mengambil gambar (menekan back), hentikan proses.
       if (imageXFile == null) return;
