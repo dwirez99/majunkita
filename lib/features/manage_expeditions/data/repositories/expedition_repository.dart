@@ -2,6 +2,7 @@
 
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/utils/image_compressor.dart';
 import '../models/expedition_model.dart';
 
 /// Repository untuk mengelola data Expedisi
@@ -66,6 +67,9 @@ class ExpeditionRepository {
   ) async {
     _log('Creating new expedition to ${data.destination}...');
     try {
+      // Compress image before uploading
+      final compressedFile = await ImageCompressor.compressImage(imageFile);
+
       // 1. Generate nama file unik untuk menghindari konflik nama
       final fileName =
           'proof_${DateTime.now().millisecondsSinceEpoch}.jpg';
@@ -74,7 +78,7 @@ class ExpeditionRepository {
       // 2. Upload gambar ke bucket 'proof_of_deliveries' di Supabase Storage
       final uploadResponse = await _supabase.storage
           .from('proof_of_deliveries')
-          .upload(fileName, imageFile);
+          .upload(fileName, compressedFile);
 
       if (uploadResponse.isEmpty) {
         throw Exception('Gagal mengupload bukti pengiriman ke storage');
