@@ -182,3 +182,42 @@ final tailorManagementProvider =
     AsyncNotifierProvider<TailorManagementNotifier, void>(
   TailorManagementNotifier.new,
 );
+
+// ===========================================================================
+// EFISIENSI & PREDIKSI (Reff)
+// ===========================================================================
+
+/// Provider untuk statistik efisiensi penjahit (Reff dan prediksi majun).
+///
+/// Menerima [tailorId] dan mengembalikan map:
+///   {
+///     'total_perca_diambil' : double,
+///     'total_majun_disetor' : double,
+///     'total_limbah_disetor': double,
+///     'sisa_perca'          : double,   // saldo mengendap saat ini
+///     'reff'                : double,   // 0.0 – 1.0
+///     'prediksi_majun'      : double,   // sisa_perca × reff
+///   }
+final tailorEfficiencyStatsProvider =
+    FutureProvider.autoDispose.family<Map<String, double>, String>((
+  ref,
+  tailorId,
+) async {
+  final repository = ref.watch(tailorRepositoryProvider);
+  return repository.getTailorEfficiencyStats(tailorId);
+});
+
+// ===========================================================================
+// DETAIL PROVIDER (untuk TailorDetailScreen agar data selalu segar)
+// ===========================================================================
+
+/// Provider untuk mengambil satu tailor terbaru berdasarkan ID.
+/// Dapat di-invalidate setelah edit agar screen menampilkan data terbaru.
+final tailorByIdProvider =
+    FutureProvider.autoDispose.family<TailorModel?, String>((
+  ref,
+  tailorId,
+) async {
+  final repository = ref.watch(tailorRepositoryProvider);
+  return repository.getTailorById(tailorId);
+});

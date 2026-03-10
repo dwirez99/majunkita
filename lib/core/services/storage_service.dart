@@ -2,6 +2,7 @@
 
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/image_compressor.dart';
 
 /// Service untuk mengelola upload dan delete file ke Supabase Storage
 class StorageService {
@@ -32,6 +33,9 @@ class StorageService {
     _log('Uploading tailor image for ID: $tailorId');
 
     try {
+      // Compress image before uploading
+      final compressedFile = await ImageCompressor.compressImage(imageFile);
+
       // Generate unique filename
       final fileName =
           'tailor_${tailorId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
@@ -43,7 +47,7 @@ class StorageService {
       // Upload ke bucket 'majunkita' folder 'tailor_images'
       final response = await _supabase.storage
           .from('majunkita')
-          .upload('tailor_images/$fileName', imageFile);
+          .upload('tailor_images/$fileName', compressedFile);
 
       if (response.isEmpty) {
         throw Exception("Failed to upload image to Supabase Storage");

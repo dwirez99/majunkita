@@ -15,7 +15,9 @@ class PercaTransactionsRepository {
     try {
       final data = await _supabase
           .from('tailors')
-          .select('id, name, address, no_telp, created_at, tailor_images');
+          .select(
+            'id, name, address, no_telp, created_at, tailor_images, total_stock',
+          );
       return data.map((item) => TailorModel.fromJson(item)).toList();
     } catch (e) {
       throw Exception('Gagal mengambil daftar Tailor: $e');

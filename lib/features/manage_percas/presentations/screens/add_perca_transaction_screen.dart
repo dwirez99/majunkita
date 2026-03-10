@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../manage_tailors/data/models/tailor_model.dart';
 import '../../domain/providers/perca_transactions_provider.dart';
 
 /// Konversi kode karung dari DB (K-45, B-25) ke tampilan UI (Kaos-45, Kain-25)
@@ -23,6 +24,10 @@ class AddPercaTransactionScreen extends ConsumerStatefulWidget {
 class _AddPercaTransactionScreenState
     extends ConsumerState<AddPercaTransactionScreen> {
   final _formKey = GlobalKey<FormState>();
+
+  // Key untuk me-reset tampilan DropdownButtonFormField saat admin menekan
+  // "Batal" pada dialog peringatan sisa perca.
+  final _tailorDropdownKey = GlobalKey<FormFieldState<String>>();
 
   // Selected values
   String? _selectedTailorId;
@@ -159,6 +164,67 @@ class _AddPercaTransactionScreenState
         _tanggalReadonlyController.clear();
       }
     });
+  }
+
+/// Tampilkan dialog peringatan jika sisa perca penjahit > [threshold] Kg.
+/// Ini adalah bahan perca mentah yang masih ada di rumah penjahit dan belum diproses.
+/// Tujuan: pastikan admin menanyakan stok sisa sebelum memberikan bahan perca baru
+/// agar tidak ada bahan perca yang tersesat atau tidak teraccounting.
+  Future<bool> _showSisaPercaWarning(
+    TailorModel tailor, {
+    double threshold = 5.0,
+  }) async {
+    if (tailor.totalStock <= threshold) return true; // tidak perlu peringatan
+
+    final sisaFmt = tailor.totalStock == tailor.totalStock.truncateToDouble()
+    ? tailor.totalStock.toStringAsFixed(0)
+    : tailor.totalStock.toStringAsFixed(1);
+
+    final proceed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        icon: Icon(Icons.warning_amber_rounded,
+            color: Colors.amber[700], size: 48),
+        title: const Text(
+          'Peringatan: Sisa bahan perca Cukup Banyak',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Penjahit "${tailor.name}" masih memiliki estimasi sisa bahan perca/limbah '
+          'sebanyak $sisaFmt Kg.\n\n'
+          'Pastikan menanyakan sisa bahan perca tersebut sebelum memberikan bahan perca baru.',
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 14),
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.grey[700],
+            ),
+            child: const Text('Batal'),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber[700],
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Lanjutkan'),
+          ),
+        ],
+      ),
+    );
+
+    return proceed ?? false;
   }
 
   Future<void> _submitTransactions() async {
@@ -325,6 +391,7 @@ class _AddPercaTransactionScreenState
                         tailorListState.when(
                           data: (tailorList) {
                             return DropdownButtonFormField<String>(
+                              key: _tailorDropdownKey,
                               value: _selectedTailorId,
                               hint: const Text('Pilih Penjahit'),
                               decoration: InputDecoration(
@@ -342,10 +409,30 @@ class _AddPercaTransactionScreenState
                                       child: Text(tailor.name),
                                     );
                                   }).toList(),
-                              onChanged: (value) {
+                              onChanged: (value) async {
                                 final selected = tailorList.firstWhere(
                                   (t) => t.id == value,
                                 );
+                                // Simpan nilai sebelumnya agar bisa di-restore
+                                final previousId = _selectedTailorId;
+                                final previousName = _selectedTailorName;
+
+                                // Tampilkan peringatan jika sisa perca > 5 Kg
+                                final proceed = await _showSisaPercaWarning(
+                                  selected,
+                                );
+                                if (!proceed) {
+                                  // Admin memilih Batal — kembalikan ke pilihan sebelumnya
+                                  // agar tampilan Dropdown sinkron dengan state.
+                                  setState(() {
+                                    _selectedTailorId = previousId;
+                                    _selectedTailorName = previousName;
+                                  });
+                                  // Reset nilai yang ditampilkan dropdown ke previousId
+                                  _tailorDropdownKey.currentState
+                                      ?.didChange(previousId);
+                                  return;
+                                }
                                 setState(() {
                                   _selectedTailorId = value;
                                   _selectedTailorName = selected.name;

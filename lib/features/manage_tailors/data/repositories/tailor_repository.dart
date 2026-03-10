@@ -90,7 +90,9 @@ class TailorRepository {
       final response =
           await _supabase
               .from('tailors')
-              .select('id, name, no_telp, address, tailor_images, created_at')
+              .select(
+                'id, name, no_telp, address, tailor_images, created_at, total_stock, balance',
+              )
               .eq('id', id)
               .maybeSingle();
 
@@ -255,6 +257,80 @@ class TailorRepository {
     } catch (e) {
       _log('Error deleting tailor $id: $e', level: 'ERROR');
       throw Exception('Gagal menghapus data penjahit: $e');
+    }
+  }
+
+  // ===========================================================================
+  // EFISIENSI & PREDIKSI (Reff)
+  // ===========================================================================
+
+  /// Mengambil statistik efisiensi penjahit untuk menghitung Reff dan prediksi.
+  ///
+  /// Rumus:
+  ///   Reff = total_majun_disetor / total_perca_diambil
+  ///   Prediksi Majun = sisa_perca (total_stock) × Reff
+  ///
+  /// Agregasi dilakukan di sisi DB (RPC get_tailor_efficiency_stats) sehingga
+  /// hanya satu round-trip dan payload minimal.
+  ///
+  /// Mengembalikan map:
+  ///   {
+  ///     'total_perca_diambil': double,
+  ///     'total_majun_disetor': double,
+  ///     'total_limbah_disetor': double,
+  ///     'sisa_perca': double,
+  ///     'reff': double,        // 0..1
+  ///     'prediksi_majun': double,
+  ///   }
+  Future<Map<String, double>> getTailorEfficiencyStats(String tailorId) async {
+    _log('Fetching efficiency stats for tailor: $tailorId');
+    try {
+      // RPC returns a list of rows; we expect exactly one row.
+      final response = await _supabase.rpc(
+        'get_tailor_efficiency_stats',
+        params: {'p_tailor_id': tailorId},
+      );
+
+      final List<dynamic> rows = response is List ? response : [response];
+      if (rows.isEmpty) {
+        return {
+          'total_perca_diambil': 0,
+          'total_majun_disetor': 0,
+          'total_limbah_disetor': 0,
+          'sisa_perca': 0,
+          'reff': 0,
+          'prediksi_majun': 0,
+        };
+      }
+
+      final row = rows.first as Map<String, dynamic>;
+
+      double _d(String key) =>
+          double.tryParse(row[key]?.toString() ?? '0') ?? 0.0;
+
+      final stats = {
+        'total_perca_diambil': _d('total_perca_diambil'),
+        'total_majun_disetor': _d('total_majun_disetor'),
+        'total_limbah_disetor': _d('total_limbah_disetor'),
+        'sisa_perca': _d('sisa_perca'),
+        'reff': _d('reff'),
+        'prediksi_majun': _d('prediksi_majun'),
+      };
+
+      _log(
+        'Efficiency stats for $tailorId: '
+        'perca=${stats['total_perca_diambil']}, '
+        'majun=${stats['total_majun_disetor']}, '
+        'limbah=${stats['total_limbah_disetor']}, '
+        'sisa=${stats['sisa_perca']}, '
+        'reff=${stats['reff']}, '
+        'prediksi=${stats['prediksi_majun']}',
+      );
+
+      return stats;
+    } catch (e) {
+      _log('Error fetching efficiency stats for $tailorId: $e', level: 'ERROR');
+      throw Exception('Gagal mengambil statistik efisiensi: $e');
     }
   }
 
