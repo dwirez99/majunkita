@@ -1,14 +1,16 @@
 -- ============================================================
--- RPC: get_tailor_efficiency_stats
--- Menghitung statistik efisiensi penjahit di sisi server.
+-- MIGRATION: Fix get_tailor_efficiency_stats
+-- Date: 2026-03-10
 --
--- Mengembalikan:
---   sisa_perca          NUMERIC  -- total_stock saat ini (saldo mengendap)
---   total_perca_diambil NUMERIC  -- SUM berat dari perca_transactions
---   total_majun_disetor NUMERIC  -- SUM berat dari majun_transactions
---   total_limbah_disetor NUMERIC -- SUM berat dari limbah_transactions
---   reff                NUMERIC  -- total_majun / total_perca (0 jika belum ada data)
---   prediksi_majun      NUMERIC  -- sisa_perca × reff
+-- Fixes dari code review:
+--   1. Tambah prefix schema public. pada nama fungsi agar fungsi selalu
+--      dibuat di schema public, tidak bergantung pada search_path aktif.
+--   2. Ganti SELECT ... INTO (yang menghasilkan NULL jika baris tidak
+--      ditemukan) dengan COALESCE sub-select untuk v_sisa_perca, sehingga
+--      prediksi_majun tidak ikut NULL ketika p_tailor_id tidak ada di tailors.
+--   3. Tambah REVOKE EXECUTE FROM PUBLIC sebelum GRANT ke authenticated,
+--      mengikuti pola migrasi lain di project ini (SECURITY DEFINER +
+--      default public privileges bisa memberikan akses yang tidak diinginkan).
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION public.get_tailor_efficiency_stats(p_tailor_id UUID)
@@ -32,10 +34,11 @@ DECLARE
     v_reff                 NUMERIC := 0;
     v_prediksi_majun       NUMERIC := 0;
 BEGIN
-    -- 1. Sisa perca saat ini (total_stock dari tailors)
-    --    Gunakan COALESCE pada sub-select agar v_sisa_perca tetap 0
-    --    ketika p_tailor_id tidak ditemukan di tabel tailors (SELECT INTO
-    --    akan menghasilkan NULL jika tidak ada baris yang cocok).
+    -- 1. Sisa perca saat ini (total_stock dari tailors).
+    --    Gunakan scalar sub-select yang di-COALESCE agar v_sisa_perca tetap 0
+    --    ketika p_tailor_id tidak ditemukan; SELECT ... INTO biasa akan
+    --    menghasilkan NULL (meski variabel punya DEFAULT 0) dan menyebabkan
+    --    prediksi_majun ikut NULL.
     SELECT COALESCE(
         (SELECT t.total_stock FROM tailors t WHERE t.id = p_tailor_id),
         0
@@ -78,6 +81,8 @@ BEGIN
 END;
 $$;
 
--- Ikuti pola migrasi lain: cabut dulu dari PUBLIC, baru grant ke authenticated
+-- Cabut default public privileges terlebih dahulu (SECURITY DEFINER tanpa
+-- REVOKE menyebabkan role public masih mewarisi hak execute via default
+-- privileges), lalu berikan secara eksplisit hanya ke authenticated.
 REVOKE EXECUTE ON FUNCTION public.get_tailor_efficiency_stats(UUID) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.get_tailor_efficiency_stats(UUID) TO authenticated;
+GRANT  EXECUTE ON FUNCTION public.get_tailor_efficiency_stats(UUID) TO authenticated;

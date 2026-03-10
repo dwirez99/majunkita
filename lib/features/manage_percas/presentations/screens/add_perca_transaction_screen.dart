@@ -201,6 +201,13 @@ class _AddPercaTransactionScreenState
         ),
         actionsAlignment: MainAxisAlignment.center,
         actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.grey[700],
+            ),
+            child: const Text('Batal'),
+          ),
           const SizedBox(width: 8),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),

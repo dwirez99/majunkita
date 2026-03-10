@@ -16,9 +16,12 @@ class ImageCompressor {
   static Future<File> compressImage(File file) async {
     try {
       final tempDir = await getTemporaryDirectory();
+      // Paksa ekstensi .jpg agar targetPath selalu cocok dengan format JPEG
+      // yang dihasilkan kompressor, sehingga tidak ada mismatch MIME antara
+      // nama file dan konten (mis. .png/.heic masuk → .jpg keluar).
       final targetPath = p.join(
         tempDir.path,
-        '${DateTime.now().millisecondsSinceEpoch}_compressed${p.extension(file.path)}',
+        '${DateTime.now().millisecondsSinceEpoch}_compressed.jpg',
       );
       final XFile? result = await FlutterImageCompress.compressAndGetFile(
         file.absolute.path,
@@ -26,6 +29,7 @@ class ImageCompressor {
         quality: 80,
         minWidth: 1024,
         minHeight: 1024,
+        format: CompressFormat.jpeg,
       );
       return result != null ? File(result.path) : file;
     } catch (_) {
