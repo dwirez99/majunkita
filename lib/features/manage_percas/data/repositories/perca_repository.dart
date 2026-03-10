@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../manage_factories/data/models/factory_model.dart';
 import '../models/perca_stock_model.dart';
+import '../../../../core/utils/image_compressor.dart';
 
 class PercaRepository {
   final SupabaseClient _supabase;
@@ -23,14 +24,17 @@ class PercaRepository {
   // 2. Upload gambar ke Supabase Storage
   Future<String> uploadImageToStorage(File imageFile) async {
     try {
-      // Generate unique filenamet: konsep Anda benar tapi ada beberapa detail yang perlu diperbaiki agar aman dan kompatibel dengan Supabase Flutter SDK.
+      // Compress image before uploading
+      final compressedFile = await ImageCompressor.compressImage(imageFile);
+
+      // Generate unique filename
       final fileName =
           'bukti_perca_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
       // Upload ke bucket 'majunkita' folder 'stok_perca'
       final response = await _supabase.storage
           .from('majunkita')
-          .upload('stok_perca/$fileName', imageFile);
+          .upload('stok_perca/$fileName', compressedFile);
 
       if (response.isEmpty) {
         throw Exception("Failed to upload image to Supabase Storage");
