@@ -22,6 +22,14 @@ class _TailorsListScreenState extends ConsumerState<TailorsListScreen> {
     super.dispose();
   }
 
+  /// Format berat stok: bilangan bulat tanpa desimal, non-integer dengan 1
+  /// desimal. Gunakan [truncateToDouble] untuk deteksi bulat yang aman dari
+  /// ketidakstabilan floating-point.
+  String _fmtStock(double value) {
+    if (value == value.truncateToDouble()) return value.toStringAsFixed(0);
+    return value.toStringAsFixed(1);
+  }
+
   @override
   Widget build(BuildContext context) {
     final tailorsAsync = ref.watch(tailorsListProvider);
@@ -217,7 +225,7 @@ class _TailorsListScreenState extends ConsumerState<TailorsListScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => TailorDetailScreen(tailor: tailor),
+            builder: (_) => TailorDetailScreen(initialTailor: tailor),
           ),
         );
       },
@@ -295,7 +303,7 @@ class _TailorsListScreenState extends ConsumerState<TailorsListScreen> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Sisa: ${tailor.totalStock % 1 == 0 ? tailor.totalStock.toStringAsFixed(0) : tailor.totalStock.toStringAsFixed(1)} Kg',
+                          'Sisa: ${_fmtStock(tailor.totalStock)} Kg',
                           style: TextStyle(
                             fontSize: 11,
                             color: tailor.totalStock > 5

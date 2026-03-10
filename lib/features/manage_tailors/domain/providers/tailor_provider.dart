@@ -206,3 +206,18 @@ final tailorEfficiencyStatsProvider =
   final repository = ref.watch(tailorRepositoryProvider);
   return repository.getTailorEfficiencyStats(tailorId);
 });
+
+// ===========================================================================
+// DETAIL PROVIDER (untuk TailorDetailScreen agar data selalu segar)
+// ===========================================================================
+
+/// Provider untuk mengambil satu tailor terbaru berdasarkan ID.
+/// Dapat di-invalidate setelah edit agar screen menampilkan data terbaru.
+final tailorByIdProvider =
+    FutureProvider.autoDispose.family<TailorModel?, String>((
+  ref,
+  tailorId,
+) async {
+  final repository = ref.watch(tailorRepositoryProvider);
+  return repository.getTailorById(tailorId);
+});

@@ -7,19 +7,45 @@ import 'tailor_form_dialog.dart';
 /// Screen detail penjahit.
 ///
 /// Menampilkan:
-///  - Informasi profil penjahit
+///  - Informasi profil penjahit (selalu segar: di-fetch via [tailorByIdProvider])
 ///  - Estimasi Sisa Perca di Rumah (= total_stock dari DB)
 ///  - Rasio Efisiensi Personal (Reff)
 ///  - Prediksi Produksi Majun dari sisa perca
-class TailorDetailScreen extends ConsumerWidget {
-  final TailorModel tailor;
+///
+/// Setelah dialog edit ditutup, layar invalidate kedua provider sehingga
+/// nama/telepon/alamat/foto langsung diperbarui tanpa keluar-masuk.
+class TailorDetailScreen extends ConsumerStatefulWidget {
+  /// Tailor awal — dipakai sebagai fallback saat provider masih loading.
+  final TailorModel initialTailor;
 
-  const TailorDetailScreen({super.key, required this.tailor});
+  const TailorDetailScreen({super.key, required this.initialTailor});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TailorDetailScreen> createState() => _TailorDetailScreenState();
+}
+
+class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
+  /// Buka dialog edit, lalu invalidate provider agar data diperbarui.
+  Future<void> _openEditDialog(TailorModel current) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => TailorFormDialog(tailorToEdit: current),
+    );
+    // Dialog sudah ditutup — minta refresh data terbaru
+    ref.invalidate(tailorByIdProvider(widget.initialTailor.id));
+    ref.invalidate(tailorEfficiencyStatsProvider(widget.initialTailor.id));
+    ref.invalidate(tailorsListProvider); // list juga ikut segar
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Pantau data tailor terbaru dari DB; gunakan initialTailor sebagai
+    // nilai awal/fallback selama loading.
+    final tailorAsync = ref.watch(tailorByIdProvider(widget.initialTailor.id));
+    final tailor = tailorAsync.asData?.value ?? widget.initialTailor;
+
     final efficiencyAsync = ref.watch(
-      tailorEfficiencyStatsProvider(tailor.id),
+      tailorEfficiencyStatsProvider(widget.initialTailor.id),
     );
 
     return Scaffold(
@@ -40,12 +66,7 @@ class TailorDetailScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.edit_outlined),
             tooltip: 'Edit Penjahit',
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (_) => TailorFormDialog(tailorToEdit: tailor),
-              );
-            },
+            onPressed: () => _openEditDialog(tailor),
           ),
         ],
       ),
@@ -56,7 +77,7 @@ class TailorDetailScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── Kartu Profil ──
-              _buildProfileCard(context),
+              _buildProfileCard(context, tailor),
               const SizedBox(height: 20),
 
               // ── Sisa Perca & Efisiensi ──
@@ -72,7 +93,7 @@ class TailorDetailScreen extends ConsumerWidget {
                   context,
                   'Gagal memuat statistik efisiensi: $err',
                   onRetry: () => ref.invalidate(
-                    tailorEfficiencyStatsProvider(tailor.id),
+                    tailorEfficiencyStatsProvider(widget.initialTailor.id),
                   ),
                 ),
               ),
@@ -85,7 +106,7 @@ class TailorDetailScreen extends ConsumerWidget {
 
   // ── Profil ─────────────────────────────────────────────────────────────────
 
-  Widget _buildProfileCard(BuildContext context) {
+  Widget _buildProfileCard(BuildContext context, TailorModel tailor) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -330,8 +351,8 @@ class TailorDetailScreen extends ConsumerWidget {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'Sisa bahan di atas toleransi (> 5 Kg). '
-                      'Tanyakan sisa bahan sebelum memberi bahan baru.',
+                      'Sisa bahan perca di atas toleransi (> 5 Kg). '
+                      'Tanyakan sisa bahan perca sebelum memberi bahan perca baru.',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.amber[900],
@@ -489,7 +510,7 @@ class TailorDetailScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Estimasi majun yang akan dihasilkan dari bahan yang sedang dikerjakan.',
+              'Estimasi majun yang akan dihasilkan dari bahan perca yang sedang dikerjakan.',
               style: TextStyle(fontSize: 11, color: Colors.teal[300]),
             ),
           ],
@@ -579,13 +600,19 @@ class TailorDetailScreen extends ConsumerWidget {
 
   // ── Helper ────────────────────────────────────────────────────────────────
 
-  /// Format angka dengan 2 desimal, hilangkan trailing zero
-  String _fmt(double value) {
+  /// Format double ke string ringkas.
+  ///
+  /// - Gunakan [truncateToDouble] (bukan modulo) untuk deteksi bilangan bulat
+  ///   agar aman dari ketidakstabilan floating-point.
+  /// - Bulatkan ke 2 desimal, hapus trailing zero, lalu hapus trailing titik.
+  static String _fmt(double value) {
     if (value == value.truncateToDouble()) {
       return value.toStringAsFixed(0);
     }
-    // Bulatkan 2 desimal, hapus trailing zero
+    // "1.50" → hapus trailing zero → "1.5"
+    // "1.00" (jika muncul setelah pembulatan) → "1." → hapus titik akhir → "1"
     final str = value.toStringAsFixed(2);
-    return str.replaceAll(RegExp(r'(\.\d*?)0+$'), r'$1').replaceAll('.', '.');
+    final trimmed = str.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+    return trimmed;
   }
 }
