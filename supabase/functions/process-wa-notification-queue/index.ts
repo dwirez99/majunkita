@@ -20,11 +20,15 @@ type QueueRow = {
   max_retries: number;
 };
 
-const baseUrl = (Deno.env.get("WA_API_BASE_URL") ?? "").replace(/\/+$/, "");
+const normalizedBaseUrl = (Deno.env.get("WA_API_BASE_URL") ?? "").replace(
+  /\/+$/,
+  "",
+);
 const username = Deno.env.get("WA_API_USERNAME") ?? "";
 const password = Deno.env.get("WA_API_PASSWORD") ?? "";
 const deviceId = Deno.env.get("WA_API_DEVICE_ID") ?? "";
 const queueSecret = Deno.env.get("WA_QUEUE_SECRET") ?? "";
+const MAX_ERROR_BODY_LENGTH = 300;
 
 function apiHeaders(contentType?: string): HeadersInit {
   const headers: Record<string, string> = {
@@ -67,7 +71,7 @@ serve(async (req) => {
     });
   }
 
-  if (!baseUrl || !username || !password) {
+  if (!normalizedBaseUrl || !username || !password) {
     return new Response(
       JSON.stringify({
         error:
@@ -114,7 +118,7 @@ serve(async (req) => {
       );
     }
 
-    const statusResponse = await fetch(`${baseUrl}/app/status`, {
+    const statusResponse = await fetch(`${normalizedBaseUrl}/app/status`, {
       method: "GET",
       headers: apiHeaders(),
     });
@@ -180,7 +184,10 @@ serve(async (req) => {
           endpoint = "/send/image";
           const imageResponse = await fetch(row.image_url);
           if (!imageResponse.ok) {
-            const imageErrorBody = (await imageResponse.text()).slice(0, 300);
+            const imageErrorBody = (await imageResponse.text()).slice(
+              0,
+              MAX_ERROR_BODY_LENGTH,
+            );
             throw new Error(
               `Failed to download proof image: ${imageResponse.status} ${imageResponse.statusText} ${imageErrorBody}`,
             );
@@ -199,7 +206,7 @@ serve(async (req) => {
             image_url: row.image_url,
             caption: row.message,
           };
-          response = await fetch(`${baseUrl}${endpoint}`, {
+          response = await fetch(`${normalizedBaseUrl}${endpoint}`, {
             method: "POST",
             headers: apiHeaders(),
             body: formData,
@@ -210,7 +217,7 @@ serve(async (req) => {
             phone: row.recipient_phone,
             message: row.message,
           };
-          response = await fetch(`${baseUrl}${endpoint}`, {
+          response = await fetch(`${normalizedBaseUrl}${endpoint}`, {
             method: "POST",
             headers: apiHeaders("application/json"),
             body: JSON.stringify(requestPayload),
