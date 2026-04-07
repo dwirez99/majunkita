@@ -36,7 +36,16 @@ function apiHeaders(contentType?: string): HeadersInit {
 }
 
 function retryDelayMinutes(retryCount: number): number {
+  // Exponential backoff (1, 2, 4, 8, ...) capped at 60 minutes.
   return Math.min(2 ** Math.max(retryCount, 0), 60);
+}
+
+function filenameFromContentType(contentType: string | null): string {
+  if (!contentType) return "proof.jpg";
+  if (contentType.includes("png")) return "proof.png";
+  if (contentType.includes("webp")) return "proof.webp";
+  if (contentType.includes("gif")) return "proof.gif";
+  return "proof.jpg";
 }
 
 serve(async (req) => {
@@ -171,12 +180,18 @@ serve(async (req) => {
           endpoint = "/send/image";
           const imageResponse = await fetch(row.image_url);
           if (!imageResponse.ok) {
-            throw new Error(`Failed to download proof image: ${imageResponse.status}`);
+            const imageErrorBody = (await imageResponse.text()).slice(0, 300);
+            throw new Error(
+              `Failed to download proof image: ${imageResponse.status} ${imageResponse.statusText} ${imageErrorBody}`,
+            );
           }
           const imageBlob = await imageResponse.blob();
+          const imageFilename = filenameFromContentType(
+            imageResponse.headers.get("content-type"),
+          );
           const formData = new FormData();
           formData.append("phone", row.recipient_phone);
-          formData.append("image", imageBlob, "proof.jpg");
+          formData.append("image", imageBlob, imageFilename);
           formData.append("caption", row.message);
 
           requestPayload = {
@@ -290,10 +305,10 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
+    console.error("process-wa-notification-queue failed", error);
     return new Response(
       JSON.stringify({
         error: "Unexpected error",
-        details: error instanceof Error ? error.message : String(error),
       }),
       {
         status: 500,
