@@ -1,6 +1,8 @@
 # WhatsApp API Integration — Setup Guide
 
-This guide covers everything needed to get the WhatsApp notification integration up and running for the **majunkita** project. The integration uses [go-whatsapp-web-multidevice](https://github.com/aldinokemal/go-whatsapp-web-multidevice) as the WA gateway and Supabase Edge Functions as the queue worker.
+This guide covers everything needed to get the WhatsApp notification integration up and running for the **majunkita** project. The integration uses the [dwirez99/go-whatsapp-web-multidevice](https://github.com/dwirez99/go-whatsapp-web-multidevice) fork (based on [aldinokemal/go-whatsapp-web-multidevice](https://github.com/aldinokemal/go-whatsapp-web-multidevice)) as the WA gateway and Supabase Edge Functions as the queue worker.
+
+> **Fork-specific notes:** `dwirez99/go-whatsapp-web-multidevice` ships a pre-configured `docker-compose.yml` that bundles three services — the WA gateway, a Swagger UI (`/openapi/`), and an nginx reverse proxy — all behind a single port (`3000`). Basic Auth is configured using a combined `--basic-auth=user:pass` flag (not separate `--basic-auth-username` / `--basic-auth-password` flags as in some older guides).
 
 ---
 
@@ -26,7 +28,7 @@ This guide covers everything needed to get the WhatsApp notification integration
 - [Supabase CLI](https://supabase.com/docs/guides/cli) installed and logged in
 - A running Supabase project
 - A host for the WA gateway — this can be a VPS/cloud VM **or** a local device such as a Raspberry Pi or Android Box (see the [Appendix](#appendix--self-hosting-on-raspberry-pi--android-box-with-cloudflare-tunnel) for the local-device + Cloudflare Tunnel setup)
-- Docker or a Go 1.21+ environment on that host
+- Docker + Docker Compose v2 (`docker compose version`) on that host
 - A WhatsApp account (dedicated phone number recommended)
 
 ---
@@ -67,7 +69,58 @@ go-whatsapp-web-multidevice ← local device (RPi / Android Box)   │
 
 ## Step 1 — Run the WA Gateway Server
 
-### Option A — Docker (recommended)
+### Option A — Docker Compose from the fork (recommended)
+
+The `dwirez99/go-whatsapp-web-multidevice` repository already ships a complete `docker-compose.yml` that includes the WA gateway, a Swagger UI, and an nginx reverse proxy. This is the simplest way to get started.
+
+```bash
+# Clone the fork
+git clone https://github.com/dwirez99/go-whatsapp-web-multidevice.git
+cd go-whatsapp-web-multidevice
+
+# (Optional) edit the basic-auth credentials in docker-compose.yml before starting
+# Look for: --basic-auth=dwirez:dwirez123
+# Change to a strong password of your choice
+
+# Start all services (gateway + swagger UI + nginx)
+docker compose up -d
+```
+
+After this completes, three containers will be running:
+
+| Container | Role | Internal address |
+|---|---|---|
+| `whatsapp` | WA gateway | `whatsapp:3000` |
+| `openapi` | Swagger UI | `openapi:8080` |
+| `nginx-proxy` | Reverse proxy (public entry point) | host port `3000` → nginx port `80` |
+
+- WA gateway web UI: `http://<your-server>:3000`
+- Swagger / OpenAPI UI: `http://<your-server>:3000/openapi/`
+
+> **Tip:** The default credentials in the fork are `dwirez:dwirez123`. **Change these** in `docker-compose.yml` before deploying to any publicly reachable server. The updated values will become `WA_API_USERNAME` and `WA_API_PASSWORD` in the Edge Function secrets.
+
+#### Customising Basic Auth credentials
+
+Edit `docker-compose.yml`, find the `whatsapp` service `command` block, and update the `--basic-auth` flag:
+
+```yaml
+command:
+  - rest
+  - --port=3000
+  - --basic-auth=YOUR_USERNAME:YOUR_STRONG_PASSWORD   # ← change this
+  - --os=Chrome
+  - --account-validation=false
+```
+
+Then restart the stack:
+
+```bash
+docker compose down && docker compose up -d
+```
+
+### Option B — docker run (single container, no nginx)
+
+If you prefer a minimal single-container setup without the nginx reverse proxy or Swagger UI:
 
 ```bash
 docker run -d \
@@ -75,25 +128,30 @@ docker run -d \
   --restart unless-stopped \
   -p 3000:3000 \
   -v $(pwd)/wa-data:/app/storages \
-  -e APP_BASIC_AUTH_USERNAME=admin \
-  -e APP_BASIC_AUTH_PASSWORD=your_strong_password \
-  aldinokemal2104/go-whatsapp-web-multidevice:latest \
-  --port 3000 \
-  --basic-auth-username admin \
-  --basic-auth-password your_strong_password
+  ghcr.io/aldinokemal/go-whatsapp-web-multidevice:latest \
+  rest \
+  --port=3000 \
+  --basic-auth=YOUR_USERNAME:YOUR_STRONG_PASSWORD
 ```
 
-> **Tip:** Replace `admin` and `your_strong_password` with real credentials. These values will be used as `WA_API_USERNAME` and `WA_API_PASSWORD` in the Edge Function secrets.
+> Note the combined `--basic-auth=user:pass` flag format used by this version of the gateway.
 
-### Option B — Build from source
+### Option C — Build from source
 
 ```bash
-git clone https://github.com/aldinokemal/go-whatsapp-web-multidevice.git
+git clone https://github.com/dwirez99/go-whatsapp-web-multidevice.git
 cd go-whatsapp-web-multidevice
-go build -o wa-gateway ./cmd/main.go
-./wa-gateway --port 3000 \
-  --basic-auth-username admin \
-  --basic-auth-password your_strong_password
+# Build using the provided Dockerfile
+docker build -f docker/golang.Dockerfile -t wa-gateway-local .
+docker run -d \
+  --name wa-gateway \
+  --restart unless-stopped \
+  -p 3000:3000 \
+  -v $(pwd)/wa-data:/app/storages \
+  wa-gateway-local \
+  rest \
+  --port=3000 \
+  --basic-auth=YOUR_USERNAME:YOUR_STRONG_PASSWORD
 ```
 
 ---
@@ -107,7 +165,8 @@ go build -o wa-gateway ./cmd/main.go
 5. Verify the session is active:
 
 ```bash
-curl -u admin:your_strong_password http://<your-server>:3000/app/status
+# Replace YOUR_USERNAME and YOUR_STRONG_PASSWORD with the --basic-auth values you set
+curl -u YOUR_USERNAME:YOUR_STRONG_PASSWORD http://<your-server>:3000/app/status
 ```
 
 Expected response:
@@ -119,10 +178,12 @@ Expected response:
 ### Retrieve the Device ID
 
 ```bash
-curl -u admin:your_strong_password http://<your-server>:3000/app/devices
+curl -u YOUR_USERNAME:YOUR_STRONG_PASSWORD http://<your-server>:3000/app/devices
 ```
 
 Copy the `device` value from the response — this is your `WA_API_DEVICE_ID`.
+
+> **Swagger UI shortcut:** If you used the docker-compose option, you can also use the built-in Swagger UI at `http://<your-server>:3000/openapi/` to call these endpoints interactively.
 
 ---
 
@@ -181,18 +242,14 @@ All secrets are injected as environment variables into the Edge Function. Run th
 ```bash
 supabase secrets set \
   WA_API_BASE_URL="http://<your-server>:3000" \
-  WA_API_USERNAME="admin" \
-  WA_API_PASSWORD="your_strong_password" \
+  WA_API_USERNAME="YOUR_USERNAME" \
+  WA_API_PASSWORD="YOUR_STRONG_PASSWORD" \
   WA_API_DEVICE_ID="<device-id-from-step-2>" \
   WA_QUEUE_SECRET="<random-secret-string>" \
   --project-ref <your-project-ref>
 ```
 
-To verify the secrets were set:
-
-```bash
-supabase secrets list --project-ref <your-project-ref>
-```
+> `WA_API_USERNAME` and `WA_API_PASSWORD` must match the value you set in `--basic-auth=USER:PASS` when starting the gateway (docker-compose or `docker run`).
 
 ---
 
@@ -320,7 +377,7 @@ WHERE status = 'processing';
 
 ### WA gateway returns 401
 
-- Verify the Basic Auth credentials match between the gateway startup flags and the Edge Function secrets.
+- Verify the Basic Auth credentials match between the gateway startup flag (`--basic-auth=USER:PASS` in `docker-compose.yml` or `docker run`) and the Edge Function secrets (`WA_API_USERNAME`, `WA_API_PASSWORD`).
 
 ### WA gateway returns `is_login: false`
 
@@ -389,11 +446,28 @@ newgrp docker
 docker --version
 ```
 
-> If Docker's ARM64 image for `go-whatsapp-web-multidevice` is not available, build from source (see [Option B in Step 1](#option-b--build-from-source)).
+> If Docker's ARM64 image for `go-whatsapp-web-multidevice` is not available, build from source (see [Option C in Step 1](#option-c--build-from-source)).
 
 ---
 
 ### B. Run the WA Gateway
+
+#### Option 1 — docker-compose (includes nginx + Swagger UI)
+
+```bash
+git clone https://github.com/dwirez99/go-whatsapp-web-multidevice.git
+cd go-whatsapp-web-multidevice
+
+# Edit credentials before starting:
+# In docker-compose.yml, change --basic-auth=dwirez:dwirez123 to your own
+nano docker-compose.yml
+
+docker compose up -d
+```
+
+WA gateway is now reachable at `http://localhost:3000` (via nginx).
+
+#### Option 2 — single container (no nginx)
 
 ```bash
 # Create a persistent data directory
@@ -405,10 +479,10 @@ docker run -d \
   --restart unless-stopped \
   -p 127.0.0.1:3000:3000 \
   -v ~/wa-data:/app/storages \
-  aldinokemal2104/go-whatsapp-web-multidevice:latest \
-  --port 3000 \
-  --basic-auth-username admin \
-  --basic-auth-password your_strong_password
+  ghcr.io/aldinokemal/go-whatsapp-web-multidevice:latest \
+  rest \
+  --port=3000 \
+  --basic-auth=YOUR_USERNAME:YOUR_STRONG_PASSWORD
 ```
 
 > Binding to `127.0.0.1:3000` (loopback only) is intentional — the Cloudflare Tunnel will be the **only** public entry point, so you never expose the port to the local network directly.
@@ -523,8 +597,8 @@ Now that the gateway is publicly reachable at `https://wa.yourdomain.com`, set i
 ```bash
 supabase secrets set \
   WA_API_BASE_URL="https://wa.yourdomain.com" \
-  WA_API_USERNAME="admin" \
-  WA_API_PASSWORD="your_strong_password" \
+  WA_API_USERNAME="YOUR_USERNAME" \
+  WA_API_PASSWORD="YOUR_STRONG_PASSWORD" \
   WA_API_DEVICE_ID="<device-id>" \
   WA_QUEUE_SECRET="<random-secret-string>" \
   --project-ref <your-project-ref>
@@ -550,7 +624,7 @@ It will print a URL like `https://random-name.trycloudflare.com`. Use that as `W
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `docker: image not found` | No ARM64 Docker image published | Build from source (see [Step 1 Option B](#option-b--build-from-source)) |
+| `docker: image not found` | No ARM64 Docker image published | Build from source (see [Step 1 Option C](#option-c--build-from-source)) |
 | `cloudflared: connection refused` | WA gateway not running | `docker ps` — restart if stopped |
 | Tunnel connects but returns 502 | Gateway bound to wrong address | Ensure gateway listens on `0.0.0.0:3000` or `127.0.0.1:3000` matching the config |
 | Session lost after device reboot | Docker container stopped | `--restart unless-stopped` flag ensures auto-restart; verify with `docker ps` |
