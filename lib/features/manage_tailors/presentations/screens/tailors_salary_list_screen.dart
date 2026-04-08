@@ -5,6 +5,7 @@ import '../../domain/providers/tailor_provider.dart';
 import '../../data/models/tailor_model.dart';
 import '../../data/models/salary_withdrawal_model.dart';
 import '../../../manage_majun/data/model/majun_transactions_model.dart';
+import 'widget/withdrawal_salary_dialog.dart';
 
 /// Screen untuk menampilkan daftar penjahit beserta saldo upahnya.
 /// Ketika diklik, akan masuk ke riwayat penarikan upah.
@@ -24,90 +25,6 @@ class _TailorsSalaryListScreenState
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  void _showAddTransactionDialog(BuildContext context, TailorModel tailor) {
-    final amountController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        bool isLoading = false;
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: Text('Tarik Upah: ${tailor.name}'),
-              content: TextField(
-                controller: amountController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Jumlah Penarikan',
-                  prefixText: 'Rp',
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: isLoading ? null : () => Navigator.pop(context),
-                  child: const Text('Batal'),
-                ),
-                ElevatedButton(
-                  onPressed:
-                      isLoading
-                          ? null
-                          : () async {
-                            final amount =
-                                double.tryParse(amountController.text) ?? 0;
-                            if (amount <= 0) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Jumlah harus lebih dari 0'),
-                                ),
-                              );
-                              return;
-                            }
-
-                            setState(() => isLoading = true);
-
-                            try {
-                              await ref
-                                  .read(tailorManagementProvider.notifier)
-                                  .addSalaryWithdrawal(
-                                    tailorId: tailor.id,
-                                    amount: amount,
-                                    dateEntry: DateTime.now(),
-                                  );
-                              if (context.mounted) {
-                                Navigator.pop(context);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Berhasil menyimpan upah'),
-                                  ),
-                                );
-                              }
-                            } catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Gagal: $e')),
-                                );
-                              }
-                              setState(() => isLoading = false);
-                            }
-                          },
-                  child:
-                      isLoading
-                          ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                          : const Text('Simpan'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
   }
 
   @override
@@ -350,7 +267,7 @@ class _TailorsSalaryListScreenState
 
             // Add Salary Button
             IconButton(
-              onPressed: () => _showAddTransactionDialog(context, tailor),
+              onPressed: () => WithdrawalSalaryDialog.show(context, tailor),
               icon: const Icon(Icons.add_card, color: Colors.white),
               tooltip: 'Tarik Upah',
               style: IconButton.styleFrom(
