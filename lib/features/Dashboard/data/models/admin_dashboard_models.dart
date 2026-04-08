@@ -4,7 +4,10 @@ import 'package:intl/intl.dart';
 // ── Formatters (shared) ───────────────────────────────────────────────────
 
 final _currency = NumberFormat.currency(
-    locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+  locale: 'id_ID',
+  symbol: 'Rp',
+  decimalDigits: 0,
+);
 final _weight = NumberFormat('#,##0.##', 'id_ID');
 
 String _fmt(num v) => _weight.format(v);
@@ -31,15 +34,20 @@ class AdminDashboardSummary {
   factory AdminDashboardSummary.fromJson(Map<String, dynamic> json) {
     return AdminDashboardSummary(
       perca: PercaSummary.fromJson(
-          (json['perca'] as Map<String, dynamic>?) ?? {}),
+        (json['perca'] as Map<String, dynamic>?) ?? {},
+      ),
       majun: MajunSummary.fromJson(
-          (json['majun'] as Map<String, dynamic>?) ?? {}),
+        (json['majun'] as Map<String, dynamic>?) ?? {},
+      ),
       expedisi: ExpedisiSummary.fromJson(
-          (json['expedisi'] as Map<String, dynamic>?) ?? {}),
+        (json['expedisi'] as Map<String, dynamic>?) ?? {},
+      ),
       penjahit: TailorSummary.fromJson(
-          (json['penjahit'] as Map<String, dynamic>?) ?? {}),
+        (json['penjahit'] as Map<String, dynamic>?) ?? {},
+      ),
       limbah: LimbahSummary.fromJson(
-          (json['limbah'] as Map<String, dynamic>?) ?? {}),
+        (json['limbah'] as Map<String, dynamic>?) ?? {},
+      ),
     );
   }
 }
@@ -67,10 +75,10 @@ class PercaSummary {
   String get fmtDistribusiBulanIni => '${_fmt(distribusiBulanIni)} kg';
 
   factory PercaSummary.fromJson(Map<String, dynamic> json) => PercaSummary(
-        stokGudang: _n(json['stok_gudang']),
-        totalDiberikanKePenjahit: _n(json['total_diberikan_ke_penjahit']),
-        distribusiBulanIni: _n(json['distribusi_bulan_ini']),
-      );
+    stokGudang: _n(json['stok_gudang']),
+    totalDiberikanKePenjahit: _n(json['total_diberikan_ke_penjahit']),
+    distribusiBulanIni: _n(json['distribusi_bulan_ini']),
+  );
 }
 
 // ── Majun ─────────────────────────────────────────────────────────────────
@@ -106,12 +114,12 @@ class MajunSummary {
   String get fmtDiterimaBulanIni => '${_fmt(diterimaBulanIni)} kg';
 
   factory MajunSummary.fromJson(Map<String, dynamic> json) => MajunSummary(
-        totalDiterima: _n(json['total_diterima']),
-        totalTerkirim: _n(json['total_terkirim']),
-        stokEfektif: _n(json['stok_efektif']),
-        totalUpahDibayar: _n(json['total_upah_dibayar']),
-        diterimaBulanIni: _n(json['diterima_bulan_ini']),
-      );
+    totalDiterima: _n(json['total_diterima']),
+    totalTerkirim: _n(json['total_terkirim']),
+    stokEfektif: _n(json['stok_efektif']),
+    totalUpahDibayar: _n(json['total_upah_dibayar']),
+    diterimaBulanIni: _n(json['diterima_bulan_ini']),
+  );
 }
 
 // ── Expedisi ──────────────────────────────────────────────────────────────
@@ -178,10 +186,10 @@ class TailorSummary {
   String get formattedUnpaidWages => fmtSaldoBelumDitarik;
 
   factory TailorSummary.fromJson(Map<String, dynamic> json) => TailorSummary(
-        jumlahAktif: _n(json['jumlah_aktif']).toInt(),
-        totalStokPenjahit: _n(json['total_stok_penjahit']),
-        totalSaldoBelumDitarik: _n(json['total_saldo_belum_ditarik']),
-      );
+    jumlahAktif: _n(json['jumlah_aktif']).toInt(),
+    totalStokPenjahit: _n(json['total_stok_penjahit']),
+    totalSaldoBelumDitarik: _n(json['total_saldo_belum_ditarik']),
+  );
 }
 
 // ── Limbah ────────────────────────────────────────────────────────────────
@@ -202,7 +210,7 @@ class LimbahSummary {
   String get fmtDiterimaBulanIni => '${_fmt(diterimaBulanIni)} kg';
 
   factory LimbahSummary.fromJson(Map<String, dynamic> json) => LimbahSummary(
-        totalDiterima: _n(json['total_diterima']),
-        diterimaBulanIni: _n(json['diterima_bulan_ini']),
-      );
+    totalDiterima: _n(json['total_diterima']),
+    diterimaBulanIni: _n(json['diterima_bulan_ini']),
+  );
 }

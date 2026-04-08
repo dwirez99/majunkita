@@ -2,7 +2,9 @@
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/tailor_model.dart';
+import '../models/salary_withdrawal_model.dart';
 import '../../../../core/services/storage_service.dart';
+import '../../../manage_majun/data/model/majun_transactions_model.dart';
 
 /// Repository untuk mengelola data Tailor
 /// Mengisolasi logika Supabase dari UI layer
@@ -68,7 +70,9 @@ class TailorRepository {
 
       final response = await _supabase
           .from('tailors')
-          .select('id, name, no_telp, address, tailor_images, created_at')
+          .select(
+            'id, name, no_telp, address, tailor_images, created_at, total_stock, balance',
+          )
           .ilike('name', '%$query%')
           .order('name', ascending: true);
 
@@ -90,7 +94,9 @@ class TailorRepository {
       final response =
           await _supabase
               .from('tailors')
-              .select('id, name, no_telp, address, tailor_images, created_at')
+              .select(
+                'id, name, no_telp, address, tailor_images, created_at, total_stock, balance',
+              )
               .eq('id', id)
               .maybeSingle();
 
@@ -259,6 +265,80 @@ class TailorRepository {
   }
 
   // ===========================================================================
+  // EFISIENSI & PREDIKSI (Reff)
+  // ===========================================================================
+
+  /// Mengambil statistik efisiensi penjahit untuk menghitung Reff dan prediksi.
+  ///
+  /// Rumus:
+  ///   Reff = total_majun_disetor / total_perca_diambil
+  ///   Prediksi Majun = sisa_perca (total_stock) × Reff
+  ///
+  /// Agregasi dilakukan di sisi DB (RPC get_tailor_efficiency_stats) sehingga
+  /// hanya satu round-trip dan payload minimal.
+  ///
+  /// Mengembalikan map:
+  ///   {
+  ///     'total_perca_diambil': double,
+  ///     'total_majun_disetor': double,
+  ///     'total_limbah_disetor': double,
+  ///     'sisa_perca': double,
+  ///     'reff': double,        // 0..1
+  ///     'prediksi_majun': double,
+  ///   }
+  Future<Map<String, double>> getTailorEfficiencyStats(String tailorId) async {
+    _log('Fetching efficiency stats for tailor: $tailorId');
+    try {
+      // RPC returns a list of rows; we expect exactly one row.
+      final response = await _supabase.rpc(
+        'get_tailor_efficiency_stats',
+        params: {'p_tailor_id': tailorId},
+      );
+
+      final List<dynamic> rows = response is List ? response : [response];
+      if (rows.isEmpty) {
+        return {
+          'total_perca_diambil': 0,
+          'total_majun_disetor': 0,
+          'total_limbah_disetor': 0,
+          'sisa_perca': 0,
+          'reff': 0,
+          'prediksi_majun': 0,
+        };
+      }
+
+      final row = rows.first as Map<String, dynamic>;
+
+      double _d(String key) =>
+          double.tryParse(row[key]?.toString() ?? '0') ?? 0.0;
+
+      final stats = {
+        'total_perca_diambil': _d('total_perca_diambil'),
+        'total_majun_disetor': _d('total_majun_disetor'),
+        'total_limbah_disetor': _d('total_limbah_disetor'),
+        'sisa_perca': _d('sisa_perca'),
+        'reff': _d('reff'),
+        'prediksi_majun': _d('prediksi_majun'),
+      };
+
+      _log(
+        'Efficiency stats for $tailorId: '
+        'perca=${stats['total_perca_diambil']}, '
+        'majun=${stats['total_majun_disetor']}, '
+        'limbah=${stats['total_limbah_disetor']}, '
+        'sisa=${stats['sisa_perca']}, '
+        'reff=${stats['reff']}, '
+        'prediksi=${stats['prediksi_majun']}',
+      );
+
+      return stats;
+    } catch (e) {
+      _log('Error fetching efficiency stats for $tailorId: $e', level: 'ERROR');
+      throw Exception('Gagal mengambil statistik efisiensi: $e');
+    }
+  }
+
+  // ===========================================================================
   // UTILITY
   // ===========================================================================
 
@@ -277,6 +357,104 @@ class TailorRepository {
     } catch (e) {
       _log('Error counting tailors: $e', level: 'ERROR');
       throw Exception('Gagal menghitung jumlah penjahit: $e');
+    }
+  }
+
+  // ===========================================================================
+  // SALARY WITHDRAWALS
+  // ===========================================================================
+
+  /// Mengambil riwayat setor majun (penambahan upah) berdasarkan id_tailor
+  Future<List<MajunTransactionsModel>> getMajunTransactionsByTailor(
+    String tailorId,
+  ) async {
+    _log('Fetching majun transactions for tailor: $tailorId');
+    try {
+      final response = await _supabase
+          .from('majun_transactions')
+          .select('*')
+          .eq('id_tailor', tailorId)
+          .order('created_at', ascending: false);
+
+      final list =
+          (response as List)
+              .map((json) => MajunTransactionsModel.fromJson(json))
+              .toList();
+      _log('Found ${list.length} majun transactions for tailor $tailorId');
+      return list;
+    } catch (e) {
+      _log(
+        'Error fetching majun transactions for $tailorId: $e',
+        level: 'ERROR',
+      );
+      throw Exception('Gagal mengambil riwayat setor majun: $e');
+    }
+  }
+
+  /// Mengambil riwayat penarikan upah berdasarkan id_tailor
+  Future<List<SalaryWithdrawalModel>> getSalaryWithdrawalsByTailor(
+    String tailorId,
+  ) async {
+    _log('Fetching salary withdrawals for tailor: $tailorId');
+    try {
+      final response = await _supabase
+          .from('salary_withdrawals')
+          .select('*')
+          .eq('id_tailor', tailorId)
+          .order('created_at', ascending: false);
+
+      final list =
+          (response as List)
+              .map((json) => SalaryWithdrawalModel.fromJson(json))
+              .toList();
+      _log('Found ${list.length} salary withdrawals for tailor $tailorId');
+      return list;
+    } catch (e) {
+      _log(
+        'Error fetching salary withdrawals for $tailorId: $e',
+        level: 'ERROR',
+      );
+      throw Exception('Gagal mengambil riwayat upah: $e');
+    }
+  }
+
+  /// Membuat transaksi penarikan upah baru
+  Future<SalaryWithdrawalModel> createSalaryWithdrawal({
+    required String tailorId,
+    required double amount,
+    required DateTime dateEntry,
+  }) async {
+    _log('Creating salary withdrawal for tailor: $tailorId, amount: $amount');
+    try {
+      final response =
+          await _supabase
+              .from('salary_withdrawals')
+              .insert({
+                'id_tailor': tailorId,
+                'amount': amount,
+                'date_entry': dateEntry.toIso8601String().split('T')[0],
+              })
+              .select()
+              .single();
+
+      // Update tailor balance
+      final tailor = await getTailorById(tailorId);
+      if (tailor != null) {
+        await _supabase
+            .from('tailors')
+            .update({'balance': tailor.balance - amount})
+            .eq('id', tailorId);
+      }
+
+      final withdrawal = SalaryWithdrawalModel.fromJson(response);
+      _log('Successfully created salary withdrawal (ID: ${withdrawal.id})');
+      return withdrawal;
+    } catch (e) {
+      _log(
+        'Error creating salary withdrawal for $tailorId: $e',
+        level: 'ERROR',
+      );
+      throw Exception('Gagal membuat penarikan upah: $e');
     }
   }
 }

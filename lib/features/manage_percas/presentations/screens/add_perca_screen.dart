@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../domain/providers/perca_provider.dart';
 import '../../../../core/utils/image_capture_helper.dart';
 
@@ -32,10 +33,31 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
   // Flag untuk menentukan apakah sedang dalam mode input stok atau upload bukti
   bool _isInputStockMode = true;
 
-  // Fungsi untuk mengambil foto dengan kamera menggunakan ImageCaptureHelper
+  // Fungsi untuk mengambil foto dengan kamera atau galeri
   Future<void> _pickImage() async {
+    // Show source selection dialog
+    final ImageSource? source = await showDialog<ImageSource>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Pilih Sumber Gambar'),
+        actions: [
+          TextButton.icon(
+            onPressed: () => Navigator.of(ctx).pop(ImageSource.camera),
+            icon: const Icon(Icons.camera_alt),
+            label: const Text('Kamera'),
+          ),
+          TextButton.icon(
+            onPressed: () => Navigator.of(ctx).pop(ImageSource.gallery),
+            icon: const Icon(Icons.photo_library),
+            label: const Text('Galeri'),
+          ),
+        ],
+      ),
+    );
+    if (source == null) return;
     await ImageCaptureHelper.showCaptureFlow(
       context: context,
+      source: source,
       onSubmit: (File imageFile) async {
         // Set image file ke state
         setState(() {

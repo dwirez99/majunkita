@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../manage_expeditions/presentations/screens/manage_expeditions_screen.dart';
-import '../../../manage_tailors/presentations/screens/tailors_list_screen.dart';
+import '../../../manage_tailors/presentations/screens/manage_tailors_screen.dart';
 import '../../../manage_factories/presentations/screens/factory_list_screen.dart';
 import '../../../manage_partner/presentations/screens/manage_partner_screen.dart';
 import '../../../manage_percas/presentations/screens/manage_perca_screen.dart';
@@ -146,7 +146,7 @@ class ManagementMenuGrid extends StatelessWidget {
         // Navigate to Kelola Penjahit
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const TailorsListScreen()),
+          MaterialPageRoute(builder: (context) => const ManageTailorsScreen()),
         );
         break;
       case 3:

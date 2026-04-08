@@ -1,0 +1,307 @@
+// ignore_for_file: avoid_print
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/api/supabase_client_api.dart';
+import '../../../../core/services/storage_service_provider.dart';
+import '../../data/models/salary_withdrawal_model.dart';
+import '../../data/models/tailor_model.dart';
+import '../../data/repositories/tailor_repository.dart';
+import '../../../manage_majun/data/model/majun_transactions_model.dart';
+
+// ===========================================================================
+// REPOSITORY PROVIDER
+// ===========================================================================
+
+final tailorRepositoryProvider = Provider<TailorRepository>((ref) {
+  return TailorRepository(
+    ref.watch(supabaseClientProvider),
+    ref.watch(storageServiceProvider),
+  );
+});
+
+// ===========================================================================
+// SEARCH QUERY PROVIDER
+// ===========================================================================
+
+/// Notifier untuk search query
+class TailorSearchQueryNotifier extends Notifier<String> {
+  @override
+  String build() => '';
+
+  void setQuery(String query) => state = query;
+  void clear() => state = '';
+}
+
+final tailorSearchQueryProvider =
+    NotifierProvider<TailorSearchQueryNotifier, String>(
+      TailorSearchQueryNotifier.new,
+    );
+
+// ===========================================================================
+// LIST PROVIDER (dengan auto-reload saat search query berubah)
+// ===========================================================================
+
+/// Provider untuk List Tailor (dengan filter search otomatis)
+final tailorsListProvider = FutureProvider.autoDispose<List<TailorModel>>((
+  ref,
+) async {
+  final repository = ref.watch(tailorRepositoryProvider);
+  final query = ref.watch(tailorSearchQueryProvider);
+
+  // Jika query kosong, ambil semua. Jika ada, cari.
+  if (query.isEmpty) {
+    return repository.getAllTailors();
+  } else {
+    return repository.searchTailors(query);
+  }
+});
+
+/// Provider untuk menghitung total tailor
+final tailorCountProvider = FutureProvider.autoDispose<int>((ref) async {
+  final repository = ref.watch(tailorRepositoryProvider);
+  return repository.getTailorCount();
+});
+
+// ===========================================================================
+// CRUD NOTIFIER
+// ===========================================================================
+
+/// Notifier untuk menangani Create/Update/Delete tailor
+class TailorManagementNotifier extends AsyncNotifier<void> {
+  @override
+  Future<void> build() async {
+    // Initial state void
+  }
+
+  void _log(String message, {String level = 'INFO'}) {
+    final timestamp = DateTime.now().toString();
+    // NOTE: Using print() to match existing codebase pattern.
+    // Consider migrating to logger package for production.
+    print('[$timestamp] [$level] TAILOR_MGMT_NOTIFIER: $message');
+  }
+
+  /// Create new tailor
+  Future<TailorModel> createTailor({
+    required String name,
+    required String noTelp,
+    required String address,
+    String? tailorImages,
+  }) async {
+    _log('Creating new tailor: $name');
+
+    state = const AsyncValue.loading();
+
+    try {
+      final repository = ref.read(tailorRepositoryProvider);
+
+      final tailor = await repository.createTailor(
+        name: name,
+        noTelp: noTelp,
+        address: address,
+        tailorImages: tailorImages,
+      );
+
+      // Invalidate list provider to refresh the list
+      ref.invalidate(tailorsListProvider);
+      ref.invalidate(tailorCountProvider);
+
+      _log('Successfully created tailor: ${tailor.name}');
+      state = const AsyncValue.data(null);
+
+      return tailor;
+    } catch (e, st) {
+      _log('Error creating tailor $name: $e', level: 'ERROR');
+      state = AsyncValue.error(e, st);
+      rethrow; // Lempar ulang error agar UI bisa menangkap
+    }
+  }
+
+  /// Update existing tailor
+  Future<TailorModel> updateTailor({
+    required String id,
+    required String name,
+    required String noTelp,
+    required String address,
+    String? tailorImages,
+    String? oldImageUrl, // Add parameter to track old image
+  }) async {
+    _log('Updating tailor: id=$id, nama=$name');
+
+    state = const AsyncValue.loading();
+
+    try {
+      final repository = ref.read(tailorRepositoryProvider);
+
+      final tailor = await repository.updateTailor(
+        id: id,
+        name: name,
+        noTelp: noTelp,
+        address: address,
+        tailorImages: tailorImages,
+        oldImageUrl: oldImageUrl,
+      );
+
+      // Invalidate list provider to refresh the list
+      ref.invalidate(tailorsListProvider);
+
+      _log('Successfully updated tailor: id=$id');
+      state = const AsyncValue.data(null);
+
+      return tailor;
+    } catch (e, st) {
+      _log('Error updating tailor $id: $e', level: 'ERROR');
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
+  /// Add salary withdrawal
+  Future<SalaryWithdrawalModel> addSalaryWithdrawal({
+    required String tailorId,
+    required double amount,
+    required DateTime dateEntry,
+  }) async {
+    _log('Adding salary withdrawal for tailor: $tailorId');
+
+    state = const AsyncValue.loading();
+
+    try {
+      final repository = ref.read(tailorRepositoryProvider);
+
+      final withdrawal = await repository.createSalaryWithdrawal(
+        tailorId: tailorId,
+        amount: amount,
+        dateEntry: dateEntry,
+      );
+
+      // Invalidate list provider to refresh the balance in list
+      ref.invalidate(tailorsListProvider);
+      // Invalidate specific tailor and salary history
+      ref.invalidate(tailorByIdProvider(tailorId));
+      ref.invalidate(tailorSalaryWithdrawalsProvider(tailorId));
+      ref.invalidate(tailorUpahHistoryProvider(tailorId));
+
+      _log('Successfully added salary withdrawal for tailor: $tailorId');
+      state = const AsyncValue.data(null);
+
+      return withdrawal;
+    } catch (e, st) {
+      _log('Error adding salary withdrawal for $tailorId: $e', level: 'ERROR');
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
+  /// Delete tailor
+  Future<void> deleteTailor(String id) async {
+    _log('Deleting tailor: id=$id');
+
+    state = const AsyncValue.loading();
+
+    try {
+      final repository = ref.read(tailorRepositoryProvider);
+
+      await repository.deleteTailor(id);
+
+      // Invalidate list provider to refresh the list
+      ref.invalidate(tailorsListProvider);
+      ref.invalidate(tailorCountProvider);
+
+      _log('Successfully deleted tailor: id=$id');
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      _log('Error deleting tailor $id: $e', level: 'ERROR');
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+}
+
+/// Provider tunggal untuk dipanggil di UI
+final tailorManagementProvider =
+    AsyncNotifierProvider<TailorManagementNotifier, void>(
+      TailorManagementNotifier.new,
+    );
+
+// ===========================================================================
+// EFISIENSI & PREDIKSI (Reff)
+// ===========================================================================
+
+/// Provider untuk statistik efisiensi penjahit (Reff dan prediksi majun).
+///
+/// Menerima [tailorId] dan mengembalikan map:
+///   {
+///     'total_perca_diambil' : double,
+///     'total_majun_disetor' : double,
+///     'total_limbah_disetor': double,
+///     'sisa_perca'          : double,   // saldo mengendap saat ini
+///     'reff'                : double,   // 0.0 – 1.0
+///     'prediksi_majun'      : double,   // sisa_perca × reff
+///   }
+final tailorEfficiencyStatsProvider = FutureProvider.autoDispose
+    .family<Map<String, double>, String>((ref, tailorId) async {
+      final repository = ref.watch(tailorRepositoryProvider);
+      return repository.getTailorEfficiencyStats(tailorId);
+    });
+
+// ===========================================================================
+// SALARY WITHDRAWALS PROVIDER
+// ===========================================================================
+
+/// Provider untuk mengambil riwayat penarikan upah berdasarkan ID penjahit
+// DETAIL PROVIDER (untuk TailorDetailScreen agar data selalu segar)
+// ===========================================================================
+=======
+final tailorSalaryWithdrawalsProvider = FutureProvider.autoDispose
+    .family<List<SalaryWithdrawalModel>, String>((ref, tailorId) async {
+      final repository = ref.watch(tailorRepositoryProvider);
+      return repository.getSalaryWithdrawalsByTailor(tailorId);
+    });
+
+/// Provider untuk mengambil riwayat penambahan upah (setor majun)
+final tailorMajunHistoryProvider = FutureProvider.autoDispose
+    .family<List<MajunTransactionsModel>, String>((ref, tailorId) async {
+      final repository = ref.watch(tailorRepositoryProvider);
+      return repository.getMajunTransactionsByTailor(tailorId);
+    });
+
+/// Kombinasi penarikan dan penambahan upah
+final tailorUpahHistoryProvider = FutureProvider.autoDispose
+    .family<List<dynamic>, String>((ref, tailorId) async {
+      final withdrawals =
+          await ref.watch(tailorSalaryWithdrawalsProvider(tailorId).future);
+      final majuns =
+          await ref.watch(tailorMajunHistoryProvider(tailorId).future);
+
+      final List<dynamic> combined = [...withdrawals, ...majuns];
+
+      // Sort desc by date
+      combined.sort((a, b) {
+        final aDate =
+            a is SalaryWithdrawalModel
+                ? a.createdAt
+                : (a as MajunTransactionsModel).createdAt ?? a.dateEntry;
+        final bDate =
+            b is SalaryWithdrawalModel
+                ? b.createdAt
+                : (b as MajunTransactionsModel).createdAt ?? b.dateEntry;
+        return bDate.compareTo(aDate);
+      });
+
+      return combined;
+    });
+
+// ===========================================================================
+// DETAIL PROVIDER (untuk TailorDetailScreen agar data selalu segar)
+// ===========================================================================
+// ===========================================================================
+// DETAIL PROVIDER (untuk TailorDetailScreen agar data selalu segar)
+// ===========================================================================
+
+/// Provider untuk mengambil satu tailor terbaru berdasarkan ID.
+/// Dapat di-invalidate setelah edit agar screen menampilkan data terbaru.
+final tailorByIdProvider = FutureProvider.autoDispose
+    .family<TailorModel?, String>((ref, tailorId) async {
+      final repository = ref.watch(tailorRepositoryProvider);
+      return repository.getTailorById(tailorId);
+    });
