@@ -83,19 +83,24 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
               // ── Sisa Perca & Efisiensi ──
               efficiencyAsync.when(
                 data: (stats) => _buildEfficiencySection(context, stats),
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 40),
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
-                error: (err, _) => _buildErrorCard(
-                  context,
-                  'Gagal memuat statistik efisiensi: $err',
-                  onRetry: () => ref.invalidate(
-                    tailorEfficiencyStatsProvider(widget.initialTailor.id),
-                  ),
-                ),
+                loading:
+                    () => const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 40),
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
+                error:
+                    (err, _) => _buildErrorCard(
+                      context,
+                      'Gagal memuat statistik efisiensi: $err',
+                      onRetry:
+                          () => ref.invalidate(
+                            tailorEfficiencyStatsProvider(
+                              widget.initialTailor.id,
+                            ),
+                          ),
+                    ),
               ),
             ],
           ),
@@ -131,20 +136,23 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
           CircleAvatar(
             radius: 36,
             backgroundColor: Colors.white,
-            backgroundImage: tailor.tailorImages != null &&
-                    tailor.tailorImages!.isNotEmpty
-                ? NetworkImage(tailor.tailorImages!)
-                : null,
-            child: tailor.tailorImages == null || tailor.tailorImages!.isEmpty
-                ? Text(
-                    tailor.name.isNotEmpty ? tailor.name[0].toUpperCase() : '?',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green[700],
-                    ),
-                  )
-                : null,
+            backgroundImage:
+                tailor.tailorImages != null && tailor.tailorImages!.isNotEmpty
+                    ? NetworkImage(tailor.tailorImages!)
+                    : null,
+            child:
+                tailor.tailorImages == null || tailor.tailorImages!.isEmpty
+                    ? Text(
+                      tailor.name.isNotEmpty
+                          ? tailor.name[0].toUpperCase()
+                          : '?',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green[700],
+                      ),
+                    )
+                    : null,
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -227,10 +235,7 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
         // ── Statistik Historis ──
         const Text(
           'Riwayat Historis',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
         Row(
@@ -268,10 +273,7 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
         // ── Reff & Prediksi ──
         const Text(
           'Efisiensi & Prediksi',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
         _buildReffCard(
@@ -346,17 +348,13 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline,
-                      color: Colors.amber[800], size: 14),
+                  Icon(Icons.info_outline, color: Colors.amber[800], size: 14),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       'Sisa bahan perca di atas toleransi (> 5 Kg). '
                       'Tanyakan sisa bahan perca sebelum memberi bahan perca baru.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.amber[900],
-                      ),
+                      style: TextStyle(fontSize: 12, color: Colors.amber[900]),
                     ),
                   ),
                 ],
@@ -423,10 +421,7 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
                     '(${_fmt(reff)} rasio)',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.purple[400],
-                    ),
+                    style: TextStyle(fontSize: 13, color: Colors.purple[400]),
                   ),
                 ),
               ],
@@ -437,8 +432,7 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
               child: LinearProgressIndicator(
                 value: reff.clamp(0.0, 1.0),
                 backgroundColor: Colors.purple[100],
-                valueColor:
-                    AlwaysStoppedAnimation<Color>(Colors.purple[600]!),
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.purple[600]!),
                 minHeight: 8,
               ),
             ),
@@ -548,10 +542,7 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-          ),
+          Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[600])),
         ],
       ),
     );
@@ -612,7 +603,9 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
     // "1.50" → hapus trailing zero → "1.5"
     // "1.00" (jika muncul setelah pembulatan) → "1." → hapus titik akhir → "1"
     final str = value.toStringAsFixed(2);
-    final trimmed = str.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+    final trimmed = str
+        .replaceAll(RegExp(r'0+$'), '')
+        .replaceAll(RegExp(r'\.$'), '');
     return trimmed;
   }
 }

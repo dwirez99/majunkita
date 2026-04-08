@@ -19,7 +19,8 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
   final _formKey = GlobalKey<FormState>();
   final _weightController = TextEditingController();
   final _currencyFormat = NumberFormat.currency(
-    symbol: 'Rp ',
+    locale: 'id_ID',
+    symbol: 'Rp',
     decimalDigits: 0,
   );
 
@@ -47,21 +48,22 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
     // Show source selection dialog
     final ImageSource? source = await showDialog<ImageSource>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Pilih Sumber Gambar'),
-        actions: [
-          TextButton.icon(
-            onPressed: () => Navigator.of(ctx).pop(ImageSource.camera),
-            icon: const Icon(Icons.camera_alt),
-            label: const Text('Kamera'),
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text('Pilih Sumber Gambar'),
+            actions: [
+              TextButton.icon(
+                onPressed: () => Navigator.of(ctx).pop(ImageSource.camera),
+                icon: const Icon(Icons.camera_alt),
+                label: const Text('Kamera'),
+              ),
+              TextButton.icon(
+                onPressed: () => Navigator.of(ctx).pop(ImageSource.gallery),
+                icon: const Icon(Icons.photo_library),
+                label: const Text('Galeri'),
+              ),
+            ],
           ),
-          TextButton.icon(
-            onPressed: () => Navigator.of(ctx).pop(ImageSource.gallery),
-            icon: const Icon(Icons.photo_library),
-            label: const Text('Galeri'),
-          ),
-        ],
-      ),
     );
     if (source == null) return;
     while (true) {

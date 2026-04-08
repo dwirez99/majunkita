@@ -17,7 +17,8 @@ class ManageMajunScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final priceState = ref.watch(majunPricePerKgProvider);
     final currencyFormat = NumberFormat.currency(
-      symbol: 'Rp ',
+      locale: 'id_ID',
+      symbol: 'Rp',
       decimalDigits: 0,
     );
 
@@ -214,7 +215,8 @@ class ManageMajunScreen extends ConsumerWidget {
       text: currentPrice.toStringAsFixed(0),
     );
     final currencyFormat = NumberFormat.currency(
-      symbol: 'Rp ',
+      locale: 'id_ID',
+      symbol: 'Rp',
       decimalDigits: 0,
     );
 
@@ -271,7 +273,7 @@ class ManageMajunScreen extends ConsumerWidget {
                     controller: controller,
                     autofocus: true,
                     decoration: InputDecoration(
-                      prefixText: 'Rp ',
+                      prefixText: 'Rp',
                       suffixText: '/ KG',
                       hintText: 'Masukkan harga baru',
                       border: OutlineInputBorder(

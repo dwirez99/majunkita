@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'tailors_list_screen.dart';
+import 'tailors_salary_list_screen.dart';
 
 /// Screen untuk menampilkan kategori manajemen penjahit
 /// Similar to ManagePartnerScreen
@@ -31,10 +32,7 @@ class ManageTailorsScreen extends StatelessWidget {
             children: [
               const Text(
                 'Pilih Kategori Penjahit',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 30),
 
@@ -50,6 +48,25 @@ class ManageTailorsScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => const TailorsListScreen(),
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              // Riwayat Gaji Penjahit Card
+              _buildTailorCard(
+                context: context,
+                icon: Icons.account_balance_wallet,
+                title: 'Riwayat Upah Penjahit',
+                description: 'Lihat saldo dan riwayat upah penjahit',
+                color: Colors.green[400]!,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const TailorsSalaryListScreen(),
                     ),
                   );
                 },
@@ -130,11 +147,7 @@ class ManageTailorsScreen extends StatelessWidget {
                 color: Colors.white.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                icon,
-                size: 40,
-                color: Colors.white,
-              ),
+              child: Icon(icon, size: 40, color: Colors.white),
             ),
             const SizedBox(width: 20),
             Expanded(
@@ -160,11 +173,7 @@ class ManageTailorsScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white,
-              size: 24,
-            ),
+            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 24),
           ],
         ),
       ),
