@@ -70,7 +70,9 @@ class TailorRepository {
 
       final response = await _supabase
           .from('tailors')
-          .select('id, name, no_telp, address, tailor_images, created_at')
+          .select(
+            'id, name, no_telp, address, tailor_images, created_at, total_stock, balance',
+          )
           .ilike('name', '%$query%')
           .order('name', ascending: true);
 
