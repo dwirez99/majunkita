@@ -13,7 +13,8 @@ class MajunHistoryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final historyState = ref.watch(majunHistoryProvider);
     final currencyFormat = NumberFormat.currency(
-      symbol: 'Rp ',
+      locale: 'id_ID',
+      symbol: 'Rp',
       decimalDigits: 0,
     );
     final dateFormat = DateFormat('dd MMM yyyy');

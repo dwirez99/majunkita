@@ -248,6 +248,10 @@ final tailorEfficiencyStatsProvider = FutureProvider.autoDispose
 // SALARY WITHDRAWALS PROVIDER
 // ===========================================================================
 
+/// Provider untuk mengambil riwayat penarikan upah berdasarkan ID penjahit
+// DETAIL PROVIDER (untuk TailorDetailScreen agar data selalu segar)
+// ===========================================================================
+=======
 final tailorSalaryWithdrawalsProvider = FutureProvider.autoDispose
     .family<List<SalaryWithdrawalModel>, String>((ref, tailorId) async {
       final repository = ref.watch(tailorRepositoryProvider);
@@ -264,12 +268,10 @@ final tailorMajunHistoryProvider = FutureProvider.autoDispose
 /// Kombinasi penarikan dan penambahan upah
 final tailorUpahHistoryProvider = FutureProvider.autoDispose
     .family<List<dynamic>, String>((ref, tailorId) async {
-      final withdrawals = await ref.watch(
-        tailorSalaryWithdrawalsProvider(tailorId).future,
-      );
-      final majuns = await ref.watch(
-        tailorMajunHistoryProvider(tailorId).future,
-      );
+      final withdrawals =
+          await ref.watch(tailorSalaryWithdrawalsProvider(tailorId).future);
+      final majuns =
+          await ref.watch(tailorMajunHistoryProvider(tailorId).future);
 
       final List<dynamic> combined = [...withdrawals, ...majuns];
 
@@ -289,6 +291,10 @@ final tailorUpahHistoryProvider = FutureProvider.autoDispose
       return combined;
     });
 
+// ===========================================================================
+// DETAIL PROVIDER (untuk TailorDetailScreen agar data selalu segar)
+// ===========================================================================
+// ===========================================================================
 // DETAIL PROVIDER (untuk TailorDetailScreen agar data selalu segar)
 // ===========================================================================
 

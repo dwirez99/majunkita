@@ -2,7 +2,9 @@
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/tailor_model.dart';
+import '../models/salary_withdrawal_model.dart';
 import '../../../../core/services/storage_service.dart';
+import '../../../manage_majun/data/model/majun_transactions_model.dart';
 
 /// Repository untuk mengelola data Tailor
 /// Mengisolasi logika Supabase dari UI layer
@@ -353,6 +355,104 @@ class TailorRepository {
     } catch (e) {
       _log('Error counting tailors: $e', level: 'ERROR');
       throw Exception('Gagal menghitung jumlah penjahit: $e');
+    }
+  }
+
+  // ===========================================================================
+  // SALARY WITHDRAWALS
+  // ===========================================================================
+
+  /// Mengambil riwayat setor majun (penambahan upah) berdasarkan id_tailor
+  Future<List<MajunTransactionsModel>> getMajunTransactionsByTailor(
+    String tailorId,
+  ) async {
+    _log('Fetching majun transactions for tailor: $tailorId');
+    try {
+      final response = await _supabase
+          .from('majun_transactions')
+          .select('*')
+          .eq('id_tailor', tailorId)
+          .order('created_at', ascending: false);
+
+      final list =
+          (response as List)
+              .map((json) => MajunTransactionsModel.fromJson(json))
+              .toList();
+      _log('Found ${list.length} majun transactions for tailor $tailorId');
+      return list;
+    } catch (e) {
+      _log(
+        'Error fetching majun transactions for $tailorId: $e',
+        level: 'ERROR',
+      );
+      throw Exception('Gagal mengambil riwayat setor majun: $e');
+    }
+  }
+
+  /// Mengambil riwayat penarikan upah berdasarkan id_tailor
+  Future<List<SalaryWithdrawalModel>> getSalaryWithdrawalsByTailor(
+    String tailorId,
+  ) async {
+    _log('Fetching salary withdrawals for tailor: $tailorId');
+    try {
+      final response = await _supabase
+          .from('salary_withdrawals')
+          .select('*')
+          .eq('id_tailor', tailorId)
+          .order('created_at', ascending: false);
+
+      final list =
+          (response as List)
+              .map((json) => SalaryWithdrawalModel.fromJson(json))
+              .toList();
+      _log('Found ${list.length} salary withdrawals for tailor $tailorId');
+      return list;
+    } catch (e) {
+      _log(
+        'Error fetching salary withdrawals for $tailorId: $e',
+        level: 'ERROR',
+      );
+      throw Exception('Gagal mengambil riwayat upah: $e');
+    }
+  }
+
+  /// Membuat transaksi penarikan upah baru
+  Future<SalaryWithdrawalModel> createSalaryWithdrawal({
+    required String tailorId,
+    required double amount,
+    required DateTime dateEntry,
+  }) async {
+    _log('Creating salary withdrawal for tailor: $tailorId, amount: $amount');
+    try {
+      final response =
+          await _supabase
+              .from('salary_withdrawals')
+              .insert({
+                'id_tailor': tailorId,
+                'amount': amount,
+                'date_entry': dateEntry.toIso8601String().split('T')[0],
+              })
+              .select()
+              .single();
+
+      // Update tailor balance
+      final tailor = await getTailorById(tailorId);
+      if (tailor != null) {
+        await _supabase
+            .from('tailors')
+            .update({'balance': tailor.balance - amount})
+            .eq('id', tailorId);
+      }
+
+      final withdrawal = SalaryWithdrawalModel.fromJson(response);
+      _log('Successfully created salary withdrawal (ID: ${withdrawal.id})');
+      return withdrawal;
+    } catch (e) {
+      _log(
+        'Error creating salary withdrawal for $tailorId: $e',
+        level: 'ERROR',
+      );
+      throw Exception('Gagal membuat penarikan upah: $e');
     }
   }
 }

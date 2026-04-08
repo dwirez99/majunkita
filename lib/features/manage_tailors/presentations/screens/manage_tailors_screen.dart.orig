@@ -60,7 +60,7 @@ class ManageTailorsScreen extends StatelessWidget {
                 context: context,
                 icon: Icons.account_balance_wallet,
                 title: 'Riwayat Upah Penjahit',
-                description: 'Lihat saldo dan riwayat upah penjahit',
+                description: 'Lihat saldo dan riwayat penarikan upah penjahit',
                 color: Colors.green[400]!,
                 onTap: () {
                   Navigator.push(

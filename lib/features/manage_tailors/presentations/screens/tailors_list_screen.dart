@@ -296,9 +296,10 @@ class _TailorsListScreenState extends ConsumerState<TailorsListScreen> {
                           tailor.totalStock > 5
                               ? Icons.warning_amber_rounded
                               : Icons.home_outlined,
-                          color: tailor.totalStock > 5
-                              ? Colors.amber[300]
-                              : Colors.white70,
+                          color:
+                              tailor.totalStock > 5
+                                  ? Colors.amber[300]
+                                  : Colors.white70,
                           size: 13,
                         ),
                         const SizedBox(width: 4),
@@ -306,12 +307,14 @@ class _TailorsListScreenState extends ConsumerState<TailorsListScreen> {
                           'Sisa: ${_fmtStock(tailor.totalStock)} Kg',
                           style: TextStyle(
                             fontSize: 11,
-                            color: tailor.totalStock > 5
-                                ? Colors.amber[300]
-                                : Colors.white70,
-                            fontWeight: tailor.totalStock > 5
-                                ? FontWeight.bold
-                                : FontWeight.normal,
+                            color:
+                                tailor.totalStock > 5
+                                    ? Colors.amber[300]
+                                    : Colors.white70,
+                            fontWeight:
+                                tailor.totalStock > 5
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
                           ),
                         ),
                       ],
@@ -353,18 +356,14 @@ class _TailorsListScreenState extends ConsumerState<TailorsListScreen> {
   void _showAddTailorDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder:
-          (context) => const TailorFormDialog(),
+      builder: (context) => const TailorFormDialog(),
     );
   }
 
   void _showEditTailorDialog(BuildContext context, TailorModel tailor) {
     showDialog(
       context: context,
-      builder:
-          (context) => TailorFormDialog(
-            tailorToEdit: tailor,
-          ),
+      builder: (context) => TailorFormDialog(tailorToEdit: tailor),
     );
   }
 

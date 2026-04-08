@@ -1,0 +1,10 @@
+--- lib/features/manage_tailors/presentations/screens/tailors_salary_list_screen.dart
++++ lib/features/manage_tailors/presentations/screens/tailors_salary_list_screen.dart
+@@ -528,6 +528,7 @@
+                     ],
+                   ),
+                 ),
++              ),
+             ],
+           ),
+         ),
