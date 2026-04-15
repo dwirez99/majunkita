@@ -246,21 +246,31 @@ class _DashboardManagerScreenState
               ),
 
               // Tombol Detail Kecil
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.green[400], // Warna hijau untuk tombol
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Text(
-                  'Detail Pengiriman',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ExpeditionHistoryScreen(),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.green[400], // Warna hijau untuk tombol
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'Detail Pengiriman',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),

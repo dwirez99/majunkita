@@ -44,7 +44,11 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                 color: AppColors.black,
               ),
               onPressed: () {
-                // TODO: Navigate to notifications screen
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Fitur notifikasi segera hadir'),
+                  ),
+                );
               },
             ),
             IconButton(
