@@ -248,7 +248,7 @@ BEGIN
       'manager',
       v_manager.no_telp,
       format(
-        'Status Pengiriman Majun #%s. Tujuan: %s. Karung: %s. Berat total: %s kg.',
+        'Status Pengiriman Majun #%s. Karung: %s. Berat total: %s kg.',
         NEW.id::text,
         NEW.destination,
         NEW.sack_number::text,

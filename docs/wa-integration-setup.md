@@ -39,7 +39,7 @@ This guide covers everything needed to get the WhatsApp notification integration
 Flutter App
     │ INSERT
     ▼
-[majun_transactions / percas_stock / expeditions]
+[majun_transactions / percas_stock / expeditions / salary_withdrawals]
     │ AFTER INSERT trigger
     ▼
 [wa_notification_queue]  ← status: pending
@@ -189,10 +189,11 @@ Copy the `device` value from the response — this is your `WA_API_DEVICE_ID`.
 
 ## Step 3 — Apply the Database Migration
 
-The migration file is located at:
+The migrations are located at:
 
 ```
 supabase/migrations/20260407164000_add_whatsapp_notification_queue.sql
+supabase/migrations/20260415160000_add_wa_trigger_salary_withdrawals.sql
 ```
 
 It creates:
@@ -204,7 +205,7 @@ It creates:
 | `normalize_wa_jid()` | Normalizes phone → `628xxx@s.whatsapp.net` |
 | `enqueue_wa_notification()` | Inserts a row into the queue |
 | `dequeue_wa_notifications()` | Atomically dequeues a batch for processing |
-| Triggers on 3 source tables | Automatically enqueue on each INSERT |
+| Triggers on 4 source tables | Automatically enqueue on each INSERT |
 
 ### Apply via Supabase CLI
 
@@ -224,7 +225,7 @@ supabase db reset --db-url "postgresql://postgres:<password>@db.<project-ref>.su
 
 ```bash
 supabase functions deploy process-wa-notification-queue \
-  --project-ref <your-project-ref>
+  --project-ref fswmiqldurziscghckpc
 ```
 
 The function source is at:
@@ -241,12 +242,12 @@ All secrets are injected as environment variables into the Edge Function. Run th
 
 ```bash
 supabase secrets set \
-  WA_API_BASE_URL="http://<your-server>:3000" \
-  WA_API_USERNAME="YOUR_USERNAME" \
-  WA_API_PASSWORD="YOUR_STRONG_PASSWORD" \
-  WA_API_DEVICE_ID="<device-id-from-step-2>" \
-  WA_QUEUE_SECRET="<random-secret-string>" \
-  --project-ref <your-project-ref>
+  WA_API_BASE_URL="https://wa.dwirez.app" \
+  WA_API_USERNAME="dwirez" \
+  WA_API_PASSWORD="dwirez123" \
+  WA_API_DEVICE_ID="a76ddb08-02ab-47f0-be03-66d2f3646864>" \
+  WA_QUEUE_SECRET="dR2gPDpA8PHHZzCoXdlutFc1TSx+fMtpelr1wSPUsZE=" \
+  --project-ref fswmiqldurziscghckpc
 ```
 
 > `WA_API_USERNAME` and `WA_API_PASSWORD` must match the value you set in `--basic-auth=USER:PASS` when starting the gateway (docker-compose or `docker run`).
@@ -307,14 +308,17 @@ Requires the `pg_net` extension as well (enable it in Extensions).
 
 ### 1. Manual queue trigger
 
-Call the Edge Function directly:
+Call the Edge Function directly using your Supabase **anon key**:
 
 ```bash
 curl -X POST \
-  -H "x-queue-secret: <WA_QUEUE_SECRET>" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "x-queue-secret: dR2gPDpA8PHHZzCoXdlutFc1TSx+fMtpelr1wSPUsZE=" \
   -H "Content-Type: application/json" \
-  https://<project-ref>.supabase.co/functions/v1/process-wa-notification-queue
+  https://fswmiqldurziscghckpc.supabase.co/functions/v1/process-wa-notification-queue
 ```
+
+> Replace `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` with your **Supabase anon key** from Dashboard → Project Settings → API → `anon` key.
 
 Expected successful response:
 
