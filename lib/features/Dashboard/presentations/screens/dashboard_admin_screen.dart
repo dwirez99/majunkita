@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../manage_expeditions/presentations/screens/manage_expeditions_screen.dart';
+import '../../../manage_notifications/domain/providers/wa_notifications_provider.dart';
+import '../../../manage_notifications/presentations/screens/admin_notifications_screen.dart';
 import '../../../manage_percas/presentations/screens/add_perca_screen.dart';
 import '../widgets/dashboard_appbar.dart';
 import '../widgets/dashboard_bottom_bar.dart';
@@ -48,8 +50,25 @@ class _DashboarAdminScreenState extends ConsumerState<DashboarAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final badgeCount = ref
+        .watch(waNotificationsBadgeCountProvider)
+        .maybeWhen(data: (value) => value, orElse: () => 0);
+
     return Scaffold(
-      appBar: const DashboardAppBar(title: 'Dashboard Admin'),
+      appBar: DashboardAppBar(
+        title: 'Dashboard Admin',
+        showNotifications: true,
+        userRole: 'admin',
+        notificationBadgeCount: badgeCount,
+        onNotificationsTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const AdminNotificationsScreen(),
+            ),
+          );
+        },
+      ),
       backgroundColor: AppColors.background,
       body: SingleChildScrollView(
         child: Padding(

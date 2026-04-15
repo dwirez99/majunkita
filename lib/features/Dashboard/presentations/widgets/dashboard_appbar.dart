@@ -6,12 +6,20 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final bool showBackButton;
   final List<Widget>? actions;
+  final VoidCallback? onNotificationsTap;
+  final bool showNotifications;
+  final String? userRole;
+  final int notificationBadgeCount;
 
   const DashboardAppBar({
     super.key,
     this.title = 'Dashboard',
     this.showBackButton = false,
     this.actions,
+    this.onNotificationsTap,
+    this.showNotifications = false,
+    this.userRole,
+    this.notificationBadgeCount = 0,
   });
 
   @override
@@ -38,15 +46,46 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions:
           actions ??
           [
-            IconButton(
-              icon: const Icon(
-                Icons.notifications_outlined,
-                color: AppColors.black,
+            if (showNotifications && userRole == 'admin')
+              IconButton(
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(
+                      Icons.notifications_outlined,
+                      color: AppColors.black,
+                    ),
+                    if (notificationBadgeCount > 0)
+                      Positioned(
+                        right: -4,
+                        top: -4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.error,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          constraints: const BoxConstraints(minWidth: 16),
+                          child: Text(
+                            notificationBadgeCount > 99
+                                ? '99+'
+                                : notificationBadgeCount.toString(),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                onPressed: onNotificationsTap,
               ),
-              onPressed: () {
-                // TODO: Navigate to notifications screen
-              },
-            ),
             IconButton(
               icon: const Icon(Icons.logout, color: Colors.black),
               onPressed: () => _showLogoutDialog(context),
