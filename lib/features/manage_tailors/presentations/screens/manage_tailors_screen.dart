@@ -41,7 +41,7 @@ class ManageTailorsScreen extends StatelessWidget {
                 context: context,
                 icon: Icons.people,
                 title: 'Daftar Penjahit',
-                description: 'Lihat daftar  informasi dan statistik setiap penjahit',
+                description: 'Lihat daftar informasi dan statistik setiap penjahit',
                 color: Colors.blue[400]!,
                 onTap: () {
                   Navigator.push(

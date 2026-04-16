@@ -349,13 +349,20 @@ class _TailorSalaryHistoryScreenState
           Expanded(
             child: historyAsync.when(
               data: (history) {
-                if (history.isEmpty) {
+                final filteredHistory = history.where((item) {
+                  if (_selectedFilter == 'all') return true;
+                  final isWithdrawal = item is SalaryWithdrawalModel;
+                  if (_selectedFilter == 'withdrawals') return isWithdrawal;
+                  return !isWithdrawal; // 'earnings'
+                }).toList();
+
+                if (filteredHistory.isEmpty) {
                   return const Center(child: Text('Tidak ada riwayat.'));
                 }
                 return ListView.builder(
-                  itemCount: history.length,
+                  itemCount: filteredHistory.length,
                   itemBuilder: (context, index) {
-                    final item = history[index];
+                    final item = filteredHistory[index];
                     final isWithdrawal = item is SalaryWithdrawalModel;
                     final amount =
                         isWithdrawal

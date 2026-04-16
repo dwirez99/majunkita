@@ -78,9 +78,9 @@ class ManagePartnerScreen extends StatelessWidget {
 
               _buildPartnerCard(
                 context: context,
-                icon: Icons.admin_panel_settings,
+                icon: Icons.content_cut,
                 title: 'Kelola Partner Penjahit',
-                description: 'Manajemen data partner admin',
+                description: 'Manajemen data penjahit',
                 color: Colors.green[400]!,
                 onTap: () {
                   Navigator.push(
