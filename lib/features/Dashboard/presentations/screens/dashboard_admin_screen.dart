@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:majunkita/features/manage_majun/presentations/screens/manage_majun_screen.dart';
+import 'package:majunkita/features/manage_percas/presentations/screens/manage_perca_screen.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../auth/domain/providers/auth_provider.dart';
 import '../../../manage_expeditions/presentations/screens/manage_expeditions_screen.dart';
 import '../../../manage_notifications/domain/providers/wa_notifications_provider.dart';
 import '../../../manage_notifications/presentations/screens/admin_notifications_screen.dart';
-import '../../../manage_percas/presentations/screens/add_perca_screen.dart';
+// import '../../../manage_percas/presentations/screens/add_perca_screen.dart';
 import '../widgets/dashboard_appbar.dart';
 import '../widgets/dashboard_bottom_bar.dart';
 import '../widgets/management_menu.dart';
@@ -32,14 +34,21 @@ class _DashboarAdminScreenState extends ConsumerState<DashboarAdminScreen> {
     // Navigasi ke screen yang sesuai berdasarkan index bottom nav
     switch (index) {
       case 1:
-        // Ambil Perca
+        // Perca
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const AddPercaScreen()),
+          MaterialPageRoute(builder: (context) => const ManagePercaScreen()),
+        ).then((_) => setState(() => _selectedIndex = 0));
+        break;
+      case 2:
+        // Majun
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ManageMajunScreen()),
         ).then((_) => setState(() => _selectedIndex = 0));
         break;
       case 3:
-        // Pengiriman
+        // Expedisi
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -96,6 +105,7 @@ class _DashboarAdminScreenState extends ConsumerState<DashboarAdminScreen> {
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
+                      color: AppColors.black,
                     ),
                   );
                 },
@@ -116,7 +126,11 @@ class _DashboarAdminScreenState extends ConsumerState<DashboarAdminScreen> {
               // 5. BAGIAN RINGKASAN
               const Text(
                 'Ringkasan',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.black,
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -124,10 +138,19 @@ class _DashboarAdminScreenState extends ConsumerState<DashboarAdminScreen> {
                   .watch(adminDashboardProvider)
                   .when(
                     loading:
-                        () => const Center(child: CircularProgressIndicator()),
+                        () => const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.secondary,
+                          ),
+                        ),
                     error:
-                        (error, stackTrace) =>
-                            Center(child: Text(error.toString())),
+                        (error, stackTrace) => Center(
+                          child: Text(
+                            error.toString(),
+                            style: const TextStyle(color: AppColors.error),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
                     data: (summary) {
                       return Column(
                         children: [

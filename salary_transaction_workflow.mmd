@@ -1,0 +1,19 @@
+flowchart TD
+    Tailor((Tailor))
+    Perca[Perca Transactions]
+    Majun[Majun Transactions]
+    Limbah[Limbah Transactions]
+    Salary[Salary Withdrawals]
+    TailorsTable["Tailors Table\n(balance, total_stock)"]
+
+    Tailor -- Takes Perca --> Perca
+    Perca -- Trigger: +total_stock --> TailorsTable
+
+    Tailor -- Deposits Majun --> Majun
+    Majun -- Trigger: -total_stock, +balance --> TailorsTable
+
+    Tailor -- Deposits Limbah --> Limbah
+    Limbah -- Trigger: -total_stock --> TailorsTable
+
+    Tailor -- Withdraws Salary --> Salary
+    Salary -- Decreases balance --> TailorsTable

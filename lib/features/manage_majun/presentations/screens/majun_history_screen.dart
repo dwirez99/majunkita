@@ -6,11 +6,140 @@ import '../../data/model/majun_transactions_model.dart';
 import '../../domain/providers/majun_provider.dart';
 
 /// Screen untuk menampilkan riwayat setor majun
-class MajunHistoryScreen extends ConsumerWidget {
+class MajunHistoryScreen extends ConsumerStatefulWidget {
   const MajunHistoryScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MajunHistoryScreen> createState() => _MajunHistoryScreenState();
+}
+
+class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  DateTimeRange? _dateRange;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDateRange() async {
+    final selectedRange = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+      initialDateRange: _dateRange,
+      helpText: 'Pilih rentang tanggal setor',
+    );
+
+    if (selectedRange != null) {
+      setState(() => _dateRange = selectedRange);
+    }
+  }
+
+  void _clearFilters() {
+    setState(() {
+      _searchController.clear();
+      _dateRange = null;
+    });
+  }
+
+  List<MajunTransactionsModel> _applyFilters(List<MajunTransactionsModel> history) {
+    final query = _searchController.text.trim().toLowerCase();
+
+    return history.where((item) {
+      final tailorName = (item.tailorName ?? '').toLowerCase();
+      final matchesSearch = query.isEmpty || tailorName.contains(query);
+
+      final itemDate = DateTime(
+        item.dateEntry.year,
+        item.dateEntry.month,
+        item.dateEntry.day,
+      );
+      final matchesDate =
+          _dateRange == null ||
+          (!itemDate.isBefore(
+                DateTime(
+                  _dateRange!.start.year,
+                  _dateRange!.start.month,
+                  _dateRange!.start.day,
+                ),
+              ) &&
+              !itemDate.isAfter(
+                DateTime(
+                  _dateRange!.end.year,
+                  _dateRange!.end.month,
+                  _dateRange!.end.day,
+                ),
+              ));
+
+      return matchesSearch && matchesDate;
+    }).toList();
+  }
+
+  Widget _buildFilterSection() {
+    final hasFilter = _searchController.text.isNotEmpty || _dateRange != null;
+    final dateLabel =
+        _dateRange == null
+            ? 'Semua tanggal'
+            : '${DateFormat('dd MMM yyyy').format(_dateRange!.start)} - ${DateFormat('dd MMM yyyy').format(_dateRange!.end)}';
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceLight,
+        border: Border.all(color: AppColors.cardBorder),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          TextField(
+            controller: _searchController,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              hintText: 'Cari nama penjahit...',
+              prefixIcon: const Icon(Icons.search, color: AppColors.greyDark),
+              suffixIcon:
+                  _searchController.text.isEmpty
+                      ? null
+                      : IconButton(
+                        icon: const Icon(Icons.clear, color: AppColors.greyDark),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {});
+                        },
+                      ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _pickDateRange,
+                  icon: const Icon(Icons.calendar_today_outlined, size: 18),
+                  label: Text(
+                    dateLabel,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              if (hasFilter) ...[
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: _clearFilters,
+                  child: const Text('Reset'),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final historyState = ref.watch(majunHistoryProvider);
     final currencyFormat = NumberFormat.currency(
       locale: 'id_ID',
@@ -23,7 +152,7 @@ class MajunHistoryScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Riwayat Setor Majun'),
         backgroundColor: AppColors.secondary,
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -32,170 +161,212 @@ class MajunHistoryScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: historyState.when(
-        data: (historyList) {
-          if (historyList.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.inbox_outlined, size: 64, color: Colors.grey[300]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Belum ada riwayat setor majun',
-                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Riwayat akan muncul setelah ada setoran',
-                    style: TextStyle(fontSize: 13, color: Colors.grey[400]),
-                  ),
-                ],
-              ),
-            );
-          }
+      backgroundColor: AppColors.background,
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            _buildFilterSection(),
+            const SizedBox(height: 12),
+            Expanded(
+              child: historyState.when(
+                data: (historyList) {
+                  final filteredHistory = _applyFilters(historyList);
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: historyList.length,
-            itemBuilder: (context, index) {
-              final item = historyList[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: AppColors.cardBorder),
-                ),
-                child: InkWell(
-                  onTap:
-                      () => _showDetailDialog(
-                        context,
-                        item,
-                        currencyFormat,
-                        dateFormat,
-                      ),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Header: Tailor name + Date
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: AppColors.secondary.withValues(
-                                alpha: 0.1,
-                              ),
-                              child: const Icon(
-                                Icons.person,
-                                color: AppColors.secondary,
-                                size: 20,
+                  if (filteredHistory.isEmpty) {
+                    final emptyMessage =
+                        historyList.isEmpty
+                            ? 'Belum ada riwayat setor majun'
+                            : 'Data tidak ditemukan untuk filter saat ini.';
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.inbox_outlined,
+                            size: 64,
+                            color: AppColors.grey,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            emptyMessage,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: AppColors.greyDark,
+                            ),
+                          ),
+                          if (historyList.isEmpty) ...[
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Riwayat akan muncul setelah ada setoran',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.grey,
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    item.tailorName ?? 'Unknown',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
+                          ],
+                        ],
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    itemCount: filteredHistory.length,
+                    itemBuilder: (context, index) {
+                      final item = filteredHistory[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: const BorderSide(color: AppColors.cardBorder),
+                        ),
+                        child: InkWell(
+                          onTap:
+                              () => _showDetailDialog(
+                                context,
+                                item,
+                                currencyFormat,
+                                dateFormat,
+                              ),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Header: Tailor name + Date
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor: AppColors.secondary
+                                          .withValues(alpha: 0.1),
+                                      child: const Icon(
+                                        Icons.person,
+                                        color: AppColors.secondary,
+                                        size: 20,
+                                      ),
                                     ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  Text(
-                                    dateFormat.format(item.dateEntry),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[500],
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            item.tailorName ?? 'Unknown',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            dateFormat.format(item.dateEntry),
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: AppColors.grey,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                const Divider(height: 1),
+                                const SizedBox(height: 12),
+
+                                // Data: Berat Majun + Upah
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildDataColumn(
+                                        icon: Icons.scale,
+                                        label: 'Berat Majun',
+                                        value:
+                                            '${item.weightMajun.toStringAsFixed(1)} KG',
+                                        color: AppColors.secondary,
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 1,
+                                      height: 40,
+                                      color: AppColors.cardBorder,
+                                    ),
+                                    Expanded(
+                                      child: _buildDataColumn(
+                                        icon: Icons.monetization_on,
+                                        label: 'Upah',
+                                        value: currencyFormat.format(
+                                          item.earnedWage,
+                                        ),
+                                        color: AppColors.accentDark,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                // Foto Bukti (link)
+                                if (item.deliveryProof != null &&
+                                    item.deliveryProof!.isNotEmpty) ...[
+                                  const SizedBox(height: 12),
+                                  GestureDetector(
+                                    onTap:
+                                        () => _showProofImage(
+                                          context,
+                                          item.deliveryProof!,
+                                        ),
+                                    child: const Text(
+                                      'Lihat Bukti Foto',
+                                      style: TextStyle(
+                                        color: AppColors.secondary,
+                                        decoration: TextDecoration.underline,
+                                      ),
                                     ),
                                   ),
                                 ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        const Divider(height: 1),
-                        const SizedBox(height: 12),
-
-                        // Data: Berat Majun + Upah
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildDataColumn(
-                                icon: Icons.scale,
-                                label: 'Berat Majun',
-                                value:
-                                    '${item.weightMajun.toStringAsFixed(1)} KG',
-                                color: AppColors.secondary,
-                              ),
-                            ),
-                            Container(
-                              width: 1,
-                              height: 40,
-                              color: Colors.grey[200],
-                            ),
-                            Expanded(
-                              child: _buildDataColumn(
-                                icon: Icons.monetization_on,
-                                label: 'Upah',
-                                value: currencyFormat.format(item.earnedWage),
-                                color: Colors.green,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        // Foto Bukti (link)
-                        if (item.deliveryProof != null &&
-                            item.deliveryProof!.isNotEmpty) ...[
-                          const SizedBox(height: 12),
-                          GestureDetector(
-                            onTap:
-                                () => _showProofImage(
-                                  context,
-                                  item.deliveryProof!,
-                                ),
-                            child: const Text(
-                              'Lihat Bukti Foto',
-                              style: TextStyle(
-                                color: Colors.blue,
-                                decoration: TextDecoration.underline,
-                              ),
+                              ],
                             ),
                           ),
-                        ],
-                      ],
+                        ),
+                      );
+                    },
+                  );
+                },
+                loading:
+                    () => const Center(
+                      child: CircularProgressIndicator(color: AppColors.primary),
                     ),
-                  ),
-                ),
-              );
-            },
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error:
-            (error, stack) => Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
-                  const SizedBox(height: 12),
-                  Text('Error: $error'),
-                  const SizedBox(height: 12),
-                  ElevatedButton.icon(
-                    onPressed: () => ref.invalidate(majunHistoryProvider),
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Coba Lagi'),
-                  ),
-                ],
+                error:
+                    (error, stack) => Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: AppColors.error,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Error: $error',
+                            style: const TextStyle(color: AppColors.error),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          ElevatedButton.icon(
+                            onPressed: () => ref.invalidate(majunHistoryProvider),
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Coba Lagi'),
+                          ),
+                        ],
+                      ),
+                    ),
               ),
             ),
+          ],
+        ),
       ),
     );
   }
@@ -219,7 +390,10 @@ class MajunHistoryScreen extends ConsumerWidget {
           ),
           overflow: TextOverflow.ellipsis,
         ),
-        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 11, color: AppColors.grey),
+        ),
       ],
     );
   }
@@ -257,7 +431,7 @@ class MajunHistoryScreen extends ConsumerWidget {
                     child: const Text(
                       'Lihat Bukti Foto',
                       style: TextStyle(
-                        color: Colors.blue,
+                        color: AppColors.secondary,
                         decoration: TextDecoration.underline,
                       ),
                     ),
@@ -286,6 +460,8 @@ class MajunHistoryScreen extends ConsumerWidget {
                 AppBar(
                   title: const Text('Bukti Foto'),
                   automaticallyImplyLeading: false,
+                  backgroundColor: AppColors.white,
+                  foregroundColor: AppColors.black,
                   actions: [
                     IconButton(
                       icon: const Icon(Icons.close),
@@ -299,7 +475,7 @@ class MajunHistoryScreen extends ConsumerWidget {
                     if (loadingProgress == null) return child;
                     return const Padding(
                       padding: EdgeInsets.all(32),
-                      child: CircularProgressIndicator(),
+                      child: CircularProgressIndicator(color: AppColors.primary),
                     );
                   },
                   errorBuilder:

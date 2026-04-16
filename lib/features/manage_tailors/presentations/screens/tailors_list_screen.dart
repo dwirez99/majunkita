@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../auth/domain/providers/auth_provider.dart';
 import '../../data/models/tailor_model.dart';
 import '../../domain/providers/tailor_provider.dart';
 import 'tailor_detail_screen.dart';
@@ -34,6 +35,15 @@ class _TailorsListScreenState extends ConsumerState<TailorsListScreen> {
   Widget build(BuildContext context) {
     final tailorsAsync = ref.watch(tailorsListProvider);
     final actionState = ref.watch(tailorManagementProvider);
+    final userProfileAsync = ref.watch(userProfileProvider);
+
+    final isAdmin = userProfileAsync.when(
+      data:
+          (profile) =>
+              (profile?['role']?.toString().toLowerCase() ?? '') == 'admin',
+      loading: () => false,
+      error: (_, __) => false,
+    );
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -56,31 +66,35 @@ class _TailorsListScreenState extends ConsumerState<TailorsListScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- TOMBOL TAMBAH ---
-              SizedBox(
-                width: double.infinity,
-                height: 60,
-                child: ElevatedButton(
-                  onPressed:
-                      actionState.isLoading
-                          ? null // Disable kalau lagi loading delete/create
-                          : () => _showAddTailorDialog(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[400],
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+              // --- TOMBOL TAMBAH  ---
+              if (isAdmin) ...[
+                SizedBox(
+                  width: double.infinity,
+                  height: 60,
+                  child: ElevatedButton(
+                    onPressed:
+                        actionState.isLoading
+                            ? null // Disable kalau lagi loading delete/create
+                            : () => _showAddTailorDialog(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green[400],
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'Tambah Penjahit',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                  child: const Text(
-                    'Tambah Penjahit',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
                 ),
-              ),
-
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
+              ],
 
               // --- SEARCH BAR ---
               Container(
@@ -324,15 +338,6 @@ class _TailorsListScreenState extends ConsumerState<TailorsListScreen> {
               ),
             ),
 
-            // Edit Button
-            IconButton(
-              onPressed: () => _showEditTailorDialog(context, tailor),
-              icon: const Icon(Icons.edit_outlined, color: Colors.white),
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.black.withValues(alpha: 0.1),
-              ),
-            ),
-
             const SizedBox(width: 8),
 
             // Delete Button
@@ -357,13 +362,6 @@ class _TailorsListScreenState extends ConsumerState<TailorsListScreen> {
     showDialog(
       context: context,
       builder: (context) => const TailorFormDialog(),
-    );
-  }
-
-  void _showEditTailorDialog(BuildContext context, TailorModel tailor) {
-    showDialog(
-      context: context,
-      builder: (context) => TailorFormDialog(tailorToEdit: tailor),
     );
   }
 

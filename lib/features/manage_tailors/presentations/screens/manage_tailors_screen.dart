@@ -41,7 +41,7 @@ class ManageTailorsScreen extends StatelessWidget {
                 context: context,
                 icon: Icons.people,
                 title: 'Daftar Penjahit',
-                description: 'Lihat dan kelola data semua penjahit',
+                description: 'Lihat daftar  informasi dan statistik setiap penjahit',
                 color: Colors.blue[400]!,
                 onTap: () {
                   Navigator.push(
@@ -67,24 +67,6 @@ class ManageTailorsScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => const TailorsSalaryListScreen(),
-                    ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 20),
-
-              // Statistik Penjahit Card
-              _buildTailorCard(
-                context: context,
-                icon: Icons.bar_chart,
-                title: 'Statistik Penjahit',
-                description: 'Lihat statistik dan performa penjahit',
-                color: Colors.orange[400]!,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Fitur statistik akan segera hadir'),
                     ),
                   );
                 },
