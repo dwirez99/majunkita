@@ -91,22 +91,6 @@ class ManageTailorsScreen extends StatelessWidget {
               ),
 
               const SizedBox(height: 20),
-
-              // Laporan Penjahit Card
-              _buildTailorCard(
-                context: context,
-                icon: Icons.description,
-                title: 'Laporan Penjahit',
-                description: 'Lihat laporan aktivitas penjahit',
-                color: Colors.purple[400]!,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Fitur laporan akan segera hadir'),
-                    ),
-                  );
-                },
-              ),
             ],
           ),
         ),
