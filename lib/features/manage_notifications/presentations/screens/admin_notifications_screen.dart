@@ -16,7 +16,30 @@ class AdminNotificationsScreen extends ConsumerStatefulWidget {
 
 class _AdminNotificationsScreenState
     extends ConsumerState<AdminNotificationsScreen> {
-  static const _filterOptions = ['all', 'pending', 'processing', 'sent', 'failed'];
+  static const _filterOptions = [
+    'all',
+    'pending',
+    'processing',
+    'sent',
+    'failed',
+  ];
+
+  String _statusLabel(String value) {
+    switch (value) {
+      case 'all':
+        return 'Semua';
+      case 'pending':
+        return 'Menunggu';
+      case 'processing':
+        return 'Diproses';
+      case 'sent':
+        return 'Terkirim';
+      case 'failed':
+        return 'Gagal';
+      default:
+        return value;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +48,7 @@ class _AdminNotificationsScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('WA Notifications'),
+        title: const Text('Notifikasi WhatsApp'),
         backgroundColor: AppColors.white,
       ),
       backgroundColor: AppColors.background,
@@ -36,7 +59,7 @@ class _AdminNotificationsScreenState
             child: Row(
               children: [
                 const Text(
-                  'Filter Status:',
+                  'Filter status:',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(width: 12),
@@ -50,24 +73,27 @@ class _AdminNotificationsScreenState
                         vertical: 10,
                       ),
                     ),
-                    items: _filterOptions
-                        .map(
-                          (value) => DropdownMenuItem(
-                            value: value,
-                            child: Text(value.toUpperCase()),
-                          ),
-                        )
-                        .toList(),
+                    items:
+                        _filterOptions
+                            .map(
+                              (value) => DropdownMenuItem(
+                                value: value,
+                                child: Text(_statusLabel(value)),
+                              ),
+                            )
+                            .toList(),
                     onChanged: (value) {
                       if (value == null) return;
-                      ref.read(waNotificationsFilterProvider.notifier).setStatus(value);
+                      ref
+                          .read(waNotificationsFilterProvider.notifier)
+                          .setStatus(value);
                       ref.invalidate(waNotificationsListProvider);
                     },
                   ),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  tooltip: 'Refresh',
+                  tooltip: 'Muat ulang',
                   onPressed: () => ref.invalidate(waNotificationsListProvider),
                   icon: const Icon(Icons.refresh),
                 ),
@@ -77,15 +103,18 @@ class _AdminNotificationsScreenState
           Expanded(
             child: notificationsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text('Gagal memuat notifikasi: $error'),
-                ),
-              ),
+              error:
+                  (error, _) => Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text('Gagal memuat notifikasi: $error'),
+                    ),
+                  ),
               data: (items) {
                 if (items.isEmpty) {
-                  return const Center(child: Text('Belum ada data notifikasi WA.'));
+                  return const Center(
+                    child: Text('Belum ada data notifikasi WhatsApp.'),
+                  );
                 }
 
                 return ListView.separated(
@@ -96,31 +125,39 @@ class _AdminNotificationsScreenState
                     final item = items[index];
                     return _NotificationCard(
                       item: item,
-                      onRetry: item.isFailed
-                          ? () async {
-                              try {
-                                await ref
-                                    .read(waNotificationActionProvider.notifier)
-                                    .retry(item.id);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Retry dikirim. Menunggu worker memproses.'),
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Gagal retry: $e')),
-                                  );
+                      onRetry:
+                          item.isFailed
+                              ? () async {
+                                try {
+                                  await ref
+                                      .read(
+                                        waNotificationActionProvider.notifier,
+                                      )
+                                      .retry(item.id);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Coba kirim ulang dijadwalkan. Menunggu proses worker.',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Gagal coba ulang: $e'),
+                                      ),
+                                    );
+                                  }
                                 }
                               }
-                            }
-                          : null,
-                      onManualSend: item.isFailed
-                          ? () => _openManualSendDialog(context, item)
-                          : null,
+                              : null,
+                      onManualSend:
+                          item.isFailed
+                              ? () => _openManualSendDialog(context, item)
+                              : null,
                     );
                   },
                 );
@@ -230,6 +267,64 @@ class _NotificationCard extends StatelessWidget {
     this.onManualSend,
   });
 
+  String _statusText(String status) {
+    switch (status) {
+      case 'sent':
+        return 'TERKIRIM';
+      case 'failed':
+        return 'GAGAL';
+      case 'processing':
+        return 'DIPROSES';
+      case 'pending':
+        return 'MENUNGGU';
+      default:
+        return status.toUpperCase();
+    }
+  }
+
+  String _roleLabel(String role) {
+    switch (role.toLowerCase()) {
+      case 'penjahit':
+        return 'Penjahit';
+      case 'manager':
+        return 'Manajer';
+      case 'admin':
+        return 'Admin';
+      default:
+        return role;
+    }
+  }
+
+  String _eventLabel(String eventType) {
+    switch (eventType) {
+      case 'setor_majun':
+        return 'Setor majun';
+      case 'penarikan_upah':
+        return 'Penarikan upah';
+      case 'tambah_stok_perca':
+        return 'Tambah stok perca';
+      case 'expedition':
+        return 'Pengiriman';
+      default:
+        return eventType.replaceAll('_', ' ');
+    }
+  }
+
+  String _tableLabel(String sourceTable) {
+    switch (sourceTable) {
+      case 'majun_transactions':
+        return 'Transaksi majun';
+      case 'salary_withdrawals':
+        return 'Penarikan upah';
+      case 'percas_stock':
+        return 'Stok perca';
+      case 'expeditions':
+        return 'Ekspedisi';
+      default:
+        return sourceTable.replaceAll('_', ' ');
+    }
+  }
+
   Color _statusColor(String status) {
     switch (status) {
       case 'sent':
@@ -275,7 +370,7 @@ class _NotificationCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  item.status.toUpperCase(),
+                  _statusText(item.status),
                   style: TextStyle(
                     color: statusColor,
                     fontWeight: FontWeight.w700,
@@ -286,23 +381,42 @@ class _NotificationCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text('To: ${item.recipientPhone} (${item.recipientRole})'),
+          Text(
+            'Dari: ${_eventLabel(item.eventType)} (${_tableLabel(item.sourceTable)})',
+          ),
           const SizedBox(height: 4),
+          Text(
+            'Kirim ke: ${item.recipientPhone} (${_roleLabel(item.recipientRole)})',
+          ),
+          const SizedBox(height: 8),
+          const Text('Pesan:', style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 2),
           Text(item.message),
-          if ((item.lastError ?? '').isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Error: ${item.lastError}',
-              style: const TextStyle(color: AppColors.error, fontSize: 12),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
+          if ((item.imageUrl ?? '').isNotEmpty) ...[
+            const SizedBox(height: 10),
+            const Text(
+              'Gambar:',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                item.imageUrl!,
+                height: 150,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder:
+                    (_, __, ___) => const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        'Gambar tidak dapat dimuat',
+                        style: TextStyle(color: AppColors.greyDark),
+                      ),
+                    ),
+              ),
             ),
           ],
-          const SizedBox(height: 8),
-          Text(
-            'Retry ${item.retryCount}/${item.maxRetries} • ${item.createdAt.toLocal()}',
-            style: const TextStyle(fontSize: 12, color: AppColors.greyDark),
-          ),
           if (onRetry != null || onManualSend != null) ...[
             const SizedBox(height: 10),
             Wrap(
@@ -312,13 +426,13 @@ class _NotificationCard extends StatelessWidget {
                   OutlinedButton.icon(
                     onPressed: onRetry,
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Retry'),
+                    label: const Text('Coba ulang'),
                   ),
                 if (onManualSend != null)
                   ElevatedButton.icon(
                     onPressed: onManualSend,
                     icon: const Icon(Icons.send),
-                    label: const Text('Send Manual'),
+                    label: const Text('Kirim manual'),
                   ),
               ],
             ),
