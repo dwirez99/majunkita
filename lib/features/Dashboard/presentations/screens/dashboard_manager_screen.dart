@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../auth/domain/providers/auth_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../manage_expeditions/presentations/screens/expedition_history_screen.dart';
+import '../../../manage_expeditions/domain/expedition_provider.dart';
+import '../../../manage_expeditions/data/models/expedition_model.dart';
 import '../../../manage_partner/presentations/screens/manage_partner_screen.dart';
 import '../../../manage_percas/presentations/screens/add_perca_history_screen.dart';
 import '../widgets/dashboard_appbar.dart';
@@ -52,6 +55,7 @@ class _DashboardManagerScreenState
   Widget build(BuildContext context) {
     // 1. Ambil data profil dari Riverpod (agar nama dinamis)
     final userProfileAsync = ref.watch(userProfileProvider);
+    final expeditionsAsync = ref.watch(expeditionListProvider);
 
     return Scaffold(
       appBar: const DashboardAppBar(title: 'Dashboard Manager'),
@@ -94,13 +98,14 @@ class _DashboardManagerScreenState
               const SizedBox(height: 20),
 
               // 4. CARD RENCANA PENGIRIMAN TERBARU
-              _buildShipmentCard(),
+              _buildShipmentCard(expeditionsAsync),
 
               const SizedBox(height: 30),
 
               // 5. ACTION BUTTONS (Menu Utama)
               _buildMenuButton(
                 label: 'RIWAYAT AMBIL DAN SETOR\nPERCA',
+                backgroundColor: AppColors.secondary,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -114,11 +119,14 @@ class _DashboardManagerScreenState
 
               _buildMenuButton(
                 label: 'RIWAYAT PENGIRIMAN',
+                backgroundColor: AppColors.accent,
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const ExpeditionHistoryScreen(),
+                      builder:
+                          (context) =>
+                              const ExpeditionHistoryScreen(openLatestOnLoad: true),
                     ),
                   );
                 },
@@ -127,6 +135,7 @@ class _DashboardManagerScreenState
 
               _buildMenuButton(
                 label: 'MANAJEMEN PARTNER',
+                backgroundColor: AppColors.primaryDark,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -152,7 +161,64 @@ class _DashboardManagerScreenState
 
   // --- WIDGET BUILDERS (Agar kode rapi) ---
 
-  Widget _buildShipmentCard() {
+  Widget _buildShipmentCard(AsyncValue<List<ExpeditionModel>> expeditionsAsync) {
+    final dateFormatter = DateFormat('dd MMM yyyy');
+
+    String formatWeight(num value) {
+      if (value % 1 == 0) return value.toInt().toString();
+      return value.toStringAsFixed(1);
+    }
+
+    Widget buildCardContent({
+      required String date,
+      required String sacks,
+      required String weight,
+    }) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _InfoRow(label: 'Tanggal Kirim', value: date),
+              const SizedBox(height: 4),
+              _InfoRow(label: 'Jumlah Kirim', value: sacks),
+              const SizedBox(height: 4),
+              _InfoRow(label: 'Bobot Kirim', value: weight),
+            ],
+          ),
+
+          // Tombol Detail Kecil
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) =>
+                          const ExpeditionHistoryScreen(openLatestOnLoad: true),
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.secondaryDark,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'Detail Pengiriman',
+                style: AppTextStyles.labelLarge.copyWith(
+                  color: AppColors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -165,55 +231,42 @@ class _DashboardManagerScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Rencana Pengiriman Terbaru',
+            'Pengiriman Terbaru',
             style: AppTextStyles.bodyLarge,
           ),
           const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment:
-                CrossAxisAlignment.end, // Agar button sejajar bawah
-            children: [
-              // Kolom Informasi Data
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _InfoRow(label: 'Tanggal Kirim', value: '19 04 2025'),
-                  SizedBox(height: 4),
-                  _InfoRow(label: 'Jumlah Kirim', value: '23 Karung'),
-                  SizedBox(height: 4),
-                  _InfoRow(label: 'Bobot Kirim', value: '1150 KG'),
-                ],
-              ),
-
-              // Tombol Detail Kecil
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ExpeditionHistoryScreen(),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    'Detail Pengiriman',
-                    style: AppTextStyles.labelLarge.copyWith(
-                      color: AppColors.white,
-                    ),
+          expeditionsAsync.when(
+            loading:
+                () => const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: LinearProgressIndicator(color: AppColors.primary),
+                ),
+            error:
+                (error, _) => Text(
+                  'Gagal memuat pengiriman terbaru',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ),
-            ],
+            data: (expeditions) {
+              if (expeditions.isEmpty) {
+                return Text(
+                  'Belum ada data pengiriman.',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.greyDark,
+                    fontWeight: FontWeight.w600,
+                  ),
+                );
+              }
+
+              final latest = expeditions.first;
+              return buildCardContent(
+                date: dateFormatter.format(latest.expeditionDate),
+                sacks: '${latest.sackNumber} Karung',
+                weight: '${formatWeight(latest.totalWeight)} KG',
+              );
+            },
           ),
         ],
       ),
@@ -222,6 +275,7 @@ class _DashboardManagerScreenState
 
   Widget _buildMenuButton({
     required String label,
+    required Color backgroundColor,
     required VoidCallback onTap,
   }) {
     return SizedBox(
@@ -230,10 +284,10 @@ class _DashboardManagerScreenState
       child: ElevatedButton(
         onPressed: onTap,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
+          backgroundColor: backgroundColor,
           foregroundColor: AppColors.white,
           elevation: 2,
-          shadowColor: AppColors.primary.withValues(alpha: 0.35),
+          shadowColor: backgroundColor.withValues(alpha: 0.35),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),

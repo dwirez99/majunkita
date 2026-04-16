@@ -44,7 +44,7 @@ class _DashboardDriverScreenState extends ConsumerState<DashboardDriverScreen> {
       appBar: const DashboardAppBar(title: 'Dashboard Driver'),
       backgroundColor: AppColors.background,
       body: RefreshIndicator(
-        color: AppColors.primary,
+        color: AppColors.secondary,
         onRefresh: () async {
           ref.invalidate(driverDashboardProvider);
           ref.invalidate(userProfileProvider);
@@ -67,7 +67,7 @@ class _DashboardDriverScreenState extends ConsumerState<DashboardDriverScreen> {
                 loading:
                     () => _buildProfileCard(name: 'Memuat...', role: 'driver'),
                 error:
-                    (_, __) => _buildProfileCard(name: 'Error', role: 'driver'),
+          (_, _) => _buildProfileCard(name: 'Error', role: 'driver'),
               ),
 
               const SizedBox(height: 20),
@@ -98,7 +98,7 @@ class _DashboardDriverScreenState extends ConsumerState<DashboardDriverScreen> {
                       ),
                     ),
                 error:
-                    (_, __) => const Text(
+                    (_, _) => const Text(
                       'Hallo, Driver!',
                       style: TextStyle(
                         fontSize: 22,
@@ -273,11 +273,15 @@ class _DashboardDriverScreenState extends ConsumerState<DashboardDriverScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
+        gradient: const LinearGradient(
+          colors: [AppColors.primary, AppColors.secondaryLight],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
+            color: AppColors.secondary.withValues(alpha: 0.25),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),

@@ -105,6 +105,7 @@ class _DashboarAdminScreenState extends ConsumerState<DashboarAdminScreen> {
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
+                      color: AppColors.black,
                     ),
                   );
                 },
@@ -125,7 +126,11 @@ class _DashboarAdminScreenState extends ConsumerState<DashboarAdminScreen> {
               // 5. BAGIAN RINGKASAN
               const Text(
                 'Ringkasan',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.black,
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -133,10 +138,19 @@ class _DashboarAdminScreenState extends ConsumerState<DashboarAdminScreen> {
                   .watch(adminDashboardProvider)
                   .when(
                     loading:
-                        () => const Center(child: CircularProgressIndicator()),
+                        () => const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.secondary,
+                          ),
+                        ),
                     error:
-                        (error, stackTrace) =>
-                            Center(child: Text(error.toString())),
+                        (error, stackTrace) => Center(
+                          child: Text(
+                            error.toString(),
+                            style: const TextStyle(color: AppColors.error),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
                     data: (summary) {
                       return Column(
                         children: [

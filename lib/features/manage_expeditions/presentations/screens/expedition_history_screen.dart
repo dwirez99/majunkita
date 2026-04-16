@@ -1,16 +1,178 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../data/models/expedition_model.dart';
 import '../../domain/expedition_provider.dart';
 
 /// Screen riwayat expedisi (hanya tampilan, tanpa aksi tambah/hapus)
 /// Digunakan oleh Manager untuk memantau semua pengiriman
-class ExpeditionHistoryScreen extends ConsumerWidget {
-  const ExpeditionHistoryScreen({super.key});
+class ExpeditionHistoryScreen extends ConsumerStatefulWidget {
+  const ExpeditionHistoryScreen({
+    super.key,
+    this.openLatestOnLoad = false,
+  });
+
+  final bool openLatestOnLoad;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ExpeditionHistoryScreen> createState() =>
+      _ExpeditionHistoryScreenState();
+}
+
+class _ExpeditionHistoryScreenState
+    extends ConsumerState<ExpeditionHistoryScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  DateTimeRange? _dateRange;
+  String? _initialExpandedId;
+  bool _initialExpansionResolved = false;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDateRange() async {
+    final selectedRange = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+      initialDateRange: _dateRange,
+      helpText: 'Pilih rentang tanggal kirim',
+    );
+
+    if (selectedRange != null) {
+      setState(() => _dateRange = selectedRange);
+    }
+  }
+
+  void _clearFilters() {
+    setState(() {
+      _searchController.clear();
+      _dateRange = null;
+    });
+  }
+
+  ExpeditionModel _findLatestExpedition(List<ExpeditionModel> expeditions) {
+    ExpeditionModel latest = expeditions.first;
+
+    for (final item in expeditions.skip(1)) {
+      if (item.expeditionDate.isAfter(latest.expeditionDate)) {
+        latest = item;
+      }
+    }
+
+    return latest;
+  }
+
+  void _resolveInitialExpansion(List<ExpeditionModel> expeditions) {
+    if (_initialExpansionResolved || !widget.openLatestOnLoad) return;
+    _initialExpansionResolved = true;
+
+    if (expeditions.isEmpty) return;
+    _initialExpandedId = _findLatestExpedition(expeditions).id;
+  }
+
+  List<ExpeditionModel> _applyFilters(List<ExpeditionModel> expeditions) {
+    final query = _searchController.text.trim().toLowerCase();
+
+    return expeditions.where((expedition) {
+      final destination = expedition.destination.toLowerCase();
+      final partner = expedition.partnerName?.toLowerCase() ?? '';
+      final matchesSearch =
+          query.isEmpty || destination.contains(query) || partner.contains(query);
+
+      final expeditionDate = DateTime(
+        expedition.expeditionDate.year,
+        expedition.expeditionDate.month,
+        expedition.expeditionDate.day,
+      );
+
+      final matchesDate =
+          _dateRange == null ||
+          (!expeditionDate.isBefore(
+                DateTime(
+                  _dateRange!.start.year,
+                  _dateRange!.start.month,
+                  _dateRange!.start.day,
+                ),
+              ) &&
+              !expeditionDate.isAfter(
+                DateTime(
+                  _dateRange!.end.year,
+                  _dateRange!.end.month,
+                  _dateRange!.end.day,
+                ),
+              ));
+
+      return matchesSearch && matchesDate;
+    }).toList();
+  }
+
+  Widget _buildFilterSection() {
+    final hasFilter = _searchController.text.isNotEmpty || _dateRange != null;
+    final dateLabel =
+        _dateRange == null
+            ? 'Semua tanggal'
+            : '${DateFormat('dd MMM yyyy').format(_dateRange!.start)} - ${DateFormat('dd MMM yyyy').format(_dateRange!.end)}';
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceLight,
+        border: Border.all(color: AppColors.cardBorder),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          TextField(
+            controller: _searchController,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              hintText: 'Cari tujuan atau partner...',
+              prefixIcon: const Icon(Icons.search, color: AppColors.greyDark),
+              suffixIcon:
+                  _searchController.text.isEmpty
+                      ? null
+                      : IconButton(
+                        icon: const Icon(Icons.clear, color: AppColors.greyDark),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {});
+                        },
+                      ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _pickDateRange,
+                  icon: const Icon(Icons.calendar_month_outlined, size: 18),
+                  label: Text(
+                    dateLabel,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              if (hasFilter) ...[
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: _clearFilters,
+                  child: const Text('Reset'),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Gunakan provider yang sama dengan ManageExpeditionsScreen
     final expeditionsAsync = ref.watch(expeditionListProvider);
 
@@ -21,90 +183,130 @@ class ExpeditionHistoryScreen extends ConsumerWidget {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: AppColors.black,
           ),
         ),
-        backgroundColor: Colors.grey[200],
+        backgroundColor: AppColors.surfaceLight,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: AppColors.black),
         actions: [
           // Tombol refresh untuk memuat ulang daftar riwayat
           IconButton(
             onPressed: () => ref.invalidate(expeditionListProvider),
-            icon: const Icon(Icons.refresh, color: Colors.black),
+            icon: const Icon(Icons.refresh, color: AppColors.black),
             tooltip: 'Refresh',
           ),
         ],
       ),
-      backgroundColor: Colors.white,
-      body: expeditionsAsync.when(
-        // Tampilkan daftar riwayat jika data berhasil dimuat
-        data: (expeditions) {
-          if (expeditions.isEmpty) {
-            // Tampilkan pesan kosong jika belum ada riwayat
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.local_shipping_outlined,
-                    size: 64,
-                    color: Colors.grey,
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'Belum ada riwayat pengiriman.',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                ],
-              ),
-            );
-          }
+      backgroundColor: AppColors.background,
+      body: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            _buildFilterSection(),
+            const SizedBox(height: 12),
+            Expanded(
+              child: expeditionsAsync.when(
+                // Tampilkan daftar riwayat jika data berhasil dimuat
+                data: (expeditions) {
+                  _resolveInitialExpansion(expeditions);
+                  final filteredExpeditions = _applyFilters(expeditions);
 
-          // Tampilkan ListView semua riwayat expedisi
-          return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: expeditions.length,
-            physics: const BouncingScrollPhysics(),
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12.0),
-                child: _buildHistoryCard(context, expeditions[index]),
-              );
-            },
-          );
-        },
-        // Tampilkan loading indicator saat data sedang dimuat
-        loading: () => const Center(child: CircularProgressIndicator()),
-        // Tampilkan pesan error jika gagal memuat data
-        error: (error, stack) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                const SizedBox(height: 12),
-                Text(
-                  'Gagal memuat riwayat: $error',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.red),
+                  if (filteredExpeditions.isEmpty) {
+                    final emptyMessage =
+                        expeditions.isEmpty
+                            ? 'Belum ada riwayat pengiriman.'
+                            : 'Data tidak ditemukan untuk filter saat ini.';
+
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.local_shipping_outlined,
+                            size: 64,
+                            color: AppColors.grey,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            emptyMessage,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: AppColors.greyDark,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  // Tampilkan ListView semua riwayat expedisi
+                  return ListView.builder(
+                    itemCount: filteredExpeditions.length,
+                    physics: const BouncingScrollPhysics(),
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12.0),
+                        child: _buildHistoryCard(
+                          context,
+                          filteredExpeditions[index],
+                          initiallyExpanded:
+                              filteredExpeditions[index].id ==
+                              _initialExpandedId,
+                        ),
+                      );
+                    },
+                  );
+                },
+                // Tampilkan loading indicator saat data sedang dimuat
+                loading:
+                    () => const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
+                    ),
+                // Tampilkan pesan error jika gagal memuat data
+                error: (error, stack) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          color: AppColors.error,
+                          size: 48,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Gagal memuat riwayat: $error',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: AppColors.error),
+                        ),
+                        const SizedBox(height: 12),
+                        ElevatedButton(
+                          onPressed: () => ref.invalidate(expeditionListProvider),
+                          child: const Text('Coba Lagi'),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () => ref.invalidate(expeditionListProvider),
-                  child: const Text('Coba Lagi'),
-                ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 
   /// Kartu riwayat satu expedisi (read-only, tanpa tombol hapus)
-  Widget _buildHistoryCard(BuildContext context, ExpeditionModel expedition) {
+  Widget _buildHistoryCard(
+    BuildContext context,
+    ExpeditionModel expedition, {
+    bool initiallyExpanded = false,
+  }) {
     // Format tanggal ke format yang mudah dibaca
     final dateFormatted =
         DateFormat('dd MMM yyyy').format(expedition.expeditionDate);
@@ -113,11 +315,17 @@ class ExpeditionHistoryScreen extends ConsumerWidget {
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ExpansionTile(
+        key: PageStorageKey<String>('expedition-tile-${expedition.id}'),
+        initiallyExpanded: initiallyExpanded,
         tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         // Judul: nama tujuan pengiriman
         title: Row(
           children: [
-            const Icon(Icons.local_shipping, color: Colors.green, size: 20),
+            const Icon(
+              Icons.local_shipping,
+              color: AppColors.secondary,
+              size: 20,
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -138,12 +346,12 @@ class ExpeditionHistoryScreen extends ConsumerWidget {
             children: [
               Text(
                 dateFormatted,
-                style: const TextStyle(fontSize: 13, color: Colors.black54),
+                style: const TextStyle(fontSize: 13, color: AppColors.greyDark),
               ),
               const SizedBox(height: 2),
               Text(
                 '${expedition.sackNumber} Karung  •  ${expedition.totalWeight} KG',
-                style: const TextStyle(fontSize: 13, color: Colors.black54),
+                style: const TextStyle(fontSize: 13, color: AppColors.greyDark),
               ),
             ],
           ),
@@ -196,7 +404,7 @@ class ExpeditionHistoryScreen extends ConsumerWidget {
                     child: const Text(
                       'Lihat Bukti Pengiriman',
                       style: TextStyle(
-                        color: Colors.blue,
+                        color: AppColors.secondary,
                         decoration: TextDecoration.underline,
                         fontSize: 13,
                       ),
@@ -221,7 +429,7 @@ class ExpeditionHistoryScreen extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: Colors.grey),
+          Icon(icon, size: 16, color: AppColors.grey),
           const SizedBox(width: 8),
           SizedBox(
             width: 110,
@@ -230,7 +438,7 @@ class ExpeditionHistoryScreen extends ConsumerWidget {
               style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: AppColors.black,
               ),
             ),
           ),
@@ -238,7 +446,7 @@ class ExpeditionHistoryScreen extends ConsumerWidget {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontSize: 13, color: Colors.black54),
+              style: const TextStyle(fontSize: 13, color: AppColors.greyDark),
             ),
           ),
         ],
@@ -257,8 +465,8 @@ class ExpeditionHistoryScreen extends ConsumerWidget {
             AppBar(
               title: const Text('Bukti Pengiriman'),
               automaticallyImplyLeading: false,
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
+              backgroundColor: AppColors.white,
+              foregroundColor: AppColors.black,
               elevation: 1,
               actions: [
                 IconButton(
@@ -274,7 +482,7 @@ class ExpeditionHistoryScreen extends ConsumerWidget {
                 if (loadingProgress == null) return child;
                 return const Padding(
                   padding: EdgeInsets.all(32),
-                  child: CircularProgressIndicator(),
+                  child: CircularProgressIndicator(color: AppColors.primary),
                 );
               },
               errorBuilder: (_, __, ___) => const Padding(
