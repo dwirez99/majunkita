@@ -39,7 +39,8 @@ This guide covers everything needed to get the WhatsApp notification integration
 Flutter App
     │ INSERT
     ▼
-[majun_transactions / percas_stock / expeditions / salary_withdrawals]
+[majun_transactions / percas_stock / perca_transactions
+ expeditions / salary_withdrawals]
     │ AFTER INSERT trigger
     ▼
 [wa_notification_queue]  ← status: pending
@@ -64,6 +65,16 @@ go-whatsapp-web-multidevice ← local device (RPi / Android Box)   │
     ▼
 [wa_notification_logs]
 ```
+
+### Trigger table coverage
+
+| Source table | Event | Recipient | Notes |
+|---|---|---|---|
+| `majun_transactions` | Setor majun | Penjahit | Includes delivery proof image |
+| `percas_stock` | Tambah stok perca | Manager | Grouped per batch + idempotency guard |
+| `perca_transactions` | Pengambilan perca | Manager | Grouped per batch, debounced 2 s, advisory lock |
+| `expeditions` | Pengiriman | Manager | Includes proof of delivery image |
+| `salary_withdrawals` | Penarikan upah | Penjahit | Text only |
 
 ---
 
@@ -187,25 +198,23 @@ Copy the `device` value from the response — this is your `WA_API_DEVICE_ID`.
 
 ---
 
-## Step 3 — Apply the Database Migration
+## Step 3 — Apply the Database Migrations
 
-The migrations are located at:
+The migrations are located in `supabase/migrations/`. The relevant files for the WA integration are:
 
-```
-supabase/migrations/20260407164000_add_whatsapp_notification_queue.sql
-supabase/migrations/20260415160000_add_wa_trigger_salary_withdrawals.sql
-```
-
-It creates:
-
-| Object | Purpose |
+| File | Purpose |
 |---|---|
-| `wa_notification_queue` | Async delivery queue |
-| `wa_notification_logs` | Per-attempt delivery log |
-| `normalize_wa_jid()` | Normalizes phone → `628xxx@s.whatsapp.net` |
-| `enqueue_wa_notification()` | Inserts a row into the queue |
-| `dequeue_wa_notifications()` | Atomically dequeues a batch for processing |
-| Triggers on 4 source tables | Automatically enqueue on each INSERT |
+| `20260407164000_add_whatsapp_notification_queue.sql` | Core tables (`wa_notification_queue`, `wa_notification_logs`), helper functions (`normalize_wa_jid`, `enqueue_wa_notification`, `dequeue_wa_notifications`), and initial triggers for majun / perca stock / expeditions |
+| `20260415160000_add_wa_trigger_salary_withdrawals.sql` | Trigger for salary withdrawal notifications to tailors |
+| `20260415183000_add_admin_wa_notifications_rpcs.sql` | (Superseded) Early admin RPC definitions — replaced by later migrations |
+| `20260416090000_wa_notifications_admin_rpc.sql` | `rpc_get_wa_notifications` + `rpc_retry_wa_notification` for the admin UI |
+| `20260417090000_fix_wa_notifications_created_at_ambiguity.sql` | Fixes `created_at` ambiguity in lateral join inside the admin RPC |
+| `20260417100000_improve_wa_notification_message_templates_id.sql` | Improves all trigger message templates (Bahasa Indonesia, emojis) |
+| `20260417103000_add_wa_pending_timeout_to_failed.sql` | `mark_stale_wa_notifications_failed()` + probabilistic cleanup in `dequeue_wa_notifications` |
+| `20260417113000_add_wa_trigger_perca_transactions_factory_take.sql` | Grouped + debounced WA trigger for `perca_transactions` |
+| `20260417114500_add_wa_perca_take_batch_idempotency.sql` | Idempotency guard table (`wa_perca_take_batches`) for perca-take batches |
+| `20260417121500_group_percas_stock_wa_notifications.sql` | Replaces per-row `percas_stock` trigger with grouped + idempotent batch notifications |
+| `20260417130000_cleanup_and_fix_wa_admin_rpcs.sql` | Drops unused legacy `rpc_admin_*` functions; adds `SET search_path` to `_check_is_admin()` |
 
 ### Apply via Supabase CLI
 
@@ -245,7 +254,7 @@ supabase secrets set \
   WA_API_BASE_URL="https://wa.dwirez.app" \
   WA_API_USERNAME="dwirez" \
   WA_API_PASSWORD="dwirez123" \
-  WA_API_DEVICE_ID="a76ddb08-02ab-47f0-be03-66d2f3646864>" \
+  WA_API_DEVICE_ID="a76ddb08-02ab-47f0-be03-66d2f3646864" \
   WA_QUEUE_SECRET="dR2gPDpA8PHHZzCoXdlutFc1TSx+fMtpelr1wSPUsZE=" \
   --project-ref fswmiqldurziscghckpc
 ```
@@ -363,6 +372,30 @@ LIMIT 20;
 
 ## Monitoring & Troubleshooting
 
+### Admin notifications UI
+
+Admins can monitor all WA notification statuses in the app:
+
+- Navigate to **Dashboard Admin → Notifikasi WhatsApp** (bell icon in the app bar).
+- Filter by status (Semua / Menunggu / Diproses / Terkirim / Gagal).
+- Failed notifications can be **retried** (resets retry counter and re-queues) or **sent manually** (opens WhatsApp with the pre-filled message).
+- The badge count on the app bar shows pending + failed notifications for quick visibility.
+
+### Queue cleanup for stale `processing` items
+
+The `dequeue_wa_notifications` function includes a probabilistic cleanup (~5% chance per poll) that automatically marks stale `pending`/`processing` rows as `failed` after 120 seconds. You can also run it manually:
+
+```sql
+SELECT public.mark_stale_wa_notifications_failed(120, 100);
+```
+
+### Perca-take trigger debounce note
+
+The `perca_transactions` trigger uses `pg_sleep(2)` + an advisory lock to debounce rapid batch inserts into a single grouped WA message. This means:
+- Each batch insert to `perca_transactions` holds its DB transaction open for ~2 seconds.
+- Subsequent rows in the same batch are skipped (only the lock-winner sends the message).
+- In production with high concurrency, consider replacing `pg_sleep` with a pg_notify + external queue approach for lower lock pressure.
+
 ### Queue is not draining
 
 - Confirm the pg_cron or external cron schedule is active.
@@ -377,6 +410,12 @@ This can happen if the Edge Function crashed mid-run. Reset them manually:
 UPDATE public.wa_notification_queue
 SET status = 'pending', next_attempt_at = now()
 WHERE status = 'processing';
+```
+
+Or use the automated stale cleanup:
+
+```sql
+SELECT public.mark_stale_wa_notifications_failed(120, 100);
 ```
 
 ### WA gateway returns 401
