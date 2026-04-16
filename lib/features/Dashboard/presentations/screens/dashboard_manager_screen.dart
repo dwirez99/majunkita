@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/domain/providers/auth_provider.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../manage_expeditions/presentations/screens/expedition_history_screen.dart';
 import '../../../manage_partner/presentations/screens/manage_partner_screen.dart';
 import '../../../manage_percas/presentations/screens/add_perca_history_screen.dart';
 import '../widgets/dashboard_appbar.dart';
 import '../widgets/dashboard_bottom_bar.dart';
+import '../widgets/user_profile_card.dart';
 
 class DashboardManagerScreen extends ConsumerStatefulWidget {
   const DashboardManagerScreen({super.key});
@@ -53,55 +55,40 @@ class _DashboardManagerScreenState
 
     return Scaffold(
       appBar: const DashboardAppBar(title: 'Dashboard Manager'),
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 2. PROFILE CARD
-              userProfileAsync.when(
-                data:
-                    (profile) => _buildProfileCard(
-                      name: profile?['nama_lengkap'] ?? 'Manager',
-                      role: profile?['role'] ?? 'Manager',
-                    ),
-                loading:
-                    () => _buildProfileCard(name: 'Loading...', role: '...'),
-                error:
-                    (err, _) =>
-                        _buildProfileCard(name: 'Error', role: 'Offline'),
-              ),
+              // 2. PROFILE CARD (Shared Editable Card)
+              const UserProfileCard(),
 
               const SizedBox(height: 24),
 
               // 3. GREETING TEXT
               userProfileAsync.when(
-                data:
-                    (profile) => Text(
-                      'Hallo, ${profile?['nama_lengkap']?.split(' ')[0] ?? 'Manager'}!',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                data: (profile) {
+                  final rawName =
+                      (profile?['name'] ??
+                              profile?['nama_lengkap'] ??
+                              'Manager')
+                          .toString();
+                  final firstName =
+                      rawName.trim().isEmpty
+                          ? 'Manager'
+                          : rawName.trim().split(' ').first;
+                  return Text(
+                    'Hallo, $firstName!',
+                    style: AppTextStyles.heading3,
+                  );
+                },
                 loading:
-                    () => const Text(
-                      'Hallo...',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    () => const Text('Hallo...', style: AppTextStyles.heading3),
                 error:
-                    (_, _) => const Text(
-                      'Hallo!',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    (_, _) =>
+                        const Text('Hallo!', style: AppTextStyles.heading3),
               ),
 
               const SizedBox(height: 20),
@@ -165,59 +152,13 @@ class _DashboardManagerScreenState
 
   // --- WIDGET BUILDERS (Agar kode rapi) ---
 
-  Widget _buildProfileCard({required String name, required String role}) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.lightGreen,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          // Icon Avatar Bulat Hitam
-          const CircleAvatar(
-            radius: 30,
-            backgroundColor: Colors.black,
-            child: Icon(Icons.person, color: Colors.white, size: 40),
-          ),
-          const SizedBox(width: 16),
-          // Kolom Nama & Role
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                name,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              Text(
-                // Capitalize first letter
-                role.isNotEmpty
-                    ? "${role[0].toUpperCase()}${role.substring(1)}"
-                    : role,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildShipmentCard() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.green[50], // Warna hijau sangat muda
-        border: Border.all(color: Colors.green[200]!, width: 1),
+        color: AppColors.surfaceLight,
+        border: Border.all(color: AppColors.cardBorder, width: 1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -225,7 +166,7 @@ class _DashboardManagerScreenState
         children: [
           const Text(
             'Rencana Pengiriman Terbaru',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: AppTextStyles.bodyLarge,
           ),
           const SizedBox(height: 12),
           Row(
@@ -252,15 +193,13 @@ class _DashboardManagerScreenState
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.green[400], // Warna hijau untuk tombol
+                  color: AppColors.primary,
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: const Text(
+                child: Text(
                   'Detail Pengiriman',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                  style: AppTextStyles.labelLarge.copyWith(
+                    color: AppColors.white,
                   ),
                 ),
               ),
@@ -281,10 +220,10 @@ class _DashboardManagerScreenState
       child: ElevatedButton(
         onPressed: onTap,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.green[400], // Warna hijau cerah
-          foregroundColor: Colors.white, // Warna teks putih
-          elevation: 2, // Sedikit shadow untuk depth
-          shadowColor: Colors.green.withValues(alpha: 0.5),
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.white,
+          elevation: 2,
+          shadowColor: AppColors.primary.withValues(alpha: 0.35),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
@@ -293,11 +232,10 @@ class _DashboardManagerScreenState
         child: Text(
           label,
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: AppTextStyles.buttonText.copyWith(
             fontSize: 16,
-            fontWeight: FontWeight.w900, // Extra Bold
+            fontWeight: FontWeight.w800,
             letterSpacing: 0.5,
-            color: Colors.white,
           ),
         ),
       ),
@@ -320,13 +258,26 @@ class _InfoRow extends StatelessWidget {
           width: 100, // Lebar label tetap agar titik dua sejajar
           child: Text(
             label,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            style: AppTextStyles.bodySmall.copyWith(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.greyDark,
+            ),
           ),
         ),
-        const Text(':  ', style: TextStyle(fontWeight: FontWeight.w600)),
+        const Text(
+          ':  ',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: AppColors.greyDark,
+          ),
+        ),
         Text(
           value,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+          style: AppTextStyles.bodySmall.copyWith(
+            fontSize: 12,
+            color: AppColors.black,
+          ),
         ),
       ],
     );

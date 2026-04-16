@@ -51,9 +51,7 @@ final driverSearchQueryProvider = NotifierProvider<SearchQueryNotifier, String>(
 );
 
 /// Provider untuk List Admin (dengan filter search otomatis)
-final adminsListProvider = FutureProvider.autoDispose<List<Admin>>((
-  ref,
-) async {
+final adminsListProvider = FutureProvider.autoDispose<List<Admin>>((ref) async {
   final repository = ref.watch(managePartnerRepositoryProvider);
   final query = ref.watch(adminSearchQueryProvider);
 
@@ -122,9 +120,7 @@ class StaffManagementNotifier extends AsyncNotifier<void> {
     String? address,
   }) async {
     _checkManagerPermission();
-    _log(
-      'Creating new $role: $name (username: $username, email: $email)',
-    );
+    _log('Creating new $role: $name (username: $username, email: $email)');
 
     state = const AsyncValue.loading();
 
@@ -178,7 +174,9 @@ class StaffManagementNotifier extends AsyncNotifier<void> {
     String? password,
   }) async {
     _checkManagerPermission();
-    _log('Updating $role: id=$id, name=$name, email=$email, address=${address ?? 'N/A'}');
+    _log(
+      'Updating $role: id=$id, name=$name, email=$email, address=${address ?? 'N/A'}',
+    );
     state = const AsyncValue.loading();
 
     try {
@@ -203,6 +201,62 @@ class StaffManagementNotifier extends AsyncNotifier<void> {
       _log('Error updating $role $id: $e', level: 'ERROR');
       state = AsyncValue.error(e, st);
       rethrow; // <--- PENTING
+    }
+  }
+
+  /// Self-profile update for current logged-in user (admin/manager/driver).
+  /// Tidak memakai gate manager-only, tapi tetap aman karena hanya boleh update id milik sendiri.
+  Future<void> updateMyProfile({
+    required String id,
+    required String name,
+    String? username,
+    required String email,
+    required String noTelp,
+    String? address,
+    required String role,
+    String? password,
+  }) async {
+    final currentUser = ref.read(supabaseClientProvider).auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('Sesi tidak ditemukan. Silakan login ulang.');
+    }
+
+    if (currentUser.id != id) {
+      _log(
+        'Denied self update attempt: currentUser=${currentUser.id}, target=$id',
+        level: 'WARN',
+      );
+      throw Exception(
+        'Akses ditolak: Anda hanya dapat mengubah profil Anda sendiri.',
+      );
+    }
+
+    _log('Updating own profile: id=$id, role=$role, email=$email');
+    state = const AsyncValue.loading();
+
+    try {
+      final repository = ref.read(managePartnerRepositoryProvider);
+      await repository.updateUser(
+        id: id,
+        name: name,
+        username: username,
+        email: email,
+        noTelp: noTelp,
+        address: address,
+        password: password,
+        role: role,
+      );
+
+      // Refresh management list bila kebetulan role admin/driver
+      if (role == AppRoles.admin) ref.invalidate(adminsListProvider);
+      if (role == AppRoles.driver) ref.invalidate(driversListProvider);
+
+      _log('Successfully updated own profile: id=$id');
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      _log('Error updating own profile $id: $e', level: 'ERROR');
+      state = AsyncValue.error(e, st);
+      rethrow;
     }
   }
 

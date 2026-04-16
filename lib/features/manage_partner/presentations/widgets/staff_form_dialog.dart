@@ -123,9 +123,17 @@ class _StaffFormDialogState extends ConsumerState<StaffFormDialog> {
                 _buildLabel('Nomor'),
                 _buildTextField(
                   controller: _noTelpController,
-                  hint: '08xxxxxxxx',
+                  hint: '62xxxxxxxxxxx',
                   keyboardType: TextInputType.phone,
-                  validator: (v) => v!.isEmpty ? 'Nomor wajib diisi' : null,
+                  validator: (v) {
+                    final value = (v ?? '').trim();
+                    if (value.isEmpty) return 'Nomor wajib diisi';
+                    if (!value.startsWith('62')) {
+                      return 'Nomor harus diawali 62';
+                    }
+                    if (value.length < 10) return 'Nomor terlalu pendek';
+                    return null;
+                  },
                 ),
 
                 // Email (Readonly jika Edit)
@@ -286,6 +294,31 @@ class _StaffFormDialogState extends ConsumerState<StaffFormDialog> {
         ),
       ),
       validator: validator,
+      onChanged:
+          keyboardType == TextInputType.phone
+              ? (value) {
+                final digitsOnly = value.replaceAll(RegExp(r'[^0-9]'), '');
+                String normalized = digitsOnly;
+
+                if (digitsOnly.startsWith('0')) {
+                  normalized = '62${digitsOnly.substring(1)}';
+                } else if (digitsOnly.startsWith('8')) {
+                  normalized = '62$digitsOnly';
+                } else if (!digitsOnly.startsWith('62') &&
+                    digitsOnly.isNotEmpty) {
+                  normalized = '62$digitsOnly';
+                }
+
+                if (normalized != value) {
+                  controller.value = TextEditingValue(
+                    text: normalized,
+                    selection: TextSelection.collapsed(
+                      offset: normalized.length,
+                    ),
+                  );
+                }
+              }
+              : null,
     );
   }
 
@@ -298,26 +331,29 @@ class _StaffFormDialogState extends ConsumerState<StaffFormDialog> {
     try {
       if (_isEdit) {
         // --- LOGIKA UPDATE ---
+        final normalizedNoTelp = _normalizePhoneNumber(_noTelpController.text);
         await notifier.updateStaff(
           id: widget.staffToEdit!.id,
           name: _nameController.text.trim(),
           username: _usernameController.text.trim(),
           email: _emailController.text.trim(),
-          noTelp: _noTelpController.text.trim(),
+          noTelp: normalizedNoTelp,
           address: _addressController.text.trim(),
           role: widget.role, // Penting agar list yang direfresh sesuai
-          password: _passwordController.text.trim().isEmpty
-              ? null
-              : _passwordController.text.trim(),
+          password:
+              _passwordController.text.trim().isEmpty
+                  ? null
+                  : _passwordController.text.trim(),
         );
         if (mounted) _showSuccess('Data ${widget.role} berhasil diperbarui!');
       } else {
         // --- LOGIKA CREATE ---
+        final normalizedNoTelp = _normalizePhoneNumber(_noTelpController.text);
         await notifier.createStaff(
           name: _nameController.text.trim(),
           username: _usernameController.text.trim(),
           email: _emailController.text.trim(),
-          noTelp: _noTelpController.text.trim(),
+          noTelp: normalizedNoTelp,
           password: _passwordController.text,
           role: widget.role, // 'admin' atau 'driver'
           address: _addressController.text.trim(),
@@ -336,6 +372,17 @@ class _StaffFormDialogState extends ConsumerState<StaffFormDialog> {
         );
       }
     }
+  }
+
+  String _normalizePhoneNumber(String input) {
+    final digitsOnly = input.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (digitsOnly.startsWith('62')) return digitsOnly;
+    if (digitsOnly.startsWith('0') && digitsOnly.length > 1) {
+      return '62${digitsOnly.substring(1)}';
+    }
+    if (digitsOnly.startsWith('8')) return '62$digitsOnly';
+    return digitsOnly.isEmpty ? digitsOnly : '62$digitsOnly';
   }
 
   void _showSuccess(String message) {

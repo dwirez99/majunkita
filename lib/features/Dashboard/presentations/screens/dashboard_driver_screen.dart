@@ -20,8 +20,7 @@ class DashboardDriverScreen extends ConsumerStatefulWidget {
       _DashboardDriverScreenState();
 }
 
-class _DashboardDriverScreenState
-    extends ConsumerState<DashboardDriverScreen> {
+class _DashboardDriverScreenState extends ConsumerState<DashboardDriverScreen> {
   int _selectedIndex = 0;
 
   void _onItemTapped(int index) {
@@ -60,14 +59,15 @@ class _DashboardDriverScreenState
 
               // ── 1. KARTU PROFIL ─────────────────────────────────────
               userProfileAsync.when(
-                data: (profile) => _buildProfileCard(
-                  name: profile?['nama_lengkap'] ?? 'Driver',
-                  role: profile?['role'] ?? 'driver',
-                ),
-                loading: () => _buildProfileCard(
-                    name: 'Memuat...', role: 'driver'),
-                error: (_, __) =>
-                    _buildProfileCard(name: 'Error', role: 'driver'),
+                data:
+                    (profile) => _buildProfileCard(
+                      name: profile?['nama_lengkap'] ?? 'Driver',
+                      role: profile?['role'] ?? 'driver',
+                    ),
+                loading:
+                    () => _buildProfileCard(name: 'Memuat...', role: 'driver'),
+                error:
+                    (_, __) => _buildProfileCard(name: 'Error', role: 'driver'),
               ),
 
               const SizedBox(height: 20),
@@ -88,22 +88,24 @@ class _DashboardDriverScreenState
                     ),
                   );
                 },
-                loading: () => const Text(
-                  'Hallo...',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.black,
-                  ),
-                ),
-                error: (_, __) => const Text(
-                  'Hallo, Driver!',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.black,
-                  ),
-                ),
+                loading:
+                    () => const Text(
+                      'Hallo...',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.black,
+                      ),
+                    ),
+                error:
+                    (_, __) => const Text(
+                      'Hallo, Driver!',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.black,
+                      ),
+                    ),
               ),
 
               const SizedBox(height: 4),
@@ -127,41 +129,49 @@ class _DashboardDriverScreenState
                     icon: Icons.add_box_outlined,
                     title: 'Tambah\nPerca',
                     color: AppColors.accent,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const AddPercaScreen()),
-                    ),
+                    onTap:
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AddPercaScreen(),
+                          ),
+                        ),
                   ),
                   _buildMenuCard(
                     icon: Icons.local_shipping_outlined,
                     title: 'Tambah\nExpedisi',
                     color: AppColors.primary,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const AddExpeditionScreen()),
-                    ),
+                    onTap:
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AddExpeditionScreen(),
+                          ),
+                        ),
                   ),
                   _buildMenuCard(
                     icon: Icons.history_outlined,
                     title: 'Riwayat\nPengiriman',
                     color: AppColors.secondary,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const ExpeditionHistoryScreen()),
-                    ),
+                    onTap:
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ExpeditionHistoryScreen(),
+                          ),
+                        ),
                   ),
                   _buildMenuCard(
                     icon: Icons.business_outlined,
                     title: 'Kelola\nExpedisi',
-                    color: Colors.indigo,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const ManageExpeditionsScreen()),
-                    ),
+                    color: AppColors.secondaryDark,
+                    onTap:
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ManageExpeditionsScreen(),
+                          ),
+                        ),
                   ),
                 ],
               ),
@@ -180,47 +190,49 @@ class _DashboardDriverScreenState
               const SizedBox(height: 12),
 
               driverSummaryAsync.when(
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24.0),
-                    child: CircularProgressIndicator(
-                      color: AppColors.primary,
+                loading:
+                    () => const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24.0),
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
                 error: (error, _) => _buildErrorCard(error.toString()),
-                data: (summary) => SummaryCard(
-                  title: '🚚 Expedisi Saya',
-                  children: [
-                    _SummaryRow(
-                      icon: Icons.receipt_long_outlined,
-                      label: 'Total pengiriman',
-                      value: '${summary['total_pengiriman']} kali',
+                data:
+                    (summary) => SummaryCard(
+                      title: '🚚 Expedisi Saya',
+                      children: [
+                        _SummaryRow(
+                          icon: Icons.receipt_long_outlined,
+                          label: 'Total pengiriman',
+                          value: '${summary['total_pengiriman']} kali',
+                        ),
+                        _SummaryRow(
+                          icon: Icons.inventory_outlined,
+                          label: 'Total karung dikirim',
+                          value: '${summary['total_karung']} karung',
+                        ),
+                        _SummaryRow(
+                          icon: Icons.scale_outlined,
+                          label: 'Total berat dikirim',
+                          value: summary['fmt_total_berat'] as String,
+                        ),
+                        _SummaryRow(
+                          icon: Icons.calendar_month_outlined,
+                          label: 'Pengiriman bulan ini',
+                          value: '${summary['pengiriman_bulan_ini']} kali',
+                          isHighlighted: true,
+                        ),
+                        _SummaryRow(
+                          icon: Icons.monitor_weight_outlined,
+                          label: 'Berat bulan ini',
+                          value: summary['fmt_berat_bulan_ini'] as String,
+                          isHighlighted: true,
+                        ),
+                      ],
                     ),
-                    _SummaryRow(
-                      icon: Icons.inventory_outlined,
-                      label: 'Total karung dikirim',
-                      value: '${summary['total_karung']} karung',
-                    ),
-                    _SummaryRow(
-                      icon: Icons.scale_outlined,
-                      label: 'Total berat dikirim',
-                      value: summary['fmt_total_berat'] as String,
-                    ),
-                    _SummaryRow(
-                      icon: Icons.calendar_month_outlined,
-                      label: 'Pengiriman bulan ini',
-                      value: '${summary['pengiriman_bulan_ini']} kali',
-                      isHighlighted: true,
-                    ),
-                    _SummaryRow(
-                      icon: Icons.monitor_weight_outlined,
-                      label: 'Berat bulan ini',
-                      value: summary['fmt_berat_bulan_ini'] as String,
-                      isHighlighted: true,
-                    ),
-                  ],
-                ),
               ),
 
               const SizedBox(height: 16),
@@ -230,13 +242,14 @@ class _DashboardDriverScreenState
                 icon: Icons.business_center_outlined,
                 label: 'Kelola Mitra Expedisi',
                 subtitle: 'Tambah atau ubah perusahaan jasa pengiriman',
-                color: Colors.indigo,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) =>
-                          const ManageExpeditionPartnersScreen()),
-                ),
+                color: AppColors.secondaryDark,
+                onTap:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ManageExpeditionPartnersScreen(),
+                      ),
+                    ),
               ),
 
               const SizedBox(height: 32),
@@ -254,8 +267,7 @@ class _DashboardDriverScreenState
 
   // ── Widget Builders ────────────────────────────────────────────────────
 
-  Widget _buildProfileCard(
-      {required String name, required String role}) {
+  Widget _buildProfileCard({required String name, required String role}) {
     final roleLabel =
         role.isNotEmpty ? '${role[0].toUpperCase()}${role.substring(1)}' : role;
     return Container(
@@ -298,8 +310,10 @@ class _DashboardDriverScreenState
                 ),
                 const SizedBox(height: 4),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
@@ -316,8 +330,7 @@ class _DashboardDriverScreenState
               ],
             ),
           ),
-          const Icon(Icons.local_shipping,
-              color: AppColors.white, size: 36),
+          const Icon(Icons.local_shipping, color: AppColors.white, size: 36),
         ],
       ),
     );
@@ -415,10 +428,7 @@ class _DashboardDriverScreenState
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.grey,
-                    ),
+                    style: const TextStyle(fontSize: 11, color: AppColors.grey),
                   ),
                 ],
               ),
@@ -488,8 +498,7 @@ class _SummaryRow extends StatelessWidget {
             value,
             style: TextStyle(
               fontSize: 13,
-              fontWeight:
-                  isHighlighted ? FontWeight.bold : FontWeight.w600,
+              fontWeight: isHighlighted ? FontWeight.bold : FontWeight.w600,
               color: color,
             ),
           ),
@@ -498,4 +507,3 @@ class _SummaryRow extends StatelessWidget {
     );
   }
 }
-

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../../../core/utils/currency_helper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/providers/tailor_provider.dart';
+import 'package:majunkita/features/auth/domain/providers/auth_provider.dart';
+import 'package:majunkita/features/manage_majun/data/model/majun_transactions_model.dart';
+import 'package:majunkita/features/manage_tailors/data/models/salary_withdrawal_model.dart';
+import 'package:majunkita/features/manage_tailors/presentations/screens/widget/withdrawal_salary_dialog.dart';
+import '../../../../core/utils/currency_helper.dart';
 import '../../data/models/tailor_model.dart';
-import '../../data/models/salary_withdrawal_model.dart';
-import '../../../manage_majun/data/model/majun_transactions_model.dart';
-import 'widget/withdrawal_salary_dialog.dart';
+import '../../domain/providers/tailor_provider.dart';
 
-/// Screen untuk menampilkan daftar penjahit beserta saldo upahnya.
-/// Ketika diklik, akan masuk ke riwayat penarikan upah.
+/// Screen untuk menampilkan daftar tailor (penjahit)
 class TailorsSalaryListScreen extends ConsumerStatefulWidget {
   const TailorsSalaryListScreen({super.key});
 
@@ -30,6 +30,8 @@ class _TailorsSalaryListScreenState
   @override
   Widget build(BuildContext context) {
     final tailorsAsync = ref.watch(tailorsListProvider);
+    final userProfile = ref.watch(userProfileProvider);
+    final role = userProfile.value?['role'] ?? 'staff';
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -149,7 +151,7 @@ class _TailorsSalaryListScreenState
                         final tailor = tailors[index];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12.0),
-                          child: _buildTailorCard(context, tailor),
+                          child: _buildTailorCard(context, tailor, role),
                         );
                       },
                     );
@@ -188,7 +190,11 @@ class _TailorsSalaryListScreenState
     );
   }
 
-  Widget _buildTailorCard(BuildContext context, TailorModel tailor) {
+  Widget _buildTailorCard(
+    BuildContext context,
+    TailorModel tailor,
+    String role,
+  ) {
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -266,14 +272,15 @@ class _TailorsSalaryListScreenState
             ),
 
             // Add Salary Button
-            IconButton(
-              onPressed: () => WithdrawalSalaryDialog.show(context, tailor),
-              icon: const Icon(Icons.add_card, color: Colors.white),
-              tooltip: 'Tarik Upah',
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.black.withValues(alpha: 0.1),
+            if (role == 'admin')
+              IconButton(
+                onPressed: () => WithdrawalSalaryDialog.show(context, tailor),
+                icon: const Icon(Icons.add_card, color: Colors.white),
+                tooltip: 'Tarik Upah',
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black.withValues(alpha: 0.1),
+                ),
               ),
-            ),
 
             const SizedBox(width: 4),
 
@@ -285,10 +292,8 @@ class _TailorsSalaryListScreenState
   }
 }
 
-/// Screen untuk menampilkan riwayat penarikan gaji untuk satu penjahit
 class TailorSalaryHistoryScreen extends ConsumerStatefulWidget {
   final TailorModel tailor;
-
   const TailorSalaryHistoryScreen({super.key, required this.tailor});
 
   @override
@@ -298,268 +303,98 @@ class TailorSalaryHistoryScreen extends ConsumerStatefulWidget {
 
 class _TailorSalaryHistoryScreenState
     extends ConsumerState<TailorSalaryHistoryScreen> {
-  String _selectedFilter = 'Semua';
+  String _selectedFilter = 'all';
 
   @override
   Widget build(BuildContext context) {
     final historyAsync = ref.watch(tailorUpahHistoryProvider(widget.tailor.id));
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text(
-          'Riwayat Upah: ${widget.tailor.name}',
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        backgroundColor: Colors.grey[200],
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.green[50],
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.green[200]!),
+      appBar: AppBar(title: Text('Riwayat Upah: ${widget.tailor.name}')),
+      body: Column(
+        children: [
+          // Filter Chips
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Wrap(
+              spacing: 8.0,
+              children: [
+                FilterChip(
+                  label: const Text('Semua'),
+                  selected: _selectedFilter == 'all',
+                  onSelected: (selected) {
+                    if (selected) setState(() => _selectedFilter = 'all');
+                  },
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Total Saldo Upah',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.green,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      CurrencyHelper.formatRupiah(widget.tailor.balance),
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green[800],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Riwayat Transaksi',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children:
-                      ['Semua', 'Setor', 'Penarikan'].map((filter) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: ChoiceChip(
-                            label: Text(filter),
-                            selected: _selectedFilter == filter,
-                            onSelected: (selected) {
-                              if (selected) {
-                                setState(() {
-                                  _selectedFilter = filter;
-                                });
-                              }
-                            },
-                            selectedColor: Colors.green[100],
-                            labelStyle: TextStyle(
-                              color:
-                                  _selectedFilter == filter
-                                      ? Colors.green[800]
-                                      : Colors.black87,
-                              fontWeight:
-                                  _selectedFilter == filter
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: historyAsync.when(
-                  data: (withdrawals) {
-                    final filteredList =
-                        withdrawals.where((item) {
-                          if (_selectedFilter == 'Setor') {
-                            return item is MajunTransactionsModel;
-                          } else if (_selectedFilter == 'Penarikan') {
-                            return item is SalaryWithdrawalModel;
-                          }
-                          return true;
-                        }).toList();
-
-                    if (filteredList.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.history_edu,
-                              size: 60,
-                              color: Colors.grey,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Belum ada riwayat ${_selectedFilter.toLowerCase()}.',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
+                FilterChip(
+                  label: const Text('Penarikan'),
+                  selected: _selectedFilter == 'withdrawals',
+                  onSelected: (selected) {
+                    if (selected) {
+                      setState(() => _selectedFilter = 'withdrawals');
                     }
+                  },
+                ),
+                FilterChip(
+                  label: const Text('Pendapatan'),
+                  selected: _selectedFilter == 'earnings',
+                  onSelected: (selected) {
+                    if (selected) setState(() => _selectedFilter = 'earnings');
+                  },
+                ),
+              ],
+            ),
+          ),
+          // History List
+          Expanded(
+            child: historyAsync.when(
+              data: (history) {
+                if (history.isEmpty) {
+                  return const Center(child: Text('Tidak ada riwayat.'));
+                }
+                return ListView.builder(
+                  itemCount: history.length,
+                  itemBuilder: (context, index) {
+                    final item = history[index];
+                    final isWithdrawal = item is SalaryWithdrawalModel;
+                    final amount =
+                        isWithdrawal
+                            ? item.amount
+                            : (item as MajunTransactionsModel).earnedWage;
+                    final date =
+                        isWithdrawal
+                            ? item.dateEntry
+                            : (item as MajunTransactionsModel).dateEntry;
 
-                    return RefreshIndicator(
-                      onRefresh: () async {
-                        ref.invalidate(
-                          tailorUpahHistoryProvider(widget.tailor.id),
-                        );
-                      },
-                      child: ListView.builder(
-                        itemCount: filteredList.length,
-                        physics: const BouncingScrollPhysics(),
-                        itemBuilder: (context, index) {
-                          final item = filteredList[index];
-
-                          final isWithdrawal = item is SalaryWithdrawalModel;
-                          final dateEntry =
-                              isWithdrawal
-                                  ? item.dateEntry
-                                  : (item as MajunTransactionsModel).dateEntry;
-                          final amount =
-                              isWithdrawal
-                                  ? item.amount
-                                  : (item as MajunTransactionsModel).earnedWage;
-
-                          final dateStr =
-                              "${dateEntry.day.toString().padLeft(2, '0')}/"
-                              "${dateEntry.month.toString().padLeft(2, '0')}/"
-                              "${dateEntry.year}";
-
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12.0),
-                            child: Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.grey.shade300),
-                              ),
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    backgroundColor:
-                                        isWithdrawal
-                                            ? Colors.red[50]
-                                            : Colors.green[50],
-                                    child: Icon(
-                                      isWithdrawal
-                                          ? Icons.money_off
-                                          : Icons.attach_money,
-                                      color:
-                                          isWithdrawal
-                                              ? Colors.red
-                                              : Colors.green,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          isWithdrawal
-                                              ? 'Penarikan Upah'
-                                              : 'Setor Majun (Upah)',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          dateStr,
-                                          style: TextStyle(
-                                            color: Colors.grey[600],
-                                            fontSize: 13,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Text(
-                                    '${isWithdrawal ? '-' : '+'} ${CurrencyHelper.formatRupiah(amount)}',
-                                    style: TextStyle(
-                                      color:
-                                          isWithdrawal
-                                              ? Colors.red
-                                              : Colors.green,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
+                    return ListTile(
+                      leading: Icon(
+                        isWithdrawal
+                            ? Icons.arrow_upward
+                            : Icons.arrow_downward,
+                        color: isWithdrawal ? Colors.red : Colors.green,
+                      ),
+                      title: Text(
+                        isWithdrawal
+                            ? 'Penarikan Upah'
+                            : 'Pendapatan dari Setoran',
+                      ),
+                      subtitle: Text('${date.day}/${date.month}/${date.year}'),
+                      trailing: Text(
+                        '${isWithdrawal ? '-' : '+'} ${CurrencyHelper.formatRupiah(amount)}',
+                        style: TextStyle(
+                          color: isWithdrawal ? Colors.red : Colors.green,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     );
                   },
-                  loading:
-                      () => const Center(child: CircularProgressIndicator()),
-                  error:
-                      (error, stack) => Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.error_outline,
-                              size: 48,
-                              color: Colors.red,
-                            ),
-                            const SizedBox(height: 16),
-                            Text('Terjadi kesalahan: $error'),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed:
-                                  () => ref.invalidate(
-                                    tailorUpahHistoryProvider(widget.tailor.id),
-                                  ),
-                              child: const Text('Coba Lagi'),
-                            ),
-                          ],
-                        ),
-                      ),
-                ),
-              ),
-            ],
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, stack) => Center(child: Text('Error: $error')),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
