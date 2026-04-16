@@ -22,11 +22,11 @@ class DashboardBottomBar extends StatelessWidget {
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.inventory_2, size: 30),
-          label: 'Ambil Perca',
+          label: 'Perca',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.local_shipping, size: 30),
-          label: 'Ambil Majun',
+          label: 'Majun',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.delivery_dining, size: 30),

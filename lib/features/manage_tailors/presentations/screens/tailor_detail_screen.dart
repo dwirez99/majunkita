@@ -65,7 +65,7 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined),
-            tooltip: 'Edit Penjahit',
+            tooltip: 'Ubah Data',
             onPressed: () => _openEditDialog(tailor),
           ),
         ],
@@ -93,7 +93,7 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
                 error:
                     (err, _) => _buildErrorCard(
                       context,
-                      'Gagal memuat statistik efisiensi: $err',
+                      'Gagal memuat data ringkasan: $err',
                       onRetry:
                           () => ref.invalidate(
                             tailorEfficiencyStatsProvider(
@@ -234,7 +234,7 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
 
         // ── Statistik Historis ──
         const Text(
-          'Riwayat Historis',
+          'Riwayat Kerja',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
@@ -242,7 +242,7 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
           children: [
             Expanded(
               child: _buildStatCard(
-                label: 'Total Perca\nDiambil',
+                label: 'Perca\nDiambil',
                 value: '${_fmt(totalPercaDiambil)} Kg',
                 icon: Icons.inventory_2_outlined,
                 color: Colors.blue[400]!,
@@ -251,7 +251,7 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: _buildStatCard(
-                label: 'Total Majun\nDisetor',
+                label: 'Majun\nDisetor',
                 value: '${_fmt(totalMajunDisetor)} Kg',
                 icon: Icons.check_circle_outline,
                 color: Colors.green[400]!,
@@ -260,7 +260,7 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: _buildStatCard(
-                label: 'Total Limbah\nDisetor',
+                label: 'Limbah\nDisetor',
                 value: '${_fmt(totalLimbahDisetor)} Kg',
                 icon: Icons.delete_outline,
                 color: Colors.orange[400]!,
@@ -272,7 +272,7 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
 
         // ── Reff & Prediksi ──
         const Text(
-          'Efisiensi & Prediksi',
+          'Perkiraan Hasil',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
@@ -320,7 +320,7 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Estimasi Sisa Perca di Rumah',
+                'Sisa Perca di Rumah',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -352,8 +352,8 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'Sisa bahan perca di atas toleransi (> 5 Kg). '
-                      'Tanyakan sisa bahan perca sebelum memberi bahan perca baru.',
+                      'Sisa perca sudah lebih dari 5 Kg. '
+                      'Cek dulu sebelum memberi perca baru.',
                       style: TextStyle(fontSize: 12, color: Colors.amber[900]),
                     ),
                   ),
@@ -389,7 +389,7 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
               Icon(Icons.auto_graph, color: Colors.purple[700], size: 20),
               const SizedBox(width: 8),
               Text(
-                'Rasio Efisiensi Personal (Reff)',
+                'Tingkat Efisiensi (Reff)',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -401,7 +401,7 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
           const SizedBox(height: 12),
           if (!hasData)
             Text(
-              'Belum ada data historis untuk menghitung Reff.',
+              'Belum ada riwayat untuk hitung Reff.',
               style: TextStyle(fontSize: 13, color: Colors.purple[400]),
             )
           else ...[
@@ -438,7 +438,7 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Dihitung dari total majun disetor ÷ total perca diambil (historis seumur hidup)',
+              'Reff = total majun disetor ÷ total perca diambil.',
               style: TextStyle(fontSize: 11, color: Colors.purple[300]),
             ),
           ],
@@ -471,7 +471,7 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
               Icon(Icons.lightbulb_outline, color: Colors.teal[700], size: 20),
               const SizedBox(width: 8),
               Text(
-                'Prediksi Produksi Majun',
+                'Perkiraan Majun Jadi',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -484,8 +484,8 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
           if (!hasData || sisaPerca == 0)
             Text(
               sisaPerca == 0
-                  ? 'Tidak ada sisa perca di rumah penjahit.'
-                  : 'Belum ada data historis untuk membuat prediksi.',
+                  ? 'Tidak ada sisa perca saat ini.'
+                  : 'Belum ada riwayat untuk membuat perkiraan.',
               style: TextStyle(fontSize: 13, color: Colors.teal[400]),
             )
           else ...[
@@ -504,7 +504,7 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Estimasi majun yang akan dihasilkan dari bahan perca yang sedang dikerjakan.',
+              'Perkiraan majun dari sisa perca yang sedang dikerjakan.',
               style: TextStyle(fontSize: 11, color: Colors.teal[300]),
             ),
           ],
