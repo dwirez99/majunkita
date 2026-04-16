@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../auth/domain/providers/auth_provider.dart';
 import '../../../manage_expeditions/presentations/screens/manage_expeditions_screen.dart';
 import '../../../manage_notifications/domain/providers/wa_notifications_provider.dart';
 import '../../../manage_notifications/presentations/screens/admin_notifications_screen.dart';
@@ -17,7 +18,8 @@ class DashboarAdminScreen extends ConsumerStatefulWidget {
   const DashboarAdminScreen({super.key});
 
   @override
-  ConsumerState<DashboarAdminScreen> createState() => _DashboarAdminScreenState();
+  ConsumerState<DashboarAdminScreen> createState() =>
+      _DashboarAdminScreenState();
 }
 
 class _DashboarAdminScreenState extends ConsumerState<DashboarAdminScreen> {
@@ -63,9 +65,7 @@ class _DashboarAdminScreenState extends ConsumerState<DashboarAdminScreen> {
         onNotificationsTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const AdminNotificationsScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const AdminNotificationsScreen()),
           );
         },
       ),
@@ -83,9 +83,22 @@ class _DashboarAdminScreenState extends ConsumerState<DashboarAdminScreen> {
               const SizedBox(height: 24),
 
               // 2. TEKS SAPAAN
-              const Text(
-                'Hallo, Doni!',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              Consumer(
+                builder: (context, ref, child) {
+                  final userProfile = ref.watch(userProfileProvider);
+                  final name = userProfile.when(
+                    data: (profile) => profile?['name'] ?? 'Admin',
+                    loading: () => '...',
+                    error: (e, s) => 'Admin',
+                  );
+                  return Text(
+                    'Hallo, $name!',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  );
+                },
               ),
 
               const SizedBox(height: 16),
@@ -187,8 +200,7 @@ class _DashboarAdminScreenState extends ConsumerState<DashboarAdminScreen> {
                               _SummaryRow(
                                 icon: Icons.inventory_outlined,
                                 label: 'Total karung dikirim',
-                                value:
-                                    '${summary.expedisi.totalKarung} karung',
+                                value: '${summary.expedisi.totalKarung} karung',
                               ),
                               _SummaryRow(
                                 icon: Icons.scale_outlined,
@@ -217,8 +229,7 @@ class _DashboarAdminScreenState extends ConsumerState<DashboarAdminScreen> {
                               _SummaryRow(
                                 icon: Icons.people_outlined,
                                 label: 'Jumlah penjahit terdaftar',
-                                value:
-                                    '${summary.penjahit.jumlahAktif} orang',
+                                value: '${summary.penjahit.jumlahAktif} orang',
                               ),
                               _SummaryRow(
                                 icon: Icons.inventory_2_outlined,
@@ -296,18 +307,14 @@ class _SummaryRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.grey,
-              ),
+              style: TextStyle(fontSize: 13, color: AppColors.grey),
             ),
           ),
           Text(
             value,
             style: TextStyle(
               fontSize: 13,
-              fontWeight:
-                  isHighlighted ? FontWeight.bold : FontWeight.w600,
+              fontWeight: isHighlighted ? FontWeight.bold : FontWeight.w600,
               color: color,
             ),
           ),
