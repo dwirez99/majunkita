@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../domain/providers/perca_transactions_provider.dart';
 
 class PercaTransactionHistoryScreen extends ConsumerWidget {
@@ -13,8 +14,8 @@ class PercaTransactionHistoryScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Riwayat Transaksi Perca'),
-        backgroundColor: Colors.green[400],
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.surfaceLight,
+        foregroundColor: AppColors.black,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -22,8 +23,9 @@ class PercaTransactionHistoryScreen extends ConsumerWidget {
           ),
         ],
       ),
+      backgroundColor: AppColors.background,
       body: historyAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error:
             (err, _) => Center(
               child: Padding(
@@ -31,12 +33,12 @@ class PercaTransactionHistoryScreen extends ConsumerWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+                    const Icon(Icons.error_outline, size: 48, color: AppColors.error),
                     const SizedBox(height: 12),
                     Text(
                       'Gagal memuat riwayat: $err',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 14),
+                      style: const TextStyle(fontSize: 14, color: AppColors.greyDark),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
@@ -58,12 +60,12 @@ class PercaTransactionHistoryScreen extends ConsumerWidget {
                   Icon(
                     Icons.receipt_long_outlined,
                     size: 60,
-                    color: Colors.grey[300],
+                    color: AppColors.greyLight,
                   ),
                   const SizedBox(height: 12),
                   Text(
                     'Belum ada riwayat transaksi perca.',
-                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                    style: const TextStyle(fontSize: 16, color: AppColors.greyDark),
                   ),
                 ],
               ),
@@ -112,8 +114,10 @@ class PercaTransactionHistoryScreen extends ConsumerWidget {
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 elevation: 2,
+                color: AppColors.cardBackground,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: AppColors.cardBorder),
                 ),
                 child: ExpansionTile(
                   tilePadding: const EdgeInsets.symmetric(
@@ -121,8 +125,8 @@ class PercaTransactionHistoryScreen extends ConsumerWidget {
                     vertical: 8,
                   ),
                   leading: CircleAvatar(
-                    backgroundColor: Colors.green[100],
-                    child: Icon(Icons.person, color: Colors.green[700]),
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                    child: const Icon(Icons.person, color: AppColors.primaryDark),
                   ),
                   title: Text(
                     tailorName,
@@ -138,14 +142,14 @@ class PercaTransactionHistoryScreen extends ConsumerWidget {
                             Icon(
                               Icons.calendar_today,
                               size: 14,
-                              color: Colors.grey[600],
+                              color: AppColors.greyDark,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               formattedDate,
                               style: TextStyle(
                                 fontSize: 13,
-                                color: Colors.grey[600],
+                                color: AppColors.greyDark,
                               ),
                             ),
                           ],
@@ -155,14 +159,14 @@ class PercaTransactionHistoryScreen extends ConsumerWidget {
                           children: [
                             _buildInfoChip(
                               '$totalItems item',
-                              Colors.blue[100]!,
-                              Colors.blue[800]!,
+                              AppColors.info.withValues(alpha: 0.15),
+                              AppColors.info,
                             ),
                             const SizedBox(width: 8),
                             _buildInfoChip(
                               '${totalWeight.toStringAsFixed(1)} KG',
-                              Colors.green[100]!,
-                              Colors.green[800]!,
+                              AppColors.primary.withValues(alpha: 0.15),
+                              AppColors.primaryDark,
                             ),
                           ],
                         ),
@@ -185,7 +189,7 @@ class PercaTransactionHistoryScreen extends ConsumerWidget {
                           type.toLowerCase() == 'kaos'
                               ? Icons.checkroom
                               : Icons.content_cut,
-                          color: Colors.green[400],
+                          color: AppColors.primary,
                           size: 20,
                         ),
                         title: Text(
@@ -209,7 +213,7 @@ class PercaTransactionHistoryScreen extends ConsumerWidget {
                               style: TextStyle(
                                 fontWeight: FontWeight.w500,
                                 fontSize: 12,
-                                color: Colors.grey[600],
+                                color: AppColors.greyDark,
                               ),
                             ),
                           ],

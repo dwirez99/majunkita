@@ -1,3 +1,4 @@
+import '../../../../core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 // Sesuaikan import ini dengan struktur foldermu
@@ -30,19 +31,19 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
     final actionState = ref.watch(staffManagementProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
           'Kelola Partner Admin',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: AppColors.black,
           ),
         ),
-        backgroundColor: Colors.grey[200],
+        backgroundColor: AppColors.surfaceLight,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: AppColors.black),
       ),
       body: SafeArea(
         child: Padding(
@@ -60,8 +61,8 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
                           ? null // Disable kalau lagi loading delete/create
                           : () => _showAddAdminDialog(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[400],
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -80,7 +81,8 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
+                  color: AppColors.surfaceDark,
+                  border: Border.all(color: AppColors.cardBorder),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -103,14 +105,14 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
                     // Tombol Clear Search (Opsional UX improvement)
                     if (_searchController.text.isNotEmpty)
                       IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.grey),
+                        icon: const Icon(Icons.clear, color: AppColors.grey),
                         onPressed: () {
                           _searchController.clear();
                           ref.read(adminSearchQueryProvider.notifier).clear();
                         },
                       )
                     else
-                      const Icon(Icons.search, color: Colors.grey),
+                      const Icon(Icons.search, color: AppColors.grey),
                   ],
                 ),
               ),
@@ -125,11 +127,11 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
                     // Paksa refresh data
                     ref.invalidate(adminsListProvider);
                   },
-                  icon: const Icon(Icons.refresh, color: Colors.black),
+                  icon: const Icon(Icons.refresh, color: AppColors.primaryDark),
                   label: const Text(
                     'Refresh Data', // Ganti "Terbaru" jadi Refresh karena logic sort default database
                     style: TextStyle(
-                      color: Colors.black,
+                      color: AppColors.primaryDark,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -150,7 +152,7 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
                             const Icon(
                               Icons.people_outline,
                               size: 60,
-                              color: Colors.grey,
+                              color: AppColors.grey,
                             ),
                             const SizedBox(height: 16),
                             Text(
@@ -159,7 +161,7 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
                                   : 'Admin "${_searchController.text}" tidak ditemukan.',
                               style: const TextStyle(
                                 fontSize: 16,
-                                color: Colors.grey,
+                                color: AppColors.grey,
                               ),
                             ),
                           ],
@@ -188,7 +190,7 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
                           children: [
                             const Icon(
                               Icons.error_outline,
-                              color: Colors.red,
+                              color: AppColors.error,
                               size: 40,
                             ),
                             const SizedBox(height: 8),
@@ -217,11 +219,12 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.green[400],
+        color: AppColors.cardBackground,
+        border: Border.all(color: AppColors.cardBorder),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.2),
+            color: AppColors.black.withValues(alpha: 0.06),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 3),
@@ -233,13 +236,13 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
           // Avatar
           CircleAvatar(
             radius: 25,
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.primary.withValues(alpha: 0.15),
             child: Text(
               admin.name.isNotEmpty ? admin.name[0].toUpperCase() : '?',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.green[800],
+                color: AppColors.primaryDark,
               ),
             ),
           ),
@@ -255,13 +258,13 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: AppColors.black,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   admin.noTelp,
-                  style: const TextStyle(fontSize: 12, color: Colors.white70),
+                  style: const TextStyle(fontSize: 12, color: AppColors.greyDark),
                 ),
               ],
             ),
@@ -270,9 +273,9 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
           // Edit Button
           IconButton(
             onPressed: () => _showEditAdminDialog(context, admin),
-            icon: const Icon(Icons.edit_outlined, color: Colors.white),
+            icon: const Icon(Icons.edit_outlined, color: AppColors.white),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.black.withValues(alpha: 0.1),
+              backgroundColor: AppColors.secondary,
             ),
           ),
 
@@ -281,9 +284,9 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
           // Delete Button
           IconButton(
             onPressed: () => _showDeleteConfirmation(context, admin),
-            icon: const Icon(Icons.delete_outline, color: Colors.white),
+            icon: const Icon(Icons.delete_outline, color: AppColors.white),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.red.withValues(
+              backgroundColor: AppColors.error.withValues(
                 alpha: 0.8,
               ), // Merah biar kelihatan bahaya
             ),
@@ -332,7 +335,7 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
                 onPressed: () => Navigator.pop(context),
                 child: const Text(
                   'Batal',
-                  style: TextStyle(color: Colors.grey),
+                  style: TextStyle(color: AppColors.grey),
                 ),
               ),
               ElevatedButton(
@@ -349,7 +352,7 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Admin berhasil dihapus'),
-                          backgroundColor: Colors.green,
+                          backgroundColor: AppColors.success,
                         ),
                       );
                     }
@@ -358,13 +361,13 @@ class _ManageAdminScreenState extends ConsumerState<ManageAdminScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('Gagal hapus: $e'),
-                          backgroundColor: Colors.red,
+                          backgroundColor: AppColors.error,
                         ),
                       );
                     }
                   }
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
                 child: const Text('Hapus'),
               ),
             ],

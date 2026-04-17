@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../data/models/factory_model.dart';
 import '../../domain/providers/factory_provider.dart';
 import 'factory_form_dialog.dart';
@@ -25,19 +26,19 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
     final factoriesAsync = ref.watch(factoriesListProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
           'Kelola Data Pabrik',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: AppColors.black,
           ),
         ),
-        backgroundColor: Colors.grey[200],
+        backgroundColor: AppColors.surfaceLight,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: AppColors.black),
       ),
       body: SafeArea(
         child: Padding(
@@ -52,8 +53,8 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
                 child: ElevatedButton(
                   onPressed: () => _showFactoryFormDialog(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[600],
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -72,7 +73,8 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
+                  color: AppColors.surfaceDark,
+                  border: Border.all(color: AppColors.cardBorder),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -93,7 +95,7 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
                     ),
                     if (_searchController.text.isNotEmpty)
                       IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.grey),
+                        icon: const Icon(Icons.clear, color: AppColors.grey),
                         onPressed: () {
                           _searchController.clear();
                           ref
@@ -102,7 +104,7 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
                         },
                       )
                     else
-                      const Icon(Icons.search, color: Colors.grey),
+                      const Icon(Icons.search, color: AppColors.grey),
                   ],
                 ),
               ),
@@ -116,11 +118,11 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
                   onPressed: () {
                     ref.invalidate(factoriesListProvider);
                   },
-                  icon: const Icon(Icons.refresh, color: Colors.black),
+                  icon: const Icon(Icons.refresh, color: AppColors.primaryDark),
                   label: const Text(
                     'Refresh Data',
                     style: TextStyle(
-                      color: Colors.black,
+                      color: AppColors.primaryDark,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -141,7 +143,7 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
                             const Icon(
                               Icons.factory_outlined,
                               size: 60,
-                              color: Colors.grey,
+                              color: AppColors.grey,
                             ),
                             const SizedBox(height: 16),
                             Text(
@@ -150,7 +152,7 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
                                   : 'Pabrik "${_searchController.text}" tidak ditemukan.',
                               style: const TextStyle(
                                 fontSize: 16,
-                                color: Colors.grey,
+                                color: AppColors.grey,
                               ),
                             ),
                           ],
@@ -179,7 +181,7 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
                           children: [
                             const Icon(
                               Icons.error_outline,
-                              color: Colors.red,
+                              color: AppColors.error,
                               size: 40,
                             ),
                             const SizedBox(height: 8),
@@ -205,11 +207,12 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.green[400],
+        color: AppColors.cardBackground,
+        border: Border.all(color: AppColors.cardBorder),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.2),
+            color: AppColors.black.withValues(alpha: 0.08),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 3),
@@ -221,10 +224,10 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
           // Avatar
           CircleAvatar(
             radius: 30,
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.primary.withValues(alpha: 0.15),
             child: const Icon(
               Icons.factory,
-              color: Colors.green,
+              color: AppColors.primaryDark,
               size: 30,
             ),
           ),
@@ -240,21 +243,18 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: AppColors.black,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(Icons.location_on, size: 14, color: Colors.white70),
+                    const Icon(Icons.location_on, size: 14, color: AppColors.greyDark),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         factory.address,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.white70,
-                        ),
+                        style: const TextStyle(fontSize: 12, color: AppColors.greyDark),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -264,14 +264,11 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
                 const SizedBox(height: 2),
                 Row(
                   children: [
-                    const Icon(Icons.phone, size: 14, color: Colors.white70),
+                    const Icon(Icons.phone, size: 14, color: AppColors.greyDark),
                     const SizedBox(width: 4),
                     Text(
                       factory.noTelp,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.white70,
-                      ),
+                      style: const TextStyle(fontSize: 12, color: AppColors.greyDark),
                     ),
                   ],
                 ),
@@ -282,9 +279,9 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
           // Edit Button
           IconButton(
             onPressed: () => _showFactoryFormDialog(context, factoryToEdit: factory),
-            icon: const Icon(Icons.edit_outlined, color: Colors.white),
+            icon: const Icon(Icons.edit_outlined, color: AppColors.white),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.black.withValues(alpha: 0.1),
+              backgroundColor: AppColors.secondary,
             ),
           ),
 
@@ -293,9 +290,9 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
           // Delete Button
           IconButton(
             onPressed: () => _showDeleteConfirmation(context, factory),
-            icon: const Icon(Icons.delete_outline, color: Colors.white),
+            icon: const Icon(Icons.delete_outline, color: AppColors.white),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.red.withValues(alpha: 0.8),
+              backgroundColor: AppColors.error.withValues(alpha: 0.8),
             ),
           ),
         ],
@@ -325,7 +322,7 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
             onPressed: () => Navigator.pop(context),
             child: const Text(
               'Batal',
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: AppColors.grey),
             ),
           ),
           ElevatedButton(
@@ -341,7 +338,7 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Pabrik berhasil dihapus'),
-                      backgroundColor: Colors.green,
+                      backgroundColor: AppColors.success,
                     ),
                   );
                 }
@@ -350,13 +347,13 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Error: $e'),
-                      backgroundColor: Colors.red,
+                      backgroundColor: AppColors.error,
                     ),
                   );
                 }
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text('Hapus'),
           ),
         ],

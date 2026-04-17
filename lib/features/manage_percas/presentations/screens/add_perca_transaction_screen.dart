@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../manage_tailors/data/models/tailor_model.dart';
 import '../../domain/providers/perca_transactions_provider.dart';
 
@@ -310,8 +311,8 @@ class _AddPercaTransactionScreenState
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tambah Transaksi Perca'),
-        backgroundColor: Colors.green[400],
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.surfaceLight,
+        foregroundColor: AppColors.black,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

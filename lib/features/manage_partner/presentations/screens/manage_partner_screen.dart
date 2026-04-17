@@ -1,3 +1,4 @@
+import '../../../../core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'manage_admin_screen.dart';
 import 'manage_driver_screen.dart';
@@ -9,19 +10,19 @@ class ManagePartnerScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
           'Manajemen Partner',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: AppColors.black,
           ),
         ),
-        backgroundColor: Colors.grey[200],
+        backgroundColor: AppColors.surfaceLight,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.grey),
+        iconTheme: const IconThemeData(color: AppColors.black),
       ),
       body: SafeArea(
         child: Padding(
@@ -34,6 +35,7 @@ class ManagePartnerScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
+                  color: AppColors.black,
                 ),
               ),
               const SizedBox(height: 30),
@@ -44,7 +46,7 @@ class ManagePartnerScreen extends StatelessWidget {
                 icon: Icons.admin_panel_settings,
                 title: 'Kelola Partner Admin',
                 description: 'Manajemen data partner admin',
-                color: Colors.green[400]!,
+                color: AppColors.primary,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -63,7 +65,7 @@ class ManagePartnerScreen extends StatelessWidget {
                 icon: Icons.local_shipping,
                 title: 'Kelola Driver',
                 description: 'Manajemen data driver pengiriman',
-                color: Colors.green[400]!,
+                color: AppColors.secondary,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -78,10 +80,10 @@ class ManagePartnerScreen extends StatelessWidget {
 
               _buildPartnerCard(
                 context: context,
-                icon: Icons.admin_panel_settings,
+                icon: Icons.content_cut,
                 title: 'Kelola Partner Penjahit',
-                description: 'Manajemen data partner admin',
-                color: Colors.green[400]!,
+                description: 'Manajemen data penjahit',
+                color: AppColors.accent,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -113,11 +115,12 @@ class ManagePartnerScreen extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: color,
+          color: AppColors.cardBackground,
+          border: Border.all(color: AppColors.cardBorder),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
+              color: AppColors.black.withValues(alpha: 0.06),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -128,13 +131,13 @@ class ManagePartnerScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.3),
+                color: color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 icon,
                 size: 40,
-                color: Colors.white,
+                color: color,
               ),
             ),
             const SizedBox(width: 20),
@@ -147,23 +150,20 @@ class ManagePartnerScreen extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: AppColors.black,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     description,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.9),
-                    ),
+                    style: const TextStyle(fontSize: 14, color: AppColors.greyDark),
                   ),
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               Icons.arrow_forward_ios,
-              color: Colors.white,
+              color: color,
               size: 24,
             ),
           ],

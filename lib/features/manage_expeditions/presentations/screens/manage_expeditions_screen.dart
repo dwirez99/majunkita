@@ -21,22 +21,22 @@ class ManageExpeditionsScreen extends ConsumerWidget {
     final weightAsync = ref.watch(weightPerSackProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
           'Manajemen Expedisi',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: AppColors.black,
           ),
         ),
-        backgroundColor: Colors.grey[200],
+        backgroundColor: AppColors.surfaceLight,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.grey),
+        iconTheme: const IconThemeData(color: AppColors.black),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.grey),
+            icon: const Icon(Icons.refresh, color: AppColors.primaryDark),
             tooltip: 'Muat Ulang Data',
             onPressed: () {
               ref.invalidate(expeditionListProvider);
@@ -94,7 +94,7 @@ class ManageExpeditionsScreen extends ConsumerWidget {
                     context: context,
                     icon: Icons.scale,
                     title: 'Berat\nper Karung',
-                    color: Colors.teal,
+                    color: AppColors.secondaryDark,
                     onTap: () => _showEditWeightDialog(
                       context,
                       ref,
@@ -105,7 +105,7 @@ class ManageExpeditionsScreen extends ConsumerWidget {
                     context: context,
                     icon: Icons.business_outlined,
                     title: 'Mitra\nExpedisi',
-                    color: Colors.indigo,
+                    color: AppColors.primaryDark,
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -138,12 +138,12 @@ class ManageExpeditionsScreen extends ConsumerWidget {
                     child: Column(
                       children: [
                         Icon(Icons.error_outline,
-                            size: 40, color: Colors.red[300]),
+                            size: 40, color: AppColors.error),
                         const SizedBox(height: 8),
                         Text(
                           'Gagal memuat data: $error',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.red[400]),
+                          style: const TextStyle(color: AppColors.error),
                         ),
                         const SizedBox(height: 12),
                         TextButton.icon(
@@ -226,12 +226,12 @@ class ManageExpeditionsScreen extends ConsumerWidget {
               child: Column(
                 children: [
                   Icon(Icons.local_shipping_outlined,
-                      size: 60, color: Colors.grey[300]),
+                      size: 60, color: AppColors.greyLight),
                   const SizedBox(height: 12),
                   Text(
                     'Belum ada data expedisi',
                     style:
-                        TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        const TextStyle(fontSize: 14, color: AppColors.greyDark),
                   ),
                 ],
               ),
@@ -398,18 +398,18 @@ class ManageExpeditionsScreen extends ConsumerWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: AppColors.surfaceDark,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
                       const Icon(Icons.scale,
-                          size: 16, color: Colors.teal),
+                          size: 16, color: AppColors.secondary),
                       const SizedBox(width: 8),
                       Text(
                         'Saat ini: $currentWeight kg / karung',
                         style: const TextStyle(
-                            fontSize: 13, color: Colors.black54),
+                            fontSize: 13, color: AppColors.greyDark),
                       ),
                     ],
                   ),
@@ -431,7 +431,7 @@ class ManageExpeditionsScreen extends ConsumerWidget {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide:
-                          const BorderSide(color: Colors.teal, width: 2),
+                          const BorderSide(color: AppColors.secondary, width: 2),
                     ),
                   ),
                   onChanged: (_) => setDialogState(() {}),
@@ -444,16 +444,16 @@ class ManageExpeditionsScreen extends ConsumerWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.teal.withValues(alpha: 0.08),
+                      color: AppColors.secondary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                          color: Colors.teal.withValues(alpha: 0.3)),
+                          color: AppColors.secondary.withValues(alpha: 0.3)),
                     ),
                     child: Text(
                       'Baru: $newWeight kg / karung',
                       style: const TextStyle(
                           fontSize: 13,
-                          color: Colors.teal,
+                          color: AppColors.secondary,
                           fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -486,7 +486,7 @@ class ManageExpeditionsScreen extends ConsumerWidget {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text('Gagal memperbarui: $e'),
-                                backgroundColor: Colors.red,
+                                backgroundColor: AppColors.error,
                               ),
                             );
                           }
@@ -494,8 +494,8 @@ class ManageExpeditionsScreen extends ConsumerWidget {
                       }
                     : null,
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
-                    foregroundColor: Colors.white),
+                    backgroundColor: AppColors.secondary,
+                    foregroundColor: AppColors.white),
                 child: const Text('SIMPAN'),
               ),
             ],

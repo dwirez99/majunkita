@@ -5,8 +5,15 @@ enum ChartType { bar, pie, line }
 
 class PercaChartWidget extends StatefulWidget {
   final Map<String, Map<String, double>> monthlyData;
+  final String? stockGudangLabel;
+  final String? stockDibawaPenjahitLabel;
 
-  const PercaChartWidget({super.key, required this.monthlyData});
+  const PercaChartWidget({
+    super.key,
+    required this.monthlyData,
+    this.stockGudangLabel,
+    this.stockDibawaPenjahitLabel,
+  });
 
   @override
   State<PercaChartWidget> createState() => _PercaChartWidgetState();
@@ -22,10 +29,76 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
   void initState() {
     super.initState();
     _selectedChartType = ChartType.bar;
-    _allEntries =
-        widget.monthlyData.entries.toList()
-          ..sort((a, b) => a.key.compareTo(b.key));
+    _allEntries = _buildCompleteMonthlyEntries(widget.monthlyData);
     _filteredEntries = _allEntries;
+  }
+
+  @override
+  void didUpdateWidget(covariant PercaChartWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.monthlyData != widget.monthlyData) {
+      _allEntries = _buildCompleteMonthlyEntries(widget.monthlyData);
+
+      final selectedStillExists =
+          _selectedMonth == null ||
+          _allEntries.any((entry) => entry.key == _selectedMonth);
+      if (!selectedStillExists) {
+        _selectedMonth = null;
+      }
+
+      _updateFilteredData();
+    }
+  }
+
+  List<MapEntry<String, Map<String, double>>> _buildCompleteMonthlyEntries(
+    Map<String, Map<String, double>> source,
+  ) {
+    if (source.isEmpty) return [];
+
+    final parsedDates =
+        source.keys
+            .map(_parseMonthKey)
+            .whereType<DateTime>()
+            .toList()
+          ..sort();
+
+    if (parsedDates.isEmpty) {
+      return source.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
+    }
+
+    final firstMonth = DateTime(parsedDates.first.year, parsedDates.first.month);
+    final lastMonth = DateTime(parsedDates.last.year, parsedDates.last.month);
+
+    final complete = <MapEntry<String, Map<String, double>>>[];
+    var current = firstMonth;
+    while (!current.isAfter(lastMonth)) {
+      final key = _monthToKey(current);
+      final existing = source[key];
+      complete.add(
+        MapEntry(key, {
+          'total': existing?['total'] ?? 0.0,
+          'kain': existing?['kain'] ?? 0.0,
+          'kaos': existing?['kaos'] ?? 0.0,
+        }),
+      );
+
+      current = DateTime(current.year, current.month + 1);
+    }
+
+    return complete;
+  }
+
+  DateTime? _parseMonthKey(String key) {
+    final parts = key.split('-');
+    if (parts.length != 2) return null;
+    final year = int.tryParse(parts[0]);
+    final month = int.tryParse(parts[1]);
+    if (year == null || month == null || month < 1 || month > 12) return null;
+    return DateTime(year, month);
+  }
+
+  String _monthToKey(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}';
   }
 
   void _updateFilteredData() {
@@ -36,7 +109,6 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
       _filteredEntries =
           _allEntries.where((entry) => entry.key == _selectedMonth).toList();
     }
-    setState(() {});
   }
 
   String _formatMonthLabel(String monthKey) {
@@ -65,13 +137,35 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
     for (var entry in _allEntries) {
       months.add(entry.key); // YYYY-MM format (same as map keys)
     }
-    return months.toList()..sort();
+    final options = months.toList()..sort();
+    return options.reversed.toList();
   }
 
-  /// Convert YYYY-MM key to MM/YYYY for display
+  /// Convert YYYY-MM key to Indonesian month label for display.
   String _monthKeyToLabel(String monthKey) {
     final parts = monthKey.split('-');
-    if (parts.length == 2) return '${parts[1]}/${parts[0]}';
+    if (parts.length == 2) {
+      final year = int.tryParse(parts[0]);
+      final month = int.tryParse(parts[1]);
+      final monthNames = [
+        '',
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'Mei',
+        'Jun',
+        'Jul',
+        'Agu',
+        'Sep',
+        'Okt',
+        'Nov',
+        'Des',
+      ];
+      if (year != null && month != null && month >= 1 && month <= 12) {
+        return '${monthNames[month]} $year';
+      }
+    }
     return monthKey;
   }
 
@@ -82,6 +176,7 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
       (prev, entry) =>
           entry.value['total']! > prev ? entry.value['total']! : prev,
     );
+    if (max <= 0) return 100;
     return (max * 1.2).ceil().toDouble();
   }
 
@@ -123,25 +218,57 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Filter berdasarkan bulan:',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                Row(
+                  children: [
+                    Icon(Icons.filter_alt_outlined, size: 18, color: Colors.grey[700]),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Filter berdasarkan bulan',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                    const Spacer(),
+                    if (_selectedMonth != null)
+                      TextButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _selectedMonth = null;
+                            _updateFilteredData();
+                          });
+                        },
+                        icon: const Icon(Icons.restart_alt, size: 16),
+                        label: const Text('Reset'),
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildMonthFilterButton(null, 'semua bulan'),
-                      ..._getMonthOptions().map((month) {
-                        return _buildMonthFilterButton(
-                          month,
-                          _monthKeyToLabel(month),
-                        );
-                      }),
-                    ],
-                  ),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildMonthFilterButton(null, 'Semua bulan'),
+                    ..._getMonthOptions().map((month) {
+                      return _buildMonthFilterButton(
+                        month,
+                        _monthKeyToLabel(month),
+                      );
+                    }),
+                  ],
                 ),
+                if (_selectedMonth != null) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    'Menampilkan data: ${_monthKeyToLabel(_selectedMonth!)}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[700],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -207,31 +334,30 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
 
   Widget _buildMonthFilterButton(String? month, String label) {
     final isSelected = _selectedMonth == month;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8.0),
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedMonth = month;
-          });
-          _updateFilteredData();
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.green[600] : Colors.grey[200],
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? Colors.white : Colors.grey[700],
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      showCheckmark: false,
+      avatar:
+          isSelected ? const Icon(Icons.check_circle, size: 16, color: Colors.white) : null,
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : Colors.grey[800],
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
       ),
+      selectedColor: Colors.green[600],
+      backgroundColor: Colors.grey[200],
+      side: BorderSide(
+        color: isSelected ? Colors.green[700]! : Colors.grey[300]!,
+        width: 1.2,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      onSelected: (_) {
+        setState(() {
+          _selectedMonth = month;
+          _updateFilteredData();
+        });
+      },
     );
   }
 
@@ -249,6 +375,12 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
       (sum, e) => sum + (e.value['kaos'] ?? 0.0),
     );
 
+    final hasStockInfo =
+        (widget.stockGudangLabel != null &&
+            widget.stockGudangLabel!.trim().isNotEmpty) ||
+        (widget.stockDibawaPenjahitLabel != null &&
+            widget.stockDibawaPenjahitLabel!.trim().isNotEmpty);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -256,23 +388,104 @@ class _PercaChartWidgetState extends State<PercaChartWidget> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.green[200]!),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildStatCard(
-            'Total',
-            '${total.toStringAsFixed(2)} KG',
-            Colors.green[700]!,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildStatCard(
+                'Total',
+                '${total.toStringAsFixed(2)} KG',
+                Colors.green[700]!,
+              ),
+              _buildStatCard(
+                'Kain',
+                '${totalKain.toStringAsFixed(2)} KG',
+                Colors.blue[600]!,
+              ),
+              _buildStatCard(
+                'Kaos',
+                '${totalKaos.toStringAsFixed(2)} KG',
+                Colors.orange[600]!,
+              ),
+            ],
           ),
-          _buildStatCard(
-            'Kain',
-            '${totalKain.toStringAsFixed(2)} KG',
-            Colors.blue[600]!,
+          if (hasStockInfo) ...[
+            const SizedBox(height: 12),
+            const Divider(height: 1),
+            const SizedBox(height: 10),
+            Text(
+              'Informasi stok saat ini',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (widget.stockGudangLabel != null &&
+                widget.stockGudangLabel!.trim().isNotEmpty)
+              _buildStockInfoTile(
+                icon: Icons.warehouse_outlined,
+                label: 'Stok Gudang',
+                value: widget.stockGudangLabel!,
+                color: Colors.green[700]!,
+              ),
+            if (widget.stockGudangLabel != null &&
+                widget.stockGudangLabel!.trim().isNotEmpty &&
+                widget.stockDibawaPenjahitLabel != null &&
+                widget.stockDibawaPenjahitLabel!.trim().isNotEmpty)
+              const SizedBox(height: 8),
+            if (widget.stockDibawaPenjahitLabel != null &&
+                widget.stockDibawaPenjahitLabel!.trim().isNotEmpty)
+              _buildStockInfoTile(
+                icon: Icons.local_shipping_outlined,
+                label: 'Dibawa Penjahit',
+                value: widget.stockDibawaPenjahitLabel!,
+                color: Colors.indigo[600]!,
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStockInfoTile({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
           ),
-          _buildStatCard(
-            'Kaos',
-            '${totalKaos.toStringAsFixed(2)} KG',
-            Colors.orange[600]!,
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
           ),
         ],
       ),

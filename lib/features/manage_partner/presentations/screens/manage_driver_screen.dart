@@ -1,3 +1,4 @@
+import '../../../../core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 // Sesuaikan path import ini
@@ -30,19 +31,19 @@ class _ManageDriverScreenState extends ConsumerState<ManageDriverScreen> {
     final actionState = ref.watch(staffManagementProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
           'Kelola Driver',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: AppColors.black,
           ),
         ),
-        backgroundColor: Colors.grey[200],
+        backgroundColor: AppColors.surfaceLight,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: AppColors.black),
       ),
       body: SafeArea(
         child: Padding(
@@ -60,8 +61,8 @@ class _ManageDriverScreenState extends ConsumerState<ManageDriverScreen> {
                           ? null
                           : () => _showAddDriverDialog(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[600], // Hijau lebih tua dikit
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.primary, // Hijau lebih tua dikit
+                    foregroundColor: AppColors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -80,7 +81,8 @@ class _ManageDriverScreenState extends ConsumerState<ManageDriverScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
+                  color: AppColors.surfaceDark,
+                  border: Border.all(color: AppColors.cardBorder),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -102,14 +104,14 @@ class _ManageDriverScreenState extends ConsumerState<ManageDriverScreen> {
                     ),
                     if (_searchController.text.isNotEmpty)
                       IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.grey),
+                        icon: const Icon(Icons.clear, color: AppColors.grey),
                         onPressed: () {
                           _searchController.clear();
                           ref.read(driverSearchQueryProvider.notifier).clear();
                         },
                       )
                     else
-                      const Icon(Icons.search, color: Colors.grey),
+                      const Icon(Icons.search, color: AppColors.grey),
                   ],
                 ),
               ),
@@ -124,11 +126,11 @@ class _ManageDriverScreenState extends ConsumerState<ManageDriverScreen> {
                     // Refresh data driver
                     ref.invalidate(driversListProvider);
                   },
-                  icon: const Icon(Icons.refresh, color: Colors.black),
+                  icon: const Icon(Icons.refresh, color: AppColors.primaryDark),
                   label: const Text(
                     'Refresh Data',
                     style: TextStyle(
-                      color: Colors.black,
+                      color: AppColors.primaryDark,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -149,7 +151,7 @@ class _ManageDriverScreenState extends ConsumerState<ManageDriverScreen> {
                             const Icon(
                               Icons.local_shipping_outlined,
                               size: 60,
-                              color: Colors.grey,
+                              color: AppColors.grey,
                             ),
                             const SizedBox(height: 16),
                             Text(
@@ -158,7 +160,7 @@ class _ManageDriverScreenState extends ConsumerState<ManageDriverScreen> {
                                   : 'Driver "${_searchController.text}" tidak ditemukan.',
                               style: const TextStyle(
                                 fontSize: 16,
-                                color: Colors.grey,
+                                color: AppColors.grey,
                               ),
                             ),
                           ],
@@ -187,7 +189,7 @@ class _ManageDriverScreenState extends ConsumerState<ManageDriverScreen> {
                           children: [
                             const Icon(
                               Icons.error_outline,
-                              color: Colors.red,
+                              color: AppColors.error,
                               size: 40,
                             ),
                             const SizedBox(height: 8),
@@ -213,12 +215,13 @@ class _ManageDriverScreenState extends ConsumerState<ManageDriverScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.green[400],
+        color: AppColors.cardBackground,
+        border: Border.all(color: AppColors.cardBorder),
         borderRadius: BorderRadius.circular(12),
         // Tambahkan shadow sedikit biar elegan
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.2),
+            color: AppColors.black.withValues(alpha: 0.06),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 3),
@@ -230,10 +233,10 @@ class _ManageDriverScreenState extends ConsumerState<ManageDriverScreen> {
           // Avatar
           CircleAvatar(
             radius: 30,
-            backgroundColor: Colors.white, // Latar putih biar icon menonjol
+            backgroundColor: AppColors.primary.withValues(alpha: 0.15),
             child: const Icon(
               Icons.drive_eta,
-              color: Colors.green,
+              color: AppColors.primaryDark,
               size: 30,
             ), // Icon Mobil/Driver
           ),
@@ -249,21 +252,18 @@ class _ManageDriverScreenState extends ConsumerState<ManageDriverScreen> {
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: AppColors.black,
                   ),
                 ),
                 const SizedBox(height: 4),
                 // Tampilkan No Telp atau Email sebagai sub-info
                 Row(
                   children: [
-                    const Icon(Icons.phone, size: 14, color: Colors.white70),
+                    const Icon(Icons.phone, size: 14, color: AppColors.greyDark),
                     const SizedBox(width: 4),
                     Text(
                       driver.noTelp,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.white70,
-                      ),
+                      style: const TextStyle(fontSize: 12, color: AppColors.greyDark),
                     ),
                   ],
                 ),
@@ -274,9 +274,9 @@ class _ManageDriverScreenState extends ConsumerState<ManageDriverScreen> {
           // Edit Button
           IconButton(
             onPressed: () => _showEditDriverDialog(context, driver),
-            icon: const Icon(Icons.edit_outlined, color: Colors.white),
+            icon: const Icon(Icons.edit_outlined, color: AppColors.white),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.black.withValues(alpha: 0.1),
+              backgroundColor: AppColors.secondary,
             ),
           ),
 
@@ -285,9 +285,9 @@ class _ManageDriverScreenState extends ConsumerState<ManageDriverScreen> {
           // Delete Button
           IconButton(
             onPressed: () => _showDeleteConfirmation(context, driver),
-            icon: const Icon(Icons.delete_outline, color: Colors.white),
+            icon: const Icon(Icons.delete_outline, color: AppColors.white),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.red.withValues(alpha: 0.8),
+              backgroundColor: AppColors.error.withValues(alpha: 0.8),
             ),
           ),
         ],
@@ -333,7 +333,7 @@ class _ManageDriverScreenState extends ConsumerState<ManageDriverScreen> {
                 onPressed: () => Navigator.pop(context),
                 child: const Text(
                   'Batal',
-                  style: TextStyle(color: Colors.grey),
+                  style: TextStyle(color: AppColors.grey),
                 ),
               ),
               ElevatedButton(
@@ -353,7 +353,7 @@ class _ManageDriverScreenState extends ConsumerState<ManageDriverScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Driver berhasil dihapus'),
-                          backgroundColor: Colors.green,
+                          backgroundColor: AppColors.success,
                         ),
                       );
                     }
@@ -362,13 +362,13 @@ class _ManageDriverScreenState extends ConsumerState<ManageDriverScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('Error: $e'),
-                          backgroundColor: Colors.red,
+                          backgroundColor: AppColors.error,
                         ),
                       );
                     }
                   }
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
                 child: const Text('Hapus'),
               ),
             ],

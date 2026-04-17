@@ -242,8 +242,8 @@ class _SetorLimbahScreenState extends ConsumerState<SetorLimbahScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Setor Limbah'),
-        backgroundColor: Colors.orange[700],
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.surfaceLight,
+        foregroundColor: AppColors.black,
       ),
       body:
           _isSubmitting

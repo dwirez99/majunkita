@@ -170,7 +170,7 @@ class _TailorFormDialogState extends ConsumerState<TailorFormDialog> {
                                 )
                                 : Text(
                                   _isEdit
-                                      ? 'simpan'
+                                      ? 'Simpan'
                                       : 'Buat Penjahit',
                                 ),
                       ),
@@ -452,8 +452,10 @@ class _TailorFormDialogState extends ConsumerState<TailorFormDialog> {
           return;
         }
       } else if (_isEdit) {
-        // If editing and no new image, keep the existing image URL
-        finalImageUrl = widget.tailorToEdit!.tailorImages;
+        // If editing and no new image, keep the existing image URL unless user removed it
+        finalImageUrl = _tailorImagesController.text.isEmpty
+            ? null
+            : widget.tailorToEdit!.tailorImages;
       }
 
       if (_isEdit) {
