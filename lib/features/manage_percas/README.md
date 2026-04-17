@@ -49,7 +49,10 @@ lib/features/manage_percas/
 ```dart
 static String generateSackCode(String percaType, double weight) {
   final prefix = percaType.toLowerCase() == 'kaos' ? 'K' : 'B';
-  return '$prefix-$weightStr'; // e.g. K-45, B-25
+  final weightStr = weight == weight.roundToDouble()
+      ? weight.toInt().toString()
+      : weight.toStringAsFixed(2);
+  return '$prefix-$weightStr'; // e.g. K-45, B-25.50
 }
 ```
 
