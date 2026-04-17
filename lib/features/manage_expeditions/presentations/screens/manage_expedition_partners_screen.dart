@@ -30,22 +30,22 @@ class _ManageExpeditionPartnersScreenState
     final actionState = ref.watch(manageExpeditionPartnerNotifierProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
           'Mitra Expedisi',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: AppColors.black,
           ),
         ),
-        backgroundColor: Colors.grey[200],
+        backgroundColor: AppColors.surfaceLight,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: AppColors.black),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.black),
+            icon: const Icon(Icons.refresh, color: AppColors.primaryDark),
             tooltip: 'Refresh',
             onPressed: () => ref.invalidate(expeditionPartnerListProvider),
           ),
@@ -72,7 +72,7 @@ class _ManageExpeditionPartnersScreenState
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.secondary,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -87,7 +87,8 @@ class _ManageExpeditionPartnersScreenState
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
+                  color: AppColors.surfaceDark,
+                  border: Border.all(color: AppColors.cardBorder),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
@@ -106,7 +107,7 @@ class _ManageExpeditionPartnersScreenState
                     ),
                     if (_searchController.text.isNotEmpty)
                       IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.grey),
+                        icon: const Icon(Icons.clear, color: AppColors.grey),
                         onPressed: () {
                           _searchController.clear();
                           ref
@@ -116,7 +117,7 @@ class _ManageExpeditionPartnersScreenState
                         },
                       )
                     else
-                      const Icon(Icons.search, color: Colors.grey),
+                      const Icon(Icons.search, color: AppColors.grey),
                   ],
                 ),
               ),
@@ -133,12 +134,12 @@ class _ManageExpeditionPartnersScreenState
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Icon(Icons.error_outline,
-                            color: Colors.red, size: 48),
+                            color: AppColors.error, size: 48),
                         const SizedBox(height: 12),
                         Text(
                           'Gagal memuat data: $e',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(color: Colors.red),
+                          style: const TextStyle(color: AppColors.error),
                         ),
                         const SizedBox(height: 12),
                         ElevatedButton(
@@ -156,15 +157,15 @@ class _ManageExpeditionPartnersScreenState
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.local_shipping_outlined,
-                                size: 64, color: Colors.grey[300]),
+                                size: 64, color: AppColors.greyLight),
                             const SizedBox(height: 16),
                             Text(
                               _searchController.text.isEmpty
                                   ? 'Belum ada mitra expedisi.\nTambahkan mitra baru.'
                                   : 'Mitra "${_searchController.text}" tidak ditemukan.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(
-                                  fontSize: 14, color: Colors.grey[600]),
+                              style: const TextStyle(
+                                  fontSize: 14, color: AppColors.greyDark),
                             ),
                           ],
                         ),
@@ -200,7 +201,7 @@ class _ManageExpeditionPartnersScreenState
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.2),
+            color: AppColors.black.withValues(alpha: 0.08),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 3),
@@ -212,7 +213,7 @@ class _ManageExpeditionPartnersScreenState
           // Avatar
           CircleAvatar(
             radius: 28,
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.white,
             child: Icon(Icons.local_shipping,
                 color: AppColors.secondary, size: 28),
           ),
@@ -228,20 +229,20 @@ class _ManageExpeditionPartnersScreenState
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: AppColors.white,
                   ),
                 ),
                 if (partner.noTelp != null && partner.noTelp!.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.phone,
-                          size: 13, color: Colors.white70),
+                      Icon(Icons.phone,
+                          size: 13, color: AppColors.white.withValues(alpha: 0.75)),
                       const SizedBox(width: 4),
                       Text(
                         partner.noTelp!,
-                        style: const TextStyle(
-                            fontSize: 12, color: Colors.white70),
+                        style: TextStyle(
+                            fontSize: 12, color: AppColors.white.withValues(alpha: 0.75)),
                       ),
                     ],
                   ),
@@ -251,14 +252,14 @@ class _ManageExpeditionPartnersScreenState
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      const Icon(Icons.location_on_outlined,
-                          size: 13, color: Colors.white70),
+                      Icon(Icons.location_on_outlined,
+                          size: 13, color: AppColors.white.withValues(alpha: 0.75)),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           partner.address!,
-                          style: const TextStyle(
-                              fontSize: 12, color: Colors.white70),
+                          style: TextStyle(
+                              fontSize: 12, color: AppColors.white.withValues(alpha: 0.75)),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -272,9 +273,9 @@ class _ManageExpeditionPartnersScreenState
           // Edit
           IconButton(
             onPressed: () => _showFormDialog(context, partnerToEdit: partner),
-            icon: const Icon(Icons.edit_outlined, color: Colors.white),
+            icon: const Icon(Icons.edit_outlined, color: AppColors.white),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.black.withValues(alpha: 0.1),
+              backgroundColor: AppColors.black.withValues(alpha: 0.12),
             ),
           ),
 
@@ -283,9 +284,9 @@ class _ManageExpeditionPartnersScreenState
           // Delete
           IconButton(
             onPressed: () => _showDeleteDialog(context, partner),
-            icon: const Icon(Icons.delete_outline, color: Colors.white),
+            icon: const Icon(Icons.delete_outline, color: AppColors.white),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.red.withValues(alpha: 0.7),
+              backgroundColor: AppColors.error.withValues(alpha: 0.8),
             ),
           ),
         ],
@@ -438,7 +439,7 @@ class _ManageExpeditionPartnersScreenState
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.secondary,
-                            foregroundColor: Colors.white,
+                            foregroundColor: AppColors.white,
                             padding:
                                 const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
@@ -506,8 +507,8 @@ class _ManageExpeditionPartnersScreenState
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: AppColors.error,
+              foregroundColor: AppColors.white,
             ),
             child: const Text('HAPUS'),
           ),

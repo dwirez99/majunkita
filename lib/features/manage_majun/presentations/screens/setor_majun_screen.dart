@@ -304,8 +304,8 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Setor Majun'),
-        backgroundColor: AppColors.secondary,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.surfaceLight,
+        foregroundColor: AppColors.black,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

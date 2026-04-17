@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../domain/providers/perca_provider.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/image_capture_helper.dart';
 
 
@@ -201,6 +202,8 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isInputStockMode ? 'Tambah Stok Perca' : 'Upload Bukti Pengambilan'),
+        backgroundColor: AppColors.surfaceLight,
+        foregroundColor: AppColors.black,
       ),
       body: addPercaState.isLoading
           ? const Center(child: CircularProgressIndicator())

@@ -82,7 +82,7 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Harap pilih driver terlebih dahulu.'),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppColors.warning,
         ),
       );
       return;
@@ -92,7 +92,7 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Harap pilih mitra expedisi terlebih dahulu.'),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppColors.warning,
         ),
       );
       return;
@@ -102,7 +102,7 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Harap pilih foto bukti pengiriman.'),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppColors.warning,
         ),
       );
       return;
@@ -112,7 +112,7 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Total berat tidak valid. Periksa jumlah karung.'),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppColors.warning,
         ),
       );
       return;
@@ -231,19 +231,19 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
         _calculatedWeight > 0 && _calculatedWeight > availableStock;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
           'Tambah Expedisi',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: AppColors.black,
           ),
         ),
-        backgroundColor: Colors.grey[200],
+        backgroundColor: AppColors.surfaceLight,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.grey),
+        iconTheme: const IconThemeData(color: AppColors.black),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -462,7 +462,7 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
         ),
       ),
       data: (drivers) => DropdownButtonFormField<String>(
-        value: _selectedDriverId,
+        initialValue: _selectedDriverId,
         isExpanded: true,
         hint: const Text(
           'Pilih driver',
@@ -601,7 +601,7 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
               ),
             )
           : DropdownButtonFormField<String>(
-              value: _selectedExpeditionPartnerId,
+              initialValue: _selectedExpeditionPartnerId,
               isExpanded: true,
               hint: const Text(
                 'Pilih mitra expedisi',
@@ -663,7 +663,7 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
         border: Border.all(
           color: hasInput
               ? AppColors.secondary.withValues(alpha: 0.4)
-              : Colors.transparent,
+              : AppColors.surfaceLight.withValues(alpha: 0),
         ),
       ),
       child: Row(
@@ -734,7 +734,7 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
           ],
         ),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+  error: (_, stackTrace) => const SizedBox.shrink(),
       data: (available) {
         final color = stockExceeded ? AppColors.error : AppColors.success;
         final icon =

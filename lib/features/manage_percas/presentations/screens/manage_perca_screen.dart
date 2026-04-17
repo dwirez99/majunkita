@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:majunkita/features/manage_percas/presentations/screens/add_perca_screen.dart';
+import '../../../Dashboard/domain/providers/dashboard_providers.dart';
 import '../../domain/providers/perca_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'widgets/chart.dart';
@@ -160,7 +161,15 @@ class ManagePercaScreen extends ConsumerWidget {
                           );
                         }
 
-                        return PercaChartWidget(monthlyData: stats);
+                        final dashboardSummary =
+              ref.watch(adminDashboardProvider).asData?.value;
+
+                        return PercaChartWidget(
+                          monthlyData: stats,
+                          stockGudangLabel: dashboardSummary?.perca.fmtStokGudang,
+                          stockDibawaPenjahitLabel:
+                              dashboardSummary?.penjahit.fmtTotalStok,
+                        );
                       },
                       loading:
                           () =>
