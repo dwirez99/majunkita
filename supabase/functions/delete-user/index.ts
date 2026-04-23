@@ -14,6 +14,9 @@ interface DeleteUserRequest {
   user_id: string;
 }
 
+const normalizeRole = (role: unknown): string =>
+  typeof role === "string" ? role.trim().toLowerCase() : "";
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -70,14 +73,20 @@ serve(async (req) => {
         .eq("id", requestingUser.id)
         .single();
 
-    if (
-      profileError ||
-      !requestingProfile ||
-      !["admin", "manager"].includes(requestingProfile.role)
-    ) {
+    const profileRole = normalizeRole(requestingProfile?.role);
+    const appMetadataRole = normalizeRole(requestingUser.app_metadata?.role);
+    const isAllowedRequesterRole = ["admin", "manager"].includes(
+      profileRole
+    ) || ["admin", "manager"].includes(appMetadataRole);
+
+    if (profileError || !requestingProfile || !isAllowedRequesterRole) {
       return new Response(
         JSON.stringify({
           error: "Forbidden - Only admins and managers can delete users",
+          details: {
+            detected_profile_role: profileRole || null,
+            detected_app_metadata_role: appMetadataRole || null,
+          },
         }),
         {
           status: 403,

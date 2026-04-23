@@ -25,8 +25,8 @@ final managePartnerRepositoryProvider = Provider<ManagePartnerRepository>((
 /// Provider untuk mengecek apakah user yang sedang login adalah MANAGER
 final isManagerProvider = Provider<bool>((ref) {
   final user = ref.watch(supabaseClientProvider).auth.currentUser;
-  // Kita ambil role dari user_metadata (pastikan saat login metadata role tersimpan)
-  final role = user?.userMetadata?['role'] as String?;
+  // Fallback cepat berbasis metadata session (bisa stale).
+  final role = (user?.userMetadata?['role'] as String?)?.trim().toLowerCase();
   return role == AppRoles.manager;
 });
 
@@ -95,11 +95,27 @@ class StaffManagementNotifier extends AsyncNotifier<void> {
     print('[$timestamp] [$level] STAFF_MGMT_NOTIFIER: $message');
   }
 
-  void _checkManagerPermission() {
-    final isManager = ref.read(isManagerProvider);
-    if (!isManager) {
+  Future<void> _checkManagerPermission() async {
+    final supabase = ref.read(supabaseClientProvider);
+    final currentUser = supabase.auth.currentUser;
+
+    if (currentUser == null) {
+      _log('Permission denied: session not found', level: 'WARN');
+      throw Exception('Sesi tidak ditemukan. Silakan login ulang.');
+    }
+
+    final profile =
+        await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', currentUser.id)
+            .maybeSingle();
+
+    final role = (profile?['role'] as String?)?.trim().toLowerCase();
+
+    if (role != AppRoles.manager) {
       _log(
-        'Permission denied: Non-manager trying to access staff management',
+        'Permission denied: Non-manager trying to access staff management (role=$role)',
         level: 'WARN',
       );
       throw Exception(
@@ -119,7 +135,7 @@ class StaffManagementNotifier extends AsyncNotifier<void> {
     required String role,
     String? address,
   }) async {
-    _checkManagerPermission();
+  await _checkManagerPermission();
     _log('Creating new $role: $name (username: $username, email: $email)');
 
     state = const AsyncValue.loading();
@@ -173,7 +189,7 @@ class StaffManagementNotifier extends AsyncNotifier<void> {
     required String role,
     String? password,
   }) async {
-    _checkManagerPermission();
+  await _checkManagerPermission();
     _log(
       'Updating $role: id=$id, name=$name, email=$email, address=${address ?? 'N/A'}',
     );
@@ -261,7 +277,7 @@ class StaffManagementNotifier extends AsyncNotifier<void> {
   }
 
   Future<void> deleteStaff({required String id, required String role}) async {
-    _checkManagerPermission();
+    await _checkManagerPermission();
     _log('Deleting $role: id=$id');
     state = const AsyncValue.loading();
 

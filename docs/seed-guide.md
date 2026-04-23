@@ -93,14 +93,22 @@ You will be prompted for the database password.
 If you have the [Supabase CLI](https://supabase.com/docs/guides/cli) installed and linked to your project:
 
 ```bash
-supabase db execute --file supabase/seed.sql
+supabase db reset --local
 ```
 
-> **Note:** `supabase db reset` also runs `supabase/seed.sql` automatically (if the file exists) after re-applying all migrations. This is the quickest way to get a fully fresh database:
+For a linked remote project (staging), run:
+
+```bash
+supabase db reset --linked
+```
+
+> **Note:** `supabase db reset` re-applies migrations and then runs `supabase/seed.sql` automatically (based on `[db.seed]` in `supabase/config.toml`).
 >
 > ```bash
-> supabase db reset
+> supabase db reset --local
 > ```
+
+> **CLI compatibility note:** on some Supabase CLI versions (including `v2.76.9`), `supabase seed --local/--linked` may only show help text instead of executing SQL seed files. If that happens, use `supabase db reset --local` or `supabase db reset --linked`.
 
 ---
 

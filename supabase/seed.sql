@@ -40,6 +40,40 @@
 BEGIN;
 
 -- ============================================================
+-- LANGKAH 0: Nonaktifkan trigger WA enqueue sementara
+--
+-- Beberapa trigger WA grouped melakukan pg_sleep() untuk debounce,
+-- yang bisa memicu statement timeout saat bulk insert seed.
+--
+-- Hanya trigger notifikasi WA yang dinonaktifkan (prefix:
+-- trg_enqueue_wa_), trigger bisnis lain tetap aktif.
+-- ============================================================
+DO $$
+DECLARE
+  v_trigger RECORD;
+BEGIN
+  FOR v_trigger IN
+    SELECT
+      n.nspname AS schema_name,
+      c.relname AS table_name,
+      t.tgname  AS trigger_name
+    FROM pg_trigger t
+    JOIN pg_class c ON c.oid = t.tgrelid
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE NOT t.tgisinternal
+      AND n.nspname = 'public'
+      AND t.tgname LIKE 'trg_enqueue_wa_%'
+  LOOP
+    EXECUTE format(
+      'ALTER TABLE %I.%I DISABLE TRIGGER %I',
+      v_trigger.schema_name,
+      v_trigger.table_name,
+      v_trigger.trigger_name
+    );
+  END LOOP;
+END $$;
+
+-- ============================================================
 -- LANGKAH 1: TRUNCATE semua tabel aplikasi
 -- Urutan dari tabel "anak" ke "induk" agar FK tidak conflict.
 -- RESTART IDENTITY mereset sequence ID ke awal.
@@ -69,7 +103,7 @@ RESTART IDENTITY CASCADE;
 INSERT INTO public.app_settings (key, value, description)
 VALUES (
   'majun_price_per_kg',
-  '3000',
+  '1500',
   'Harga standar majun per kilogram (Rupiah)'
 );
 
@@ -354,7 +388,7 @@ DECLARE
   ];
 
   v_perca_types TEXT[] := ARRAY[
-    'Katun', 'Polyester', 'Rayon', 'Denim', 'Jersey', 'Linen'
+    'kain', 'kaos'
   ];
 
   -- Array untuk menyimpan UUID percas_stock yang baru dibuat,
@@ -395,7 +429,7 @@ BEGIN
         v_stock_id,
         v_factory_ids[((v_month_num * 3 + v_shipment_num - 1) % 5) + 1],
         v_month_date + ((v_shipment_num - 1) * 10),
-        v_perca_types[((v_month_num + v_shipment_num) % 6) + 1],
+  v_perca_types[((v_month_num + v_shipment_num) % 2) + 1],
         v_weight,
         'SJ/' || TO_CHAR(v_month_date, 'YYYYMM') || '/' ||
           LPAD((v_month_num * 3 + v_shipment_num)::TEXT, 4, '0')
@@ -431,7 +465,7 @@ BEGIN
         v_perca_stock_ids[v_stock_arr_idx],
         v_tailor_ids[v_tailor_idx + 1],
         v_month_date + (v_tailor_idx % 20),
-        v_perca_types[((v_month_num + v_tailor_idx) % 6) + 1],
+  v_perca_types[((v_month_num + v_tailor_idx) % 2) + 1],
         v_weight
       );
     END LOOP;
@@ -578,6 +612,34 @@ BEGIN
     END LOOP;
   END LOOP;
 
+END $$;
+
+-- ============================================================
+-- LANGKAH 6b: Aktifkan kembali trigger WA enqueue
+-- ============================================================
+DO $$
+DECLARE
+  v_trigger RECORD;
+BEGIN
+  FOR v_trigger IN
+    SELECT
+      n.nspname AS schema_name,
+      c.relname AS table_name,
+      t.tgname  AS trigger_name
+    FROM pg_trigger t
+    JOIN pg_class c ON c.oid = t.tgrelid
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE NOT t.tgisinternal
+      AND n.nspname = 'public'
+      AND t.tgname LIKE 'trg_enqueue_wa_%'
+  LOOP
+    EXECUTE format(
+      'ALTER TABLE %I.%I ENABLE TRIGGER %I',
+      v_trigger.schema_name,
+      v_trigger.table_name,
+      v_trigger.trigger_name
+    );
+  END LOOP;
 END $$;
 
 -- ============================================================
