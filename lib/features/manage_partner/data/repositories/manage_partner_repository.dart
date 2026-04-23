@@ -80,6 +80,14 @@ class ManagePartnerRepository {
       );
 
       if (response.status != 200) {
+        final data = response.data;
+        if (data is Map && data['error'] != null) {
+          final error = data['error'];
+          final details = data['details'];
+          throw Exception(
+            details != null ? '$error ($details)' : error.toString(),
+          );
+        }
         throw Exception('Gagal: Status ${response.status}');
       }
     } catch (e) {

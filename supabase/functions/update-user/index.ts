@@ -31,6 +31,9 @@ interface UpdateUserRequest {
   address?: string;
 }
 
+const normalizeRole = (role: unknown): string =>
+  typeof role === "string" ? role.trim().toLowerCase() : "";
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -87,14 +90,20 @@ serve(async (req) => {
         .eq("id", requestingUser.id)
         .single();
 
-    if (
-      profileError ||
-      !requestingProfile ||
-      !["admin", "manager"].includes(requestingProfile.role)
-    ) {
+    const profileRole = normalizeRole(requestingProfile?.role);
+    const appMetadataRole = normalizeRole(requestingUser.app_metadata?.role);
+    const isAllowedRequesterRole = ["admin", "manager"].includes(
+      profileRole
+    ) || ["admin", "manager"].includes(appMetadataRole);
+
+    if (profileError || !requestingProfile || !isAllowedRequesterRole) {
       return new Response(
         JSON.stringify({
           error: "Forbidden - Only admins and managers can update users",
+          details: {
+            detected_profile_role: profileRole || null,
+            detected_app_metadata_role: appMetadataRole || null,
+          },
         }),
         {
           status: 403,
@@ -107,6 +116,7 @@ serve(async (req) => {
     const requestData: UpdateUserRequest = await req.json();
     const { user_id, email, password, username, name, no_telp, role, address } =
       requestData;
+    const normalizedRole = normalizeRole(role);
 
     // Validate required fields
     if (!user_id) {
@@ -130,7 +140,7 @@ serve(async (req) => {
         "partner_pabrik",
         "penjahit",
       ];
-      if (!validRoles.includes(role)) {
+      if (!validRoles.includes(normalizedRole)) {
         return new Response(
           JSON.stringify({
             error: `Invalid role. Must be one of: ${validRoles.join(", ")}`,
@@ -176,7 +186,7 @@ serve(async (req) => {
         userMetadata.name = name;
       }
       if (no_telp) userMetadata.no_telp = no_telp;
-      if (role) userMetadata.role = role;
+  if (role) userMetadata.role = normalizedRole;
       if (address) userMetadata.address = address;
 
       const { error: metadataError } =
@@ -195,7 +205,7 @@ serve(async (req) => {
     if (name !== undefined) profileUpdateData.name = name;
     if (email !== undefined) profileUpdateData.email = email;
     if (no_telp !== undefined) profileUpdateData.no_telp = no_telp;
-    if (role !== undefined) profileUpdateData.role = role;
+  if (role !== undefined) profileUpdateData.role = normalizedRole;
     if (address !== undefined) profileUpdateData.address = address;
 
     if (Object.keys(profileUpdateData).length > 0) {
