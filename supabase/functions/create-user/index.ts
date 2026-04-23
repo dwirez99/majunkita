@@ -41,6 +41,9 @@ interface ProfileData {
   address: string | null;
 }
 
+const normalizeRole = (role: unknown): string =>
+  typeof role === "string" ? role.trim().toLowerCase() : "";
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -97,14 +100,20 @@ serve(async (req) => {
         .eq("id", requestingUser.id)
         .single();
 
-    if (
-      profileError ||
-      !requestingProfile ||
-      !["admin", "manager"].includes(requestingProfile.role)
-    ) {
+    const profileRole = normalizeRole(requestingProfile?.role);
+    const appMetadataRole = normalizeRole(requestingUser.app_metadata?.role);
+    const isAllowedRequesterRole = ["admin", "manager"].includes(
+      profileRole
+    ) || ["admin", "manager"].includes(appMetadataRole);
+
+    if (profileError || !requestingProfile || !isAllowedRequesterRole) {
       return new Response(
         JSON.stringify({
           error: "Forbidden - Only admins and managers can create users",
+          details: {
+            detected_profile_role: profileRole || null,
+            detected_app_metadata_role: appMetadataRole || null,
+          },
         }),
         {
           status: 403,
@@ -117,9 +126,10 @@ serve(async (req) => {
     const requestData: CreateUserRequest = await req.json();
     const { email, password, username, name, role, no_telp, address } =
       requestData;
+    const normalizedRole = normalizeRole(role);
 
     // Validate required fields
-    if (!email || !password || !name || !role) {
+    if (!email || !password || !name || !normalizedRole) {
       return new Response(
         JSON.stringify({
           error: "Missing required fields: email, password, name, role",
@@ -139,7 +149,7 @@ serve(async (req) => {
       "partner_pabrik",
       "penjahit",
     ];
-    if (!validRoles.includes(role)) {
+    if (!validRoles.includes(normalizedRole)) {
       return new Response(
         JSON.stringify({
           error: `Invalid role. Must be one of: ${validRoles.join(", ")}`,
@@ -160,7 +170,7 @@ serve(async (req) => {
         user_metadata: {
           username: username || email.split("@")[0],
           name: name,
-          role: role,
+          role: normalizedRole,
           no_telp: no_telp || null,
           address: address || null,
         },
@@ -193,7 +203,7 @@ serve(async (req) => {
       // Try to create profile manually as fallback
       const profileData: ProfileData = {
         id: newUser.user.id,
-        role: role,
+  role: normalizedRole,
         no_telp: no_telp || null,
         username: username || null,
         name: name || null,
@@ -217,7 +227,7 @@ serve(async (req) => {
         user: {
           id: newUser.user.id,
           email: newUser.user.email,
-          role: role,
+          role: normalizedRole,
         },
       }),
       {

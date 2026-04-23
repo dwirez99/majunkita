@@ -123,13 +123,31 @@ cp .env.example .env
 supabase db push
 ```
 
-### 3. Deploy Edge Functions
+### 3. Seed Development Data (optional)
+
+To populate the database with realistic Indonesian dummy data covering 15 months of transactions, run the seed script. See the full guide:
+
+```
+docs/seed-guide.md
+```
+
+Quick-start via Supabase CLI:
+
+```bash
+supabase db reset   # applies migrations + runs supabase/seed.sql automatically
+```
+
+Or paste `supabase/seed.sql` into the Supabase SQL Editor and click **Run**.
+
+> ⚠️ Only run on development/staging databases — the script wipes all existing data.
+
+### 4. Deploy Edge Functions
 
 ```bash
 supabase functions deploy --project-ref <your-project-ref>
 ```
 
-### 4. Run the Flutter App
+### 5. Run the Flutter App
 
 ```bash
 flutter pub get
