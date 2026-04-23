@@ -5,7 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 // 1. Dapatkan instance klien Supabase global
 //    Instance ini baru akan aktif setelah Supabase diinisialisasi di main.dart
-final supabaseClient = Supabase.instance.client;
+SupabaseClient get supabaseClient => Supabase.instance.client;
 
 // 2. Buat Provider untuk menyediakan instance klien
 //    Ini adalah cara Riverpod agar kita bisa mengakses atau men-mock klien Supabase
