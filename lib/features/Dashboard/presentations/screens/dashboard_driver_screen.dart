@@ -4,13 +4,16 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../auth/domain/providers/auth_provider.dart';
 import '../../../manage_expeditions/presentations/screens/add_expedition_screen.dart';
 import '../../../manage_expeditions/presentations/screens/expedition_history_screen.dart';
-import '../../../manage_expeditions/presentations/screens/manage_expedition_partners_screen.dart';
+// removed manage_expedition_partners_screen import because the shortcut banner was removed
 import '../../../manage_expeditions/presentations/screens/manage_expeditions_screen.dart';
 import '../../../manage_percas/presentations/screens/add_perca_screen.dart';
+import '../../../manage_notifications/presentations/screens/admin_notifications_screen.dart';
+import '../../../manage_notifications/domain/providers/wa_notifications_provider.dart';
 import '../../domain/providers/dashboard_providers.dart';
 import '../widgets/dashboard_appbar.dart';
 import '../widgets/dashboard_bottom_bar.dart';
 import '../widgets/summary_card.dart';
+import '../widgets/user_profile_card.dart';
 
 class DashboardDriverScreen extends ConsumerStatefulWidget {
   const DashboardDriverScreen({super.key});
@@ -39,9 +42,23 @@ class _DashboardDriverScreenState extends ConsumerState<DashboardDriverScreen> {
   Widget build(BuildContext context) {
     final userProfileAsync = ref.watch(userProfileProvider);
     final driverSummaryAsync = ref.watch(driverDashboardProvider);
+    final badgeCount = ref
+        .watch(waNotificationsBadgeCountProvider)
+        .maybeWhen(data: (value) => value, orElse: () => 0);
 
     return Scaffold(
-      appBar: const DashboardAppBar(title: 'Dashboard Driver'),
+      appBar: DashboardAppBar(
+        title: 'Dashboard Driver',
+        showNotifications: true,
+        userRole: 'driver',
+        notificationBadgeCount: badgeCount,
+        onNotificationsTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AdminNotificationsScreen()),
+          );
+        },
+      ),
       backgroundColor: AppColors.background,
       body: RefreshIndicator(
         color: AppColors.secondary,
@@ -58,16 +75,8 @@ class _DashboardDriverScreenState extends ConsumerState<DashboardDriverScreen> {
               const SizedBox(height: 16),
 
               // ── 1. KARTU PROFIL ─────────────────────────────────────
-              userProfileAsync.when(
-                data:
-                    (profile) => _buildProfileCard(
-                      name: profile?['nama_lengkap'] ?? 'Driver',
-                      role: profile?['role'] ?? 'driver',
-                    ),
-                loading:
-                    () => _buildProfileCard(name: 'Memuat...', role: 'driver'),
-                error:
-          (_, _) => _buildProfileCard(name: 'Error', role: 'driver'),
+              const UserProfileCard(
+                trailingIcon: Icons.local_shipping,
               ),
 
               const SizedBox(height: 20),
@@ -76,7 +85,7 @@ class _DashboardDriverScreenState extends ConsumerState<DashboardDriverScreen> {
               userProfileAsync.when(
                 data: (profile) {
                   final firstName =
-                      (profile?['nama_lengkap'] as String? ?? 'Driver')
+                      (profile?['username'] as String? ?? 'Driver')
                           .split(' ')
                           .first;
                   return Text(
@@ -237,21 +246,6 @@ class _DashboardDriverScreenState extends ConsumerState<DashboardDriverScreen> {
 
               const SizedBox(height: 16),
 
-              // ── 5. MITRA EXPEDISI SHORTCUT ───────────────────────────
-              _buildShortcutBanner(
-                icon: Icons.business_center_outlined,
-                label: 'Kelola Mitra Expedisi',
-                subtitle: 'Tambah atau ubah perusahaan jasa pengiriman',
-                color: AppColors.secondaryDark,
-                onTap:
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ManageExpeditionPartnersScreen(),
-                      ),
-                    ),
-              ),
-
               const SizedBox(height: 32),
             ],
           ),
@@ -267,78 +261,6 @@ class _DashboardDriverScreenState extends ConsumerState<DashboardDriverScreen> {
 
   // ── Widget Builders ────────────────────────────────────────────────────
 
-  Widget _buildProfileCard({required String name, required String role}) {
-    final roleLabel =
-        role.isNotEmpty ? '${role[0].toUpperCase()}${role.substring(1)}' : role;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primary, AppColors.secondaryLight],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.secondary.withValues(alpha: 0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: AppColors.white.withValues(alpha: 0.25),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.person, color: AppColors.white, size: 34),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.white,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    roleLabel,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Icon(Icons.local_shipping, color: AppColors.white, size: 36),
-        ],
-      ),
-    );
-  }
 
   Widget _buildMenuCard({
     required IconData icon,
@@ -390,59 +312,7 @@ class _DashboardDriverScreenState extends ConsumerState<DashboardDriverScreen> {
     );
   }
 
-  Widget _buildShortcutBanner({
-    required IconData icon,
-    required String label,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.25)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(fontSize: 11, color: AppColors.grey),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.chevron_right_rounded, color: color),
-          ],
-        ),
-      ),
-    );
-  }
+  // _buildShortcutBanner was removed because the shortcut banner is no longer shown
 
   Widget _buildErrorCard(String message) {
     return Container(

@@ -46,7 +46,7 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions:
           actions ??
           [
-            if (showNotifications && userRole == 'admin')
+            if (showNotifications)
               IconButton(
                 icon: Stack(
                   clipBehavior: Clip.none,

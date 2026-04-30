@@ -8,6 +8,8 @@ import '../../../manage_expeditions/domain/expedition_provider.dart';
 import '../../../manage_expeditions/data/models/expedition_model.dart';
 import '../../../manage_partner/presentations/screens/manage_partner_screen.dart';
 import '../../../manage_percas/presentations/screens/add_perca_history_screen.dart';
+import '../../../manage_notifications/presentations/screens/admin_notifications_screen.dart';
+import '../../../manage_notifications/domain/providers/wa_notifications_provider.dart';
 import '../widgets/dashboard_appbar.dart';
 import '../widgets/dashboard_bottom_bar.dart';
 import '../widgets/user_profile_card.dart';
@@ -56,9 +58,23 @@ class _DashboardManagerScreenState
     // 1. Ambil data profil dari Riverpod (agar nama dinamis)
     final userProfileAsync = ref.watch(userProfileProvider);
     final expeditionsAsync = ref.watch(expeditionListProvider);
+    final badgeCount = ref
+        .watch(waNotificationsBadgeCountProvider)
+        .maybeWhen(data: (value) => value, orElse: () => 0);
 
     return Scaffold(
-      appBar: const DashboardAppBar(title: 'Dashboard Manager'),
+      appBar: DashboardAppBar(
+        title: 'Dashboard Manager',
+        showNotifications: true,
+        userRole: 'manager',
+        notificationBadgeCount: badgeCount,
+        onNotificationsTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AdminNotificationsScreen()),
+          );
+        },
+      ),
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
