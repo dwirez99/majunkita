@@ -541,98 +541,9 @@ class ManageMajunScreen extends ConsumerWidget {
                     const SizedBox(height: 10),
 
                     // Tailor list
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: sorted.length,
-                      itemBuilder: (context, index) {
-                        final tailor = sorted[index];
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.grey[200]!),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withValues(alpha: 0.08),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              // Avatar
-                              CircleAvatar(
-                                radius: 20,
-                                backgroundColor: Colors.teal[50],
-                                backgroundImage:
-                                    tailor.tailorImages != null &&
-                                            tailor.tailorImages!.isNotEmpty
-                                        ? NetworkImage(tailor.tailorImages!)
-                                        : null,
-                                child:
-                                    tailor.tailorImages == null ||
-                                            tailor.tailorImages!.isEmpty
-                                        ? Text(
-                                          tailor.name.isNotEmpty
-                                              ? tailor.name[0].toUpperCase()
-                                              : '?',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.teal[700],
-                                          ),
-                                        )
-                                        : null,
-                              ),
-                              const SizedBox(width: 12),
-
-                              // Name
-                              Expanded(
-                                child: Text(
-                                  tailor.name,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-
-                              // Stock
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    '${tailor.totalStock.toStringAsFixed(1)} KG',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color:
-                                          tailor.totalStock > 0
-                                              ? Colors.teal[700]
-                                              : Colors.grey[500],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    currencyFormat.format(tailor.balance),
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color:
-                                          tailor.balance > 0
-                                              ? Colors.amber[800]
-                                              : Colors.grey[500],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+                    _TailorListPagination(
+                      tailors: sorted,
+                      currencyFormat: currencyFormat,
                     ),
                   ],
                 );
@@ -890,6 +801,169 @@ class ManageMajunScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _TailorListPagination extends StatefulWidget {
+  final List<dynamic> tailors;
+  final NumberFormat currencyFormat;
+
+  const _TailorListPagination({
+    required this.tailors,
+    required this.currencyFormat,
+  });
+
+  @override
+  State<_TailorListPagination> createState() => _TailorListPaginationState();
+}
+
+class _TailorListPaginationState extends State<_TailorListPagination> {
+  int _currentPage = 0;
+  static const int _itemsPerPage = 5;
+
+  @override
+  void didUpdateWidget(_TailorListPagination oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.tailors.length != oldWidget.tailors.length) {
+      _currentPage = 0;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final startIndex = _currentPage * _itemsPerPage;
+    final endIndex =
+        (startIndex + _itemsPerPage < widget.tailors.length)
+            ? startIndex + _itemsPerPage
+            : widget.tailors.length;
+
+    final currentTailors = widget.tailors.sublist(startIndex, endIndex);
+    final totalPages = (widget.tailors.length / _itemsPerPage).ceil();
+
+    return Column(
+      children: [
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: currentTailors.length,
+          itemBuilder: (context, index) {
+            final tailor = currentTailors[index];
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey[200]!),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withValues(alpha: 0.08),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  // Avatar
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: Colors.teal[50],
+                    backgroundImage:
+                        tailor.tailorImages != null &&
+                                tailor.tailorImages!.isNotEmpty
+                            ? NetworkImage(tailor.tailorImages!)
+                            : null,
+                    child:
+                        tailor.tailorImages == null ||
+                                tailor.tailorImages!.isEmpty
+                            ? Text(
+                              tailor.name.isNotEmpty
+                                  ? tailor.name[0].toUpperCase()
+                                  : '?',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.teal[700],
+                              ),
+                            )
+                            : null,
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Name
+                  Expanded(
+                    child: Text(
+                      tailor.name,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+
+                  // Stock
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${tailor.totalStock.toStringAsFixed(1)} KG',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color:
+                              tailor.totalStock > 0
+                                  ? Colors.teal[700]
+                                  : Colors.grey[500],
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.currencyFormat.format(tailor.balance),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color:
+                              tailor.balance > 0
+                                  ? Colors.amber[800]
+                                  : Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        if (totalPages > 1)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed:
+                      _currentPage > 0
+                          ? () => setState(() => _currentPage--)
+                          : null,
+                ),
+                Text(
+                  'Halaman ${_currentPage + 1} dari $totalPages',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed:
+                      _currentPage < totalPages - 1
+                          ? () => setState(() => _currentPage++)
+                          : null,
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }
