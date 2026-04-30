@@ -96,7 +96,7 @@ class _DashboarAdminScreenState extends ConsumerState<DashboarAdminScreen> {
                 builder: (context, ref, child) {
                   final userProfile = ref.watch(userProfileProvider);
                   final name = userProfile.when(
-                    data: (profile) => profile?['name'] ?? 'Admin',
+                    data: (profile) => profile?['username'] ?? 'Admin',
                     loading: () => '...',
                     error: (e, s) => 'Admin',
                   );
