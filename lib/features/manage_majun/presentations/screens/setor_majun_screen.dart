@@ -838,7 +838,7 @@ class _PhotoPreviewDialog extends StatelessWidget {
             backgroundColor: AppColors.secondary,
             foregroundColor: AppColors.white,
           ),
-          child: const Text('GUNAKAN FOTO INI'),
+          child: const Text('GUNAKAN INI'),
         ),
       ],
     );

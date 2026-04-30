@@ -16,6 +16,8 @@ class TailorsListScreen extends ConsumerStatefulWidget {
 
 class _TailorsListScreenState extends ConsumerState<TailorsListScreen> {
   final TextEditingController _searchController = TextEditingController();
+  static const int _pageSize = 5;
+  int _currentPage = 0;
 
   @override
   void dispose() {
@@ -113,10 +115,11 @@ class _TailorsListScreenState extends ConsumerState<TailorsListScreen> {
                           hintText: 'Cari nama penjahit...',
                         ),
                         onChanged: (value) {
-                          // Update Query di Provider
+                          // Update Query di Provider & reset halaman
                           ref
                               .read(tailorSearchQueryProvider.notifier)
                               .setQuery(value);
+                          setState(() => _currentPage = 0);
                         },
                       ),
                     ),
@@ -127,6 +130,7 @@ class _TailorsListScreenState extends ConsumerState<TailorsListScreen> {
                         onPressed: () {
                           _searchController.clear();
                           ref.read(tailorSearchQueryProvider.notifier).clear();
+                          setState(() => _currentPage = 0);
                         },
                       )
                     else
@@ -158,7 +162,7 @@ class _TailorsListScreenState extends ConsumerState<TailorsListScreen> {
 
               const SizedBox(height: 10),
 
-              // --- LIST VIEW ---
+              // --- LIST VIEW + PAGINATION ---
               Expanded(
                 child: tailorsAsync.when(
                   data: (tailors) {
@@ -187,16 +191,34 @@ class _TailorsListScreenState extends ConsumerState<TailorsListScreen> {
                       );
                     }
 
-                    return ListView.builder(
-                      itemCount: tailors.length,
-                      physics: const BouncingScrollPhysics(),
-                      itemBuilder: (context, index) {
-                        final tailor = tailors[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12.0),
-                          child: _buildTailorCard(context, tailor),
-                        );
-                      },
+                    final totalPages =
+                        (tailors.length / _pageSize).ceil();
+                    // Clamp current page in case list shrank after delete
+                    final safePage = _currentPage.clamp(0, totalPages - 1);
+                    final start = safePage * _pageSize;
+                    final end = (start + _pageSize).clamp(0, tailors.length);
+                    final pageTailors = tailors.sublist(start, end);
+
+                    return Column(
+                      children: [
+                        // List
+                        Expanded(
+                          child: ListView.builder(
+                            itemCount: pageTailors.length,
+                            physics: const BouncingScrollPhysics(),
+                            itemBuilder: (context, index) {
+                              final tailor = pageTailors[index];
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12.0),
+                                child: _buildTailorCard(context, tailor),
+                              );
+                            },
+                          ),
+                        ),
+
+                        // --- PAGINATION CONTROLS ---
+                        if (totalPages > 1) _buildPaginationBar(safePage, totalPages),
+                      ],
                     );
                   },
                   loading:
@@ -229,6 +251,80 @@ class _TailorsListScreenState extends ConsumerState<TailorsListScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // --- PAGINATION BAR ---
+  Widget _buildPaginationBar(int currentPage, int totalPages) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0, bottom: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Prev button
+          IconButton(
+            onPressed:
+                currentPage > 0
+                    ? () => setState(() => _currentPage = currentPage - 1)
+                    : null,
+            icon: const Icon(Icons.chevron_left),
+            style: IconButton.styleFrom(
+              backgroundColor:
+                  currentPage > 0 ? Colors.green[400] : Colors.grey[300],
+              foregroundColor:
+                  currentPage > 0 ? Colors.white : Colors.grey[500],
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          // Page indicator
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.green[50],
+              border: Border.all(color: Colors.green.shade300),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'Halaman ${currentPage + 1} / $totalPages',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.green[800],
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          // Next button
+          IconButton(
+            onPressed:
+                currentPage < totalPages - 1
+                    ? () => setState(() => _currentPage = currentPage + 1)
+                    : null,
+            icon: const Icon(Icons.chevron_right),
+            style: IconButton.styleFrom(
+              backgroundColor:
+                  currentPage < totalPages - 1
+                      ? Colors.green[400]
+                      : Colors.grey[300],
+              foregroundColor:
+                  currentPage < totalPages - 1
+                      ? Colors.white
+                      : Colors.grey[500],
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

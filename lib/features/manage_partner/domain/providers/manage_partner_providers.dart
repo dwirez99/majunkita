@@ -197,7 +197,11 @@ class StaffManagementNotifier extends AsyncNotifier<void> {
 
     try {
       final repository = ref.read(managePartnerRepositoryProvider);
-      await repository.updateUser(
+      // Use direct profile update for self-update to avoid manager-only Edge
+      // Function which forbids non-admin updates. Note: auth changes like
+      // email/password should be handled through supabase.auth.updateUser when
+      // necessary.
+      await repository.updateMyProfile(
         id: id,
         name: name,
         username: username,
@@ -260,7 +264,7 @@ class StaffManagementNotifier extends AsyncNotifier<void> {
         noTelp: noTelp,
         address: address,
         password: password,
-        role: role,
+        role: null, // Don't allow users to change their own role
       );
 
       // Refresh management list bila kebetulan role admin/driver

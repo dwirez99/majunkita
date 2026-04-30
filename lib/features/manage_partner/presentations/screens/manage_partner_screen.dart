@@ -1,14 +1,23 @@
 import '../../../../core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../auth/domain/providers/auth_provider.dart';
 import 'manage_admin_screen.dart';
 import 'manage_driver_screen.dart';
 import '../../../manage_tailors/presentations/screens/manage_tailors_screen.dart';
 
-class ManagePartnerScreen extends StatelessWidget {
+class ManagePartnerScreen extends ConsumerWidget {
   const ManagePartnerScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userProfileAsync = ref.watch(userProfileProvider);
+    final isAdmin = userProfileAsync.when(
+      data: (profile) =>
+          (profile?['role']?.toString().toLowerCase() ?? '') == 'admin',
+      loading: () => false,
+      error: (_, __) => false,
+    );
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -40,24 +49,25 @@ class ManagePartnerScreen extends StatelessWidget {
               ),
               const SizedBox(height: 30),
 
-              // Kelola Partner Admin Card
-              _buildPartnerCard(
-                context: context,
-                icon: Icons.admin_panel_settings,
-                title: 'Kelola Partner Admin',
-                description: 'Manajemen data partner admin',
-                color: AppColors.primary,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ManageAdminScreen(),
-                    ),
-                  );
-                },
-              ),
+              // Kelola Partner Admin Card — hanya tampil untuk non-admin
+              if (!isAdmin)
+                _buildPartnerCard(
+                  context: context,
+                  icon: Icons.admin_panel_settings,
+                  title: 'Kelola Partner Admin',
+                  description: 'Manajemen data partner admin',
+                  color: AppColors.primary,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ManageAdminScreen(),
+                      ),
+                    );
+                  },
+                ),
 
-              const SizedBox(height: 20),
+              if (!isAdmin) const SizedBox(height: 20),
 
               // Kelola Driver Card
               _buildPartnerCard(

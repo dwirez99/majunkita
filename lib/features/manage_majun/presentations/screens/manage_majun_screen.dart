@@ -657,72 +657,11 @@ class ManageMajunScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
 
-        // Monthly list
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: recentEntries.length,
-          itemBuilder: (context, index) {
-            // Display in reverse (newest first)
-            final entry = recentEntries[recentEntries.length - 1 - index];
-            final monthLabel = _formatMonthKey(entry.key);
-
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey[200]!),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_today,
-                        size: 16,
-                        color: Colors.grey[500],
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        monthLabel,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Text(
-                        '${entry.value.toStringAsFixed(1)} KG',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.secondary,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      SizedBox(
-                        width: 60,
-                        child: LinearProgressIndicator(
-                          value:
-                              totalWeight > 0 ? entry.value / totalWeight : 0,
-                          backgroundColor: Colors.grey[200],
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            AppColors.secondary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
+        // Monthly list — paginated
+        _MonthlyStatsPagination(
+          entries: recentEntries,
+          totalWeight: totalWeight,
+          formatMonthKey: _formatMonthKey,
         ),
       ],
     );
@@ -801,6 +740,133 @@ class ManageMajunScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ── Paginated monthly stats list ──────────────────────────────────────────────
+class _MonthlyStatsPagination extends StatefulWidget {
+  final List<MapEntry<String, double>> entries;
+  final double totalWeight;
+  final String Function(String) formatMonthKey;
+
+  const _MonthlyStatsPagination({
+    required this.entries,
+    required this.totalWeight,
+    required this.formatMonthKey,
+  });
+
+  @override
+  State<_MonthlyStatsPagination> createState() =>
+      _MonthlyStatsPaginationState();
+}
+
+class _MonthlyStatsPaginationState extends State<_MonthlyStatsPagination> {
+  int _currentPage = 0;
+  static const int _pageSize = 5;
+
+  @override
+  void didUpdateWidget(_MonthlyStatsPagination oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.entries.length != oldWidget.entries.length) {
+      _currentPage = 0;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Reversed so newest is first
+    final reversed = widget.entries.reversed.toList();
+    final totalPages = (reversed.length / _pageSize).ceil();
+    final safePage = _currentPage.clamp(0, totalPages - 1);
+    final start = safePage * _pageSize;
+    final end = (start + _pageSize).clamp(0, reversed.length);
+    final pageEntries = reversed.sublist(start, end);
+
+    return Column(
+      children: [
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: pageEntries.length,
+          itemBuilder: (context, index) {
+            final entry = pageEntries[index];
+            final monthLabel = widget.formatMonthKey(entry.key);
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey[200]!),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.calendar_today, size: 16, color: Colors.grey[500]),
+                      const SizedBox(width: 8),
+                      Text(
+                        monthLabel,
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        '${entry.value.toStringAsFixed(1)} KG',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.secondary,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 60,
+                        child: LinearProgressIndicator(
+                          value: widget.totalWeight > 0
+                              ? entry.value / widget.totalWeight
+                              : 0,
+                          backgroundColor: Colors.grey[200],
+                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        if (totalPages > 1)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: safePage > 0
+                      ? () => setState(() => _currentPage = safePage - 1)
+                      : null,
+                ),
+                Text(
+                  'Halaman ${safePage + 1} dari $totalPages',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: safePage < totalPages - 1
+                      ? () => setState(() => _currentPage = safePage + 1)
+                      : null,
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

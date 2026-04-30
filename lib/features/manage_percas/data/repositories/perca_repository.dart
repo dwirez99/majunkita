@@ -61,10 +61,13 @@ class PercaRepository {
   }
 
   // 4. Simpan multiple stocks ke database
+  // Insert satu per satu agar trigger WA (pg_sleep debounce)
+  // tidak menyebabkan statement timeout pada bulk insert.
   Future<void> saveMultipleStocksToDatabase(List<PercasStock> stockList) async {
     try {
-      final dataList = stockList.map((stock) => stock.toJson()).toList();
-      await _supabase.from('percas_stock').insert(dataList);
+      for (final stock in stockList) {
+        await _supabase.from('percas_stock').insert(stock.toJson());
+      }
     } catch (e) {
       throw Exception('Gagal menyimpan multiple stocks ke database: $e');
     }
