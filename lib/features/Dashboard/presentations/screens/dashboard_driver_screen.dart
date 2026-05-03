@@ -28,14 +28,6 @@ class _DashboardDriverScreenState extends ConsumerState<DashboardDriverScreen> {
 
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
-    if (index == 1) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const ExpeditionHistoryScreen(),
-        ),
-      ).then((_) => setState(() => _selectedIndex = 0));
-    }
   }
 
   @override
@@ -47,209 +39,217 @@ class _DashboardDriverScreenState extends ConsumerState<DashboardDriverScreen> {
         .maybeWhen(data: (value) => value, orElse: () => 0);
 
     return Scaffold(
-      appBar: DashboardAppBar(
-        title: 'Dashboard Driver',
-        showNotifications: true,
-        userRole: 'driver',
-        notificationBadgeCount: badgeCount,
-        onNotificationsTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AdminNotificationsScreen()),
-          );
-        },
-      ),
+      appBar: _selectedIndex == 0
+          ? DashboardAppBar(
+              title: 'Dashboard Driver',
+              showNotifications: true,
+              userRole: 'driver',
+              notificationBadgeCount: badgeCount,
+              onNotificationsTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AdminNotificationsScreen()),
+                );
+              },
+            )
+          : null,
       backgroundColor: AppColors.background,
-      body: RefreshIndicator(
-        color: AppColors.secondary,
-        onRefresh: () async {
-          ref.invalidate(driverDashboardProvider);
-          ref.invalidate(userProfileProvider);
-        },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 16),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: [
+          RefreshIndicator(
+            color: AppColors.secondary,
+            onRefresh: () async {
+              ref.invalidate(driverDashboardProvider);
+              ref.invalidate(userProfileProvider);
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
 
-              // ── 1. KARTU PROFIL ─────────────────────────────────────
-              const UserProfileCard(
-                trailingIcon: Icons.local_shipping,
-              ),
+                  // ── 1. KARTU PROFIL ─────────────────────────────────────
+                  const UserProfileCard(
+                    trailingIcon: Icons.local_shipping,
+                  ),
 
-              const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-              // ── 2. SAPAAN ────────────────────────────────────────────
-              userProfileAsync.when(
-                data: (profile) {
-                  final firstName =
-                      (profile?['username'] as String? ?? 'Driver')
-                          .split(' ')
-                          .first;
-                  return Text(
-                    'Hallo, $firstName! 👋',
-                    style: const TextStyle(
-                      fontSize: 22,
+                  // ── 2. SAPAAN ────────────────────────────────────────────
+                  userProfileAsync.when(
+                    data: (profile) {
+                      final firstName =
+                          (profile?['username'] as String? ?? 'Driver')
+                              .split(' ')
+                              .first;
+                      return Text(
+                        'Hallo, $firstName! 👋',
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.black,
+                        ),
+                      );
+                    },
+                    loading:
+                        () => const Text(
+                          'Hallo...',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.black,
+                          ),
+                        ),
+                    error:
+                        (_, _) => const Text(
+                          'Hallo, Driver!',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.black,
+                          ),
+                        ),
+                  ),
+
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Apa yang ingin kamu lakukan hari ini?',
+                    style: TextStyle(fontSize: 13, color: AppColors.grey),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // ── 3. MENU UTAMA (GRID 2×2) ────────────────────────────
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 1.1,
+                    children: [
+                      _buildMenuCard(
+                        icon: Icons.add_box_outlined,
+                        title: 'Tambah\nPerca',
+                        color: AppColors.accent,
+                        onTap:
+                            () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AddPercaScreen(),
+                              ),
+                            ),
+                      ),
+                      _buildMenuCard(
+                        icon: Icons.local_shipping_outlined,
+                        title: 'Tambah\nExpedisi',
+                        color: AppColors.primary,
+                        onTap:
+                            () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AddExpeditionScreen(),
+                              ),
+                            ),
+                      ),
+                      _buildMenuCard(
+                        icon: Icons.history_outlined,
+                        title: 'Riwayat\nPengiriman',
+                        color: AppColors.secondary,
+                        onTap:
+                            () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ExpeditionHistoryScreen(),
+                              ),
+                            ),
+                      ),
+                      _buildMenuCard(
+                        icon: Icons.business_outlined,
+                        title: 'Kelola\nExpedisi',
+                        color: AppColors.secondaryDark,
+                        onTap:
+                            () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ManageExpeditionsScreen(),
+                              ),
+                            ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // ── 4. RINGKASAN PENGIRIMAN ──────────────────────────────
+                  const Text(
+                    'Ringkasan Pengirimanku',
+                    style: TextStyle(
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: AppColors.black,
                     ),
-                  );
-                },
-                loading:
-                    () => const Text(
-                      'Hallo...',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.black,
-                      ),
-                    ),
-                error:
-                    (_, _) => const Text(
-                      'Hallo, Driver!',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.black,
-                      ),
-                    ),
-              ),
+                  ),
+                  const SizedBox(height: 12),
 
-              const SizedBox(height: 4),
-              const Text(
-                'Apa yang ingin kamu lakukan hari ini?',
-                style: TextStyle(fontSize: 13, color: AppColors.grey),
-              ),
+                  driverSummaryAsync.when(
+                    loading:
+                        () => const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(24.0),
+                            child: CircularProgressIndicator(
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                    error: (error, _) => _buildErrorCard(error.toString()),
+                    data:
+                        (summary) => SummaryCard(
+                          title: '🚚 Expedisi Saya',
+                          children: [
+                            _SummaryRow(
+                              icon: Icons.receipt_long_outlined,
+                              label: 'Total pengiriman',
+                              value: '${summary['total_pengiriman']} kali',
+                            ),
+                            _SummaryRow(
+                              icon: Icons.inventory_outlined,
+                              label: 'Total karung dikirim',
+                              value: '${summary['total_karung']} karung',
+                            ),
+                            _SummaryRow(
+                              icon: Icons.scale_outlined,
+                              label: 'Total berat dikirim',
+                              value: summary['fmt_total_berat'] as String,
+                            ),
+                            _SummaryRow(
+                              icon: Icons.calendar_month_outlined,
+                              label: 'Pengiriman bulan ini',
+                              value: '${summary['pengiriman_bulan_ini']} kali',
+                              isHighlighted: true,
+                            ),
+                            _SummaryRow(
+                              icon: Icons.monitor_weight_outlined,
+                              label: 'Berat bulan ini',
+                              value: summary['fmt_berat_bulan_ini'] as String,
+                              isHighlighted: true,
+                            ),
+                          ],
+                        ),
+                  ),
 
-              const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
-              // ── 3. MENU UTAMA (GRID 2×2) ────────────────────────────
-              GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.1,
-                children: [
-                  _buildMenuCard(
-                    icon: Icons.add_box_outlined,
-                    title: 'Tambah\nPerca',
-                    color: AppColors.accent,
-                    onTap:
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const AddPercaScreen(),
-                          ),
-                        ),
-                  ),
-                  _buildMenuCard(
-                    icon: Icons.local_shipping_outlined,
-                    title: 'Tambah\nExpedisi',
-                    color: AppColors.primary,
-                    onTap:
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const AddExpeditionScreen(),
-                          ),
-                        ),
-                  ),
-                  _buildMenuCard(
-                    icon: Icons.history_outlined,
-                    title: 'Riwayat\nPengiriman',
-                    color: AppColors.secondary,
-                    onTap:
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ExpeditionHistoryScreen(),
-                          ),
-                        ),
-                  ),
-                  _buildMenuCard(
-                    icon: Icons.business_outlined,
-                    title: 'Kelola\nExpedisi',
-                    color: AppColors.secondaryDark,
-                    onTap:
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ManageExpeditionsScreen(),
-                          ),
-                        ),
-                  ),
+                  const SizedBox(height: 32),
                 ],
               ),
-
-              const SizedBox(height: 24),
-
-              // ── 4. RINGKASAN PENGIRIMAN ──────────────────────────────
-              const Text(
-                'Ringkasan Pengirimanku',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.black,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              driverSummaryAsync.when(
-                loading:
-                    () => const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(24.0),
-                        child: CircularProgressIndicator(
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ),
-                error: (error, _) => _buildErrorCard(error.toString()),
-                data:
-                    (summary) => SummaryCard(
-                      title: '🚚 Expedisi Saya',
-                      children: [
-                        _SummaryRow(
-                          icon: Icons.receipt_long_outlined,
-                          label: 'Total pengiriman',
-                          value: '${summary['total_pengiriman']} kali',
-                        ),
-                        _SummaryRow(
-                          icon: Icons.inventory_outlined,
-                          label: 'Total karung dikirim',
-                          value: '${summary['total_karung']} karung',
-                        ),
-                        _SummaryRow(
-                          icon: Icons.scale_outlined,
-                          label: 'Total berat dikirim',
-                          value: summary['fmt_total_berat'] as String,
-                        ),
-                        _SummaryRow(
-                          icon: Icons.calendar_month_outlined,
-                          label: 'Pengiriman bulan ini',
-                          value: '${summary['pengiriman_bulan_ini']} kali',
-                          isHighlighted: true,
-                        ),
-                        _SummaryRow(
-                          icon: Icons.monitor_weight_outlined,
-                          label: 'Berat bulan ini',
-                          value: summary['fmt_berat_bulan_ini'] as String,
-                          isHighlighted: true,
-                        ),
-                      ],
-                    ),
-              ),
-
-              const SizedBox(height: 16),
-
-              const SizedBox(height: 32),
-            ],
+            ),
           ),
-        ),
+          const ExpeditionHistoryScreen(),
+        ],
       ),
       bottomNavigationBar: DashboardBottomBar(
         currentIndex: _selectedIndex,

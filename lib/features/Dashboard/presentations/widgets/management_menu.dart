@@ -40,11 +40,6 @@ class ManagementMenuGrid extends StatelessWidget {
         'color': AppColors.primaryDark,
         'icon': Icons.local_shipping,
       },
-      {
-        'label': 'Kelola\nPartner',
-        'color': AppColors.secondaryDark,
-        'icon': Icons.handshake,
-      },
     ];
 
     return Column(
@@ -164,14 +159,6 @@ class ManagementMenuGrid extends StatelessWidget {
             builder: (context) => const ManageExpeditionsScreen(),
           ),
         );
-        break;
-      case 5:
-        // Navigate to Kelola Partner (Driver & Factory)
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ManagePartnerScreen()),
-        );
-        break;
       default:
         break;
     }

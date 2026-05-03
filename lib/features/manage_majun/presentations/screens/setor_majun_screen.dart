@@ -26,6 +26,7 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
 
   String? _selectedTailorId;
   String? _selectedTailorName;
+  double? _selectedTailorStock; // total_stock penjahit terpilih
   File? _capturedPhoto;
   bool _isSubmitting = false;
 
@@ -89,7 +90,8 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
 
   bool get _isFormValid {
     final weight = double.tryParse(_weightController.text) ?? 0;
-    return _selectedTailorId != null && weight > 0 && _capturedPhoto != null;
+    final stockOk = _selectedTailorStock == null || weight <= _selectedTailorStock!;
+    return _selectedTailorId != null && weight > 0 && _capturedPhoto != null && stockOk;
   }
 
   Future<void> _submitSetorMajun() async {
@@ -231,11 +233,21 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
     } catch (e) {
       if (mounted) Navigator.of(context).pop();
       if (mounted) {
+        // Sederhanakan pesan error dari constraint violation
+        String errorMsg = e.toString();
+        if (errorMsg.contains('chk_total_stock_non_negative') ||
+            errorMsg.contains('non_negative')) {
+          errorMsg =
+              'Berat majun melebihi stok perca penjahit. '
+              'Stok tersedia: ${_selectedTailorStock?.toStringAsFixed(1) ?? "?"}  KG';
+        } else if (errorMsg.contains('Gagal setor majun:')) {
+          errorMsg = errorMsg.replaceFirst('Exception: Gagal setor majun: ', '');
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text(errorMsg),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
+            duration: const Duration(seconds: 6),
             action: SnackBarAction(
               label: 'COBA LAGI',
               textColor: Colors.white,
@@ -425,9 +437,39 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
                                 tailorList.map<DropdownMenuItem<String>>((
                                   tailor,
                                 ) {
+                                  final stock = tailor.totalStock;
                                   return DropdownMenuItem<String>(
                                     value: tailor.id,
-                                    child: Text(tailor.name),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(child: Text(tailor.name)),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: stock > 0
+                                                ? Colors.green[100]
+                                                : Colors.red[100],
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                          ),
+                                          child: Text(
+                                            '${stock.toStringAsFixed(1)} KG',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: stock > 0
+                                                  ? Colors.green[800]
+                                                  : Colors.red[800],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   );
                                 }).toList(),
                             onChanged: (value) {
@@ -437,7 +479,9 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
                               setState(() {
                                 _selectedTailorId = value;
                                 _selectedTailorName = selected.name;
+                                _selectedTailorStock = selected.totalStock;
                               });
+                              _calculateEstimate();
                             },
                             validator:
                                 (value) =>
@@ -486,6 +530,10 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
                           final weight = double.tryParse(value);
                           if (weight == null || weight <= 0) {
                             return 'Masukkan angka yang valid (> 0)';
+                          }
+                          if (_selectedTailorStock != null &&
+                              weight > _selectedTailorStock!) {
+                            return 'Melebihi stok penjahit (${_selectedTailorStock!.toStringAsFixed(1)} KG)';
                           }
                           return null;
                         },
@@ -745,6 +793,13 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
                                 _buildHintItem('Isi berat lap majun (> 0)'),
                               if (_capturedPhoto == null)
                                 _buildHintItem('Ambil foto bukti timbangan'),
+                              if (_selectedTailorStock != null &&
+                                  (double.tryParse(_weightController.text) ??
+                                          0) >
+                                      _selectedTailorStock!)
+                                _buildHintItem(
+                                  'Berat melebihi stok penjahit (${_selectedTailorStock!.toStringAsFixed(1)} KG)',
+                                ),
                             ],
                           ),
                         ),

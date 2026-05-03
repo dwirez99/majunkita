@@ -31,32 +31,6 @@ class _DashboarAdminScreenState extends ConsumerState<DashboarAdminScreen> {
     setState(() {
       _selectedIndex = index;
     });
-    // Navigasi ke screen yang sesuai berdasarkan index bottom nav
-    switch (index) {
-      case 1:
-        // Perca
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ManagePercaScreen()),
-        ).then((_) => setState(() => _selectedIndex = 0));
-        break;
-      case 2:
-        // Majun
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ManageMajunScreen()),
-        ).then((_) => setState(() => _selectedIndex = 0));
-        break;
-      case 3:
-        // Expedisi
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const ManageExpeditionsScreen(),
-          ),
-        ).then((_) => setState(() => _selectedIndex = 0));
-        break;
-    }
   }
 
   @override
@@ -66,233 +40,243 @@ class _DashboarAdminScreenState extends ConsumerState<DashboarAdminScreen> {
         .maybeWhen(data: (value) => value, orElse: () => 0);
 
     return Scaffold(
-      appBar: DashboardAppBar(
-        title: 'Dashboard Admin',
-        showNotifications: true,
-        userRole: 'admin',
-        notificationBadgeCount: badgeCount,
-        onNotificationsTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AdminNotificationsScreen()),
-          );
-        },
-      ),
+      appBar: _selectedIndex == 0
+          ? DashboardAppBar(
+              title: 'Dashboard Admin',
+              showNotifications: true,
+              userRole: 'admin',
+              notificationBadgeCount: badgeCount,
+              onNotificationsTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AdminNotificationsScreen()),
+                );
+              },
+            )
+          : null,
       backgroundColor: AppColors.background,
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 16),
-              // 1. KARTU PROFIL PENGGUNA
-              const UserProfileCard(),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: [
+          SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  // 1. KARTU PROFIL PENGGUNA
+                  const UserProfileCard(),
 
-              const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-              // 2. TEKS SAPAAN
-              Consumer(
-                builder: (context, ref, child) {
-                  final userProfile = ref.watch(userProfileProvider);
-                  final name = userProfile.when(
-                    data: (profile) => profile?['username'] ?? 'Admin',
-                    loading: () => '...',
-                    error: (e, s) => 'Admin',
-                  );
-                  return Text(
-                    'Hallo, $name!',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.black,
-                    ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 16),
-
-              // 3. AKSES CEPAT
-              const QuickAccessButtons(),
-
-              const SizedBox(height: 24),
-
-              // 4. MENU KELOLA
-              const ManagementMenuGrid(),
-
-              const SizedBox(height: 24),
-
-              // 5. BAGIAN RINGKASAN
-              const Text(
-                'Ringkasan',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.black,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              ref
-                  .watch(adminDashboardProvider)
-                  .when(
-                    loading:
-                        () => const Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.secondary,
-                          ),
+                  // 2. TEKS SAPAAN
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final userProfile = ref.watch(userProfileProvider);
+                      final name = userProfile.when(
+                        data: (profile) => profile?['username'] ?? 'Admin',
+                        loading: () => '...',
+                        error: (e, s) => 'Admin',
+                      );
+                      return Text(
+                        'Hallo, $name!',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.black,
                         ),
-                    error:
-                        (error, stackTrace) => Center(
-                          child: Text(
-                            error.toString(),
-                            style: const TextStyle(color: AppColors.error),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                    data: (summary) {
-                      return Column(
-                        children: [
-                          // ── Perca ───────────────────────────────────────
-                          SummaryCard(
-                            title: '🧵 Perca',
-                            children: [
-                              _SummaryRow(
-                                icon: Icons.warehouse_outlined,
-                                label: 'Stok gudang',
-                                value: summary.perca.fmtStokGudang,
-                              ),
-                              _SummaryRow(
-                                icon: Icons.people_outline,
-                                label: 'Diberikan ke penjahit',
-                                value: summary.perca.fmtTotalDiberikan,
-                              ),
-                              _SummaryRow(
-                                icon: Icons.calendar_month_outlined,
-                                label: 'Distribusi bulan ini',
-                                value: summary.perca.fmtDistribusiBulanIni,
-                                isHighlighted: true,
-                              ),
-                            ],
-                          ),
-
-                          // ── Majun ───────────────────────────────────────
-                          SummaryCard(
-                            title: '🧺 Majun',
-                            children: [
-                              _SummaryRow(
-                                icon: Icons.input_outlined,
-                                label: 'Total diterima',
-                                value: summary.majun.fmtTotalDiterima,
-                              ),
-                              _SummaryRow(
-                                icon: Icons.local_shipping_outlined,
-                                label: 'Total terkirim',
-                                value: summary.majun.fmtTotalTerkirim,
-                              ),
-                              _SummaryRow(
-                                icon: Icons.inventory_2_outlined,
-                                label: 'Stok tersedia di gudang',
-                                value: summary.majun.fmtStokEfektif,
-                                isHighlighted: true,
-                              ),
-                              _SummaryRow(
-                                icon: Icons.calendar_month_outlined,
-                                label: 'Diterima bulan ini',
-                                value: summary.majun.fmtDiterimaBulanIni,
-                              ),
-                              _SummaryRow(
-                                icon: Icons.payments_outlined,
-                                label: 'Total upah dibayarkan',
-                                value: summary.majun.fmtTotalUpah,
-                              ),
-                            ],
-                          ),
-
-                          // ── Expedisi ────────────────────────────────────
-                          SummaryCard(
-                            title: '🚚 Expedisi',
-                            children: [
-                              _SummaryRow(
-                                icon: Icons.receipt_long_outlined,
-                                label: 'Total pengiriman',
-                                value:
-                                    '${summary.expedisi.totalPengiriman} kali',
-                              ),
-                              _SummaryRow(
-                                icon: Icons.inventory_outlined,
-                                label: 'Total karung dikirim',
-                                value: '${summary.expedisi.totalKarung} karung',
-                              ),
-                              _SummaryRow(
-                                icon: Icons.scale_outlined,
-                                label: 'Total berat dikirim',
-                                value: summary.expedisi.fmtTotalBerat,
-                              ),
-                              _SummaryRow(
-                                icon: Icons.calendar_month_outlined,
-                                label: 'Pengiriman bulan ini',
-                                value:
-                                    '${summary.expedisi.pengirimanBulanIni} kali',
-                                isHighlighted: true,
-                              ),
-                              _SummaryRow(
-                                icon: Icons.monitor_weight_outlined,
-                                label: 'Berat bulan ini',
-                                value: summary.expedisi.fmtBeratBulanIni,
-                              ),
-                            ],
-                          ),
-
-                          // ── Penjahit ────────────────────────────────────
-                          SummaryCard(
-                            title: '👗 Penjahit',
-                            children: [
-                              _SummaryRow(
-                                icon: Icons.people_outlined,
-                                label: 'Jumlah penjahit terdaftar',
-                                value: '${summary.penjahit.jumlahAktif} orang',
-                              ),
-                              _SummaryRow(
-                                icon: Icons.inventory_2_outlined,
-                                label: 'Total stok di penjahit',
-                                value: summary.penjahit.fmtTotalStok,
-                              ),
-                              _SummaryRow(
-                                icon: Icons.account_balance_wallet_outlined,
-                                label: 'Total saldo belum ditarik',
-                                value: summary.penjahit.fmtSaldoBelumDitarik,
-                                isHighlighted: true,
-                              ),
-                            ],
-                          ),
-
-                          // ── Limbah ──────────────────────────────────────
-                          SummaryCard(
-                            title: '♻️ Limbah',
-                            children: [
-                              _SummaryRow(
-                                icon: Icons.delete_outline,
-                                label: 'Total diterima',
-                                value: summary.limbah.fmtTotalDiterima,
-                              ),
-                              _SummaryRow(
-                                icon: Icons.calendar_month_outlined,
-                                label: 'Diterima bulan ini',
-                                value: summary.limbah.fmtDiterimaBulanIni,
-                                isHighlighted: true,
-                              ),
-                            ],
-                          ),
-                        ],
                       );
                     },
                   ),
-              const SizedBox(height: 32),
-            ],
+
+                  const SizedBox(height: 16),
+
+                  // 3. AKSES CEPAT
+                  const QuickAccessButtons(),
+
+                  const SizedBox(height: 24),
+
+                  // 4. MENU KELOLA
+                  const ManagementMenuGrid(),
+
+                  const SizedBox(height: 24),
+
+                  // 5. BAGIAN RINGKASAN
+                  const Text(
+                    'Ringkasan',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  ref
+                      .watch(adminDashboardProvider)
+                      .when(
+                        loading:
+                            () => const Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.secondary,
+                              ),
+                            ),
+                        error:
+                            (error, stackTrace) => Center(
+                              child: Text(
+                                error.toString(),
+                                style: const TextStyle(color: AppColors.error),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                        data: (summary) {
+                          return Column(
+                            children: [
+                              // ── Perca ───────────────────────────────────────
+                              SummaryCard(
+                                title: '🧵 Perca',
+                                children: [
+                                  _SummaryRow(
+                                    icon: Icons.warehouse_outlined,
+                                    label: 'Stok gudang',
+                                    value: summary.perca.fmtStokGudang,
+                                  ),
+                                  _SummaryRow(
+                                    icon: Icons.people_outline,
+                                    label: 'Diberikan ke penjahit',
+                                    value: summary.perca.fmtTotalDiberikan,
+                                  ),
+                                  _SummaryRow(
+                                    icon: Icons.calendar_month_outlined,
+                                    label: 'Distribusi bulan ini',
+                                    value: summary.perca.fmtDistribusiBulanIni,
+                                    isHighlighted: true,
+                                  ),
+                                ],
+                              ),
+
+                              // ── Majun ───────────────────────────────────────
+                              SummaryCard(
+                                title: '🧺 Majun',
+                                children: [
+                                  _SummaryRow(
+                                    icon: Icons.input_outlined,
+                                    label: 'Total diterima',
+                                    value: summary.majun.fmtTotalDiterima,
+                                  ),
+                                  _SummaryRow(
+                                    icon: Icons.local_shipping_outlined,
+                                    label: 'Total terkirim',
+                                    value: summary.majun.fmtTotalTerkirim,
+                                  ),
+                                  _SummaryRow(
+                                    icon: Icons.inventory_2_outlined,
+                                    label: 'Stok tersedia di gudang',
+                                    value: summary.majun.fmtStokEfektif,
+                                    isHighlighted: true,
+                                  ),
+                                  _SummaryRow(
+                                    icon: Icons.calendar_month_outlined,
+                                    label: 'Diterima bulan ini',
+                                    value: summary.majun.fmtDiterimaBulanIni,
+                                  ),
+                                  _SummaryRow(
+                                    icon: Icons.payments_outlined,
+                                    label: 'Total upah dibayarkan',
+                                    value: summary.majun.fmtTotalUpah,
+                                  ),
+                                ],
+                              ),
+
+                              // ── Expedisi ────────────────────────────────────
+                              SummaryCard(
+                                title: '🚚 Expedisi',
+                                children: [
+                                  _SummaryRow(
+                                    icon: Icons.receipt_long_outlined,
+                                    label: 'Total pengiriman',
+                                    value:
+                                        '${summary.expedisi.totalPengiriman} kali',
+                                  ),
+                                  _SummaryRow(
+                                    icon: Icons.inventory_outlined,
+                                    label: 'Total karung dikirim',
+                                    value: '${summary.expedisi.totalKarung} karung',
+                                  ),
+                                  _SummaryRow(
+                                    icon: Icons.scale_outlined,
+                                    label: 'Total berat dikirim',
+                                    value: summary.expedisi.fmtTotalBerat,
+                                  ),
+                                  _SummaryRow(
+                                    icon: Icons.calendar_month_outlined,
+                                    label: 'Pengiriman bulan ini',
+                                    value:
+                                        '${summary.expedisi.pengirimanBulanIni} kali',
+                                    isHighlighted: true,
+                                  ),
+                                  _SummaryRow(
+                                    icon: Icons.monitor_weight_outlined,
+                                    label: 'Berat bulan ini',
+                                    value: summary.expedisi.fmtBeratBulanIni,
+                                  ),
+                                ],
+                              ),
+
+                              // ── Penjahit ────────────────────────────────────
+                              SummaryCard(
+                                title: '👗 Penjahit',
+                                children: [
+                                  _SummaryRow(
+                                    icon: Icons.people_outlined,
+                                    label: 'Jumlah penjahit terdaftar',
+                                    value: '${summary.penjahit.jumlahAktif} orang',
+                                  ),
+                                  _SummaryRow(
+                                    icon: Icons.inventory_2_outlined,
+                                    label: 'Total stok di penjahit',
+                                    value: summary.penjahit.fmtTotalStok,
+                                  ),
+                                  _SummaryRow(
+                                    icon: Icons.account_balance_wallet_outlined,
+                                    label: 'Total saldo belum ditarik',
+                                    value: summary.penjahit.fmtSaldoBelumDitarik,
+                                    isHighlighted: true,
+                                  ),
+                                ],
+                              ),
+
+                              // ── Limbah ──────────────────────────────────────
+                              SummaryCard(
+                                title: '♻️ Limbah',
+                                children: [
+                                  _SummaryRow(
+                                    icon: Icons.delete_outline,
+                                    label: 'Total diterima',
+                                    value: summary.limbah.fmtTotalDiterima,
+                                  ),
+                                  _SummaryRow(
+                                    icon: Icons.calendar_month_outlined,
+                                    label: 'Diterima bulan ini',
+                                    value: summary.limbah.fmtDiterimaBulanIni,
+                                    isHighlighted: true,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                  const SizedBox(height: 32),
+                ],
+              ),
+            ),
           ),
-        ),
+          const ManagePercaScreen(),
+          const ManageMajunScreen(),
+          const ManageExpeditionsScreen(),
+        ],
       ),
       bottomNavigationBar: DashboardBottomBar(
         currentIndex: _selectedIndex,

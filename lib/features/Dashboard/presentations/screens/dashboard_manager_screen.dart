@@ -30,27 +30,6 @@ class _DashboardManagerScreenState
     setState(() {
       _selectedIndex = index;
     });
-    // Navigasi ke screen yang sesuai berdasarkan index bottom nav
-    switch (index) {
-      case 1:
-        // Riwayat Perca
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const AddPercaHistoryScreen(),
-          ),
-        ).then((_) => setState(() => _selectedIndex = 0));
-        break;
-      case 2:
-        // Riwayat Pengiriman
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const ExpeditionHistoryScreen(),
-          ),
-        ).then((_) => setState(() => _selectedIndex = 0));
-        break;
-    }
   }
 
   @override
@@ -63,107 +42,116 @@ class _DashboardManagerScreenState
         .maybeWhen(data: (value) => value, orElse: () => 0);
 
     return Scaffold(
-      appBar: DashboardAppBar(
-        title: 'Dashboard Manager',
-        showNotifications: true,
-        userRole: 'manager',
-        notificationBadgeCount: badgeCount,
-        onNotificationsTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AdminNotificationsScreen()),
-          );
-        },
-      ),
+      appBar: _selectedIndex == 0
+          ? DashboardAppBar(
+              title: 'Dashboard Manager',
+              showNotifications: true,
+              userRole: 'manager',
+              notificationBadgeCount: badgeCount,
+              onNotificationsTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AdminNotificationsScreen()),
+                );
+              },
+            )
+          : null,
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 2. PROFILE CARD (Shared Editable Card)
-              const UserProfileCard(),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: [
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 2. PROFILE CARD (Shared Editable Card)
+                  const UserProfileCard(),
 
-              const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-              // 3. GREETING TEXT
-              userProfileAsync.when(
-                data: (profile) {
-                  final rawName =
-                      (profile?['name'] ??
-                              profile?['nama_lengkap'] ??
-                              'Manager')
-                          .toString();
-                  final firstName =
-                      rawName.trim().isEmpty
-                          ? 'Manager'
-                          : rawName.trim().split(' ').first;
-                  return Text(
-                    'Hallo, $firstName!',
-                    style: AppTextStyles.heading3,
-                  );
-                },
-                loading:
-                    () => const Text('Hallo...', style: AppTextStyles.heading3),
-                error:
-                    (_, _) =>
-                        const Text('Hallo!', style: AppTextStyles.heading3),
+                  // 3. GREETING TEXT
+                  userProfileAsync.when(
+                    data: (profile) {
+                      final rawName =
+                          (profile?['name'] ??
+                                  profile?['nama_lengkap'] ??
+                                  'Manager')
+                              .toString();
+                      final firstName =
+                          rawName.trim().isEmpty
+                              ? 'Manager'
+                              : rawName.trim().split(' ').first;
+                      return Text(
+                        'Hallo, $firstName!',
+                        style: AppTextStyles.heading3,
+                      );
+                    },
+                    loading:
+                        () => const Text('Hallo...', style: AppTextStyles.heading3),
+                    error:
+                        (_, _) =>
+                            const Text('Hallo!', style: AppTextStyles.heading3),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // 4. CARD RENCANA PENGIRIMAN TERBARU
+                  _buildShipmentCard(expeditionsAsync),
+
+                  const SizedBox(height: 30),
+
+                  // 5. ACTION BUTTONS (Menu Utama)
+                  _buildMenuButton(
+                    label: 'RIWAYAT AMBIL DAN SETOR\nPERCA',
+                    backgroundColor: AppColors.secondary,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AddPercaHistoryScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  _buildMenuButton(
+                    label: 'RIWAYAT PENGIRIMAN',
+                    backgroundColor: AppColors.accent,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) =>
+                                  const ExpeditionHistoryScreen(openLatestOnLoad: true),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  _buildMenuButton(
+                    label: 'MANAJEMEN PARTNER',
+                    backgroundColor: AppColors.primaryDark,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ManagePartnerScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
-
-              const SizedBox(height: 20),
-
-              // 4. CARD RENCANA PENGIRIMAN TERBARU
-              _buildShipmentCard(expeditionsAsync),
-
-              const SizedBox(height: 30),
-
-              // 5. ACTION BUTTONS (Menu Utama)
-              _buildMenuButton(
-                label: 'RIWAYAT AMBIL DAN SETOR\nPERCA',
-                backgroundColor: AppColors.secondary,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const AddPercaHistoryScreen(),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-
-              _buildMenuButton(
-                label: 'RIWAYAT PENGIRIMAN',
-                backgroundColor: AppColors.accent,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) =>
-                              const ExpeditionHistoryScreen(openLatestOnLoad: true),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-
-              _buildMenuButton(
-                label: 'MANAJEMEN PARTNER',
-                backgroundColor: AppColors.primaryDark,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ManagePartnerScreen(),
-                    ),
-                  );
-                },
-              ),
-            ],
+            ),
           ),
-        ),
+          const AddPercaHistoryScreen(),
+          const ExpeditionHistoryScreen(),
+        ],
       ),
 
       // 6. BOTTOM NAVIGATION BAR
@@ -212,8 +200,7 @@ class _DashboardManagerScreenState
                 context,
                 MaterialPageRoute(
                   builder:
-                      (context) =>
-                          const ExpeditionHistoryScreen(openLatestOnLoad: true),
+                      (context) => const ExpeditionHistoryScreen(openLatestOnLoad: true),
                 ),
               );
             },

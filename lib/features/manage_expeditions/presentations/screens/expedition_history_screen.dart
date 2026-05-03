@@ -27,6 +27,9 @@ class _ExpeditionHistoryScreenState
   String? _initialExpandedId;
   bool _initialExpansionResolved = false;
 
+  int _currentPage = 0;
+  static const int _pageSize = 10;
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -51,6 +54,7 @@ class _ExpeditionHistoryScreenState
     setState(() {
       _searchController.clear();
       _dateRange = null;
+      _currentPage = 0;
     });
   }
 
@@ -128,7 +132,9 @@ class _ExpeditionHistoryScreenState
         children: [
           TextField(
             controller: _searchController,
-            onChanged: (_) => setState(() {}),
+            onChanged: (_) => setState(() {
+              _currentPage = 0;
+            }),
             decoration: InputDecoration(
               hintText: 'Cari tujuan atau partner...',
               prefixIcon: const Icon(Icons.search, color: AppColors.greyDark),
@@ -241,22 +247,59 @@ class _ExpeditionHistoryScreenState
                     );
                   }
 
+                  final totalPages = (filteredExpeditions.length / _pageSize).ceil();
+                  final safePage = _currentPage.clamp(0, totalPages - 1 >= 0 ? totalPages - 1 : 0);
+                  final start = safePage * _pageSize;
+                  final end = (start + _pageSize).clamp(0, filteredExpeditions.length);
+                  final pageExpeditions = filteredExpeditions.sublist(start, end);
+
                   // Tampilkan ListView semua riwayat expedisi
-                  return ListView.builder(
-                    itemCount: filteredExpeditions.length,
-                    physics: const BouncingScrollPhysics(),
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12.0),
-                        child: _buildHistoryCard(
-                          context,
-                          filteredExpeditions[index],
-                          initiallyExpanded:
-                              filteredExpeditions[index].id ==
-                              _initialExpandedId,
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: pageExpeditions.length,
+                          physics: const BouncingScrollPhysics(),
+                          itemBuilder: (context, index) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12.0),
+                              child: _buildHistoryCard(
+                                context,
+                                pageExpeditions[index],
+                                initiallyExpanded:
+                                    pageExpeditions[index].id ==
+                                    _initialExpandedId,
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
+                      ),
+                      if (totalPages > 1)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.chevron_left),
+                                onPressed: safePage > 0
+                                    ? () => setState(() => _currentPage = safePage - 1)
+                                    : null,
+                              ),
+                              Text(
+                                'Halaman ${safePage + 1} dari $totalPages',
+                                style: const TextStyle(fontSize: 14, color: AppColors.greyDark),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.chevron_right),
+                                onPressed: safePage < totalPages - 1
+                                    ? () => setState(() => _currentPage = safePage + 1)
+                                    : null,
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
                   );
                 },
                 // Tampilkan loading indicator saat data sedang dimuat
