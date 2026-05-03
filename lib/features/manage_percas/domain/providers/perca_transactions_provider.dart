@@ -139,6 +139,41 @@ class PercaTransactionNotifier extends AsyncNotifier<void> {
     return result;
   }
 
+  Future<Map<String, dynamic>> processBulkTransactions({
+    required String idTailor,
+    required DateTime dateEntry,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    state = const AsyncValue.loading();
+    Map<String, dynamic> result = {};
+
+    state = await AsyncValue.guard(() async {
+      final repository = ref.read(percaTransactionsRepositoryProvider);
+      final staffId = Supabase.instance.client.auth.currentUser?.id;
+      if (staffId == null) {
+        throw Exception('Pengguna tidak terautentikasi. Silakan login ulang.');
+      }
+
+      result = await repository.processBulkTransactions(
+        idTailor: idTailor,
+        staffId: staffId,
+        dateEntry: dateEntry,
+        items: items,
+      );
+
+      ref.invalidate(percaTransactionHistoryProvider);
+      ref.invalidate(percaTransactionMonthlyStatsProvider);
+      ref.invalidate(percaWeightPerTailorProvider);
+      ref.invalidate(availableSackSummaryProvider);
+    });
+
+    if (state.hasError) {
+      throw state.error!;
+    }
+
+    return result;
+  }
+
   /// Update transaksi perca yang sudah ada
   Future<void> updatePercaTransaction({
     required String transactionId,

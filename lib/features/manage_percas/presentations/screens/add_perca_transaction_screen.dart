@@ -249,30 +249,26 @@ class _AddPercaTransactionScreenState
         builder: (ctx) => const Center(child: CircularProgressIndicator()),
       );
 
-      // Proses setiap transaksi via RPC secara paralel (concurrent) agar backend
-      // bisa me-lock dan membungkus semuanya dalam satu batch WA (time window).
+      // Proses seluruh transaksi SEKALIGUS via 1 RPC (Bulk Processing)
+      // Ini menjamin backend tidak akan memecah pesan WA menjadi beberapa bagian.
       final notifier = ref.read(percaTransactionNotifierProvider.notifier);
       
-      final futures = _transactionList.map((trx) {
-        return notifier.processTransaction(
-          idTailor: trx['idTailor'],
-          sackCode: trx['sackCode'],
-          sackCount: trx['sackCount'],
-          dateEntry: trx['dateEntry'],
-        );
-      });
-      
-      final results = await Future.wait(futures);
+      final items = _transactionList.map((trx) => {
+        'sackCode': trx['sackCode'],
+        'sackCount': trx['sackCount'],
+      }).toList();
+
+      final result = await notifier.processBulkTransactions(
+        idTailor: _transactionList.first['idTailor'],
+        dateEntry: _transactionList.first['dateEntry'],
+        items: items,
+      );
 
       if (mounted) Navigator.of(context).pop(); // Tutup loading
 
-      // Hitung total dari semua transaksi yang berhasil
-      double totalWeight = 0;
-      int totalSacks = 0;
-      for (var r in results) {
-        totalWeight += (r['total_weight_kg'] as num?)?.toDouble() ?? 0;
-        totalSacks += (r['sacks_taken'] as num?)?.toInt() ?? 0;
-      }
+      // Ambil total dari response RPC bulk
+      final double totalWeight = (result['total_weight_kg'] as num?)?.toDouble() ?? 0;
+      final int totalSacks = (result['total_sacks_taken'] as num?)?.toInt() ?? 0;
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
