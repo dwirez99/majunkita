@@ -252,10 +252,10 @@ All secrets are injected as environment variables into the Edge Function. Run th
 
 ```bash
 supabase secrets set \
-  WA_API_BASE_URL="https://wa.dwirez.app" \
+  WA_API_BASE_URL="https://chat.dwirez.app" \
   WA_API_USERNAME="dwirez" \
   WA_API_PASSWORD="dwirez123" \
-  WA_API_DEVICE_ID="1944e85f-b1bc-4f0e-8973-75a4fd0840b6" \
+  WA_API_DEVICE_ID="2f97b967-9075-47e3-897e-f2c3d1820a32" \
   WA_QUEUE_SECRET="dR2gPDpA8PHHZzCoXdlutFc1TSx+fMtpelr1wSPUsZE=" \
   --project-ref fswmiqldurziscghckpc
 ```

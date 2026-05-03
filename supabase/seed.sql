@@ -496,7 +496,7 @@ BEGIN
   -- ==========================================================
   FOR v_month_num IN 2..14 LOOP
     v_month_date := DATE '2025-01-01' + (v_month_num * INTERVAL '1 month');
-
+4
     FOR v_tailor_idx IN 0..21 LOOP
       -- Referensi perca yang diterima 2 bulan lalu
       v_perca_ref := 8 + ((v_tailor_idx * 3 + (v_month_num - 2) * 7) % 10);

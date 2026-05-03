@@ -26,22 +26,13 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
 
   String? _selectedTailorId;
   String? _selectedTailorName;
-  double? _selectedTailorStock; // total_stock penjahit terpilih
   File? _capturedPhoto;
   bool _isSubmitting = false;
-
-  double _estimatedWage = 0;
-  double _pricePerKg = 0;
 
   @override
   void initState() {
     super.initState();
-    _weightController.addListener(_calculateEstimate);
-  }
-
-  void _calculateEstimate() {
-    final weight = double.tryParse(_weightController.text) ?? 0;
-    setState(() => _estimatedWage = weight * _pricePerKg);
+    _weightController.addListener(() => setState(() {}));
   }
 
   Future<void> _capturePhoto() async {
@@ -90,8 +81,7 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
 
   bool get _isFormValid {
     final weight = double.tryParse(_weightController.text) ?? 0;
-    final stockOk = _selectedTailorStock == null || weight <= _selectedTailorStock!;
-    return _selectedTailorId != null && weight > 0 && _capturedPhoto != null && stockOk;
+    return _selectedTailorId != null && weight > 0 && _capturedPhoto != null;
   }
 
   Future<void> _submitSetorMajun() async {
@@ -120,12 +110,12 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
                 const SizedBox(height: 8),
                 _buildConfirmRow(
                   'Estimasi Upah',
-                  _currencyFormat.format(_estimatedWage),
+                  _currencyFormat.format((double.tryParse(_weightController.text) ?? 0) * (ref.read(majunPricePerKgProvider).value ?? 0.0)),
                 ),
                 const SizedBox(height: 8),
                 _buildConfirmRow(
                   'Harga/KG',
-                  _currencyFormat.format(_pricePerKg),
+                  _currencyFormat.format(ref.read(majunPricePerKgProvider).value ?? 0.0),
                 ),
               ],
             ),
@@ -233,21 +223,11 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
     } catch (e) {
       if (mounted) Navigator.of(context).pop();
       if (mounted) {
-        // Sederhanakan pesan error dari constraint violation
-        String errorMsg = e.toString();
-        if (errorMsg.contains('chk_total_stock_non_negative') ||
-            errorMsg.contains('non_negative')) {
-          errorMsg =
-              'Berat majun melebihi stok perca penjahit. '
-              'Stok tersedia: ${_selectedTailorStock?.toStringAsFixed(1) ?? "?"}  KG';
-        } else if (errorMsg.contains('Gagal setor majun:')) {
-          errorMsg = errorMsg.replaceFirst('Exception: Gagal setor majun: ', '');
-        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(errorMsg),
+            content: Text('Error: $e'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 6),
+            duration: const Duration(seconds: 5),
             action: SnackBarAction(
               label: 'COBA LAGI',
               textColor: Colors.white,
@@ -292,7 +272,6 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
 
   @override
   void dispose() {
-    _weightController.removeListener(_calculateEstimate);
     _weightController.dispose();
     super.dispose();
   }
@@ -302,16 +281,9 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
     final tailorListState = ref.watch(tailorListForMajunProvider);
     final priceState = ref.watch(majunPricePerKgProvider);
 
-    priceState.whenData((price) {
-      if (_pricePerKg != price) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            setState(() => _pricePerKg = price);
-            _calculateEstimate();
-          }
-        });
-      }
-    });
+    final pricePerKg = priceState.value ?? 0.0;
+    final weight = double.tryParse(_weightController.text) ?? 0;
+    final estimatedWage = weight * pricePerKg;
 
     return Scaffold(
       appBar: AppBar(
@@ -437,39 +409,9 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
                                 tailorList.map<DropdownMenuItem<String>>((
                                   tailor,
                                 ) {
-                                  final stock = tailor.totalStock;
                                   return DropdownMenuItem<String>(
                                     value: tailor.id,
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(child: Text(tailor.name)),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 2,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: stock > 0
-                                                ? Colors.green[100]
-                                                : Colors.red[100],
-                                            borderRadius:
-                                                BorderRadius.circular(10),
-                                          ),
-                                          child: Text(
-                                            '${stock.toStringAsFixed(1)} KG',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
-                                              color: stock > 0
-                                                  ? Colors.green[800]
-                                                  : Colors.red[800],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                    child: Text(tailor.name),
                                   );
                                 }).toList(),
                             onChanged: (value) {
@@ -479,9 +421,7 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
                               setState(() {
                                 _selectedTailorId = value;
                                 _selectedTailorName = selected.name;
-                                _selectedTailorStock = selected.totalStock;
                               });
-                              _calculateEstimate();
                             },
                             validator:
                                 (value) =>
@@ -531,17 +471,13 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
                           if (weight == null || weight <= 0) {
                             return 'Masukkan angka yang valid (> 0)';
                           }
-                          if (_selectedTailorStock != null &&
-                              weight > _selectedTailorStock!) {
-                            return 'Melebihi stok penjahit (${_selectedTailorStock!.toStringAsFixed(1)} KG)';
-                          }
                           return null;
                         },
                       ),
                       const SizedBox(height: 16),
 
                       // ── Estimasi Upah (auto-calculate) ──
-                      if (_estimatedWage > 0)
+                      if (estimatedWage > 0)
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -574,7 +510,7 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
                                     ],
                                   ),
                                   Text(
-                                    _currencyFormat.format(_estimatedWage),
+                                    _currencyFormat.format(estimatedWage),
                                     style: TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
@@ -588,7 +524,7 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
                                   Text(
-                                    '${_weightController.text} KG × ${_currencyFormat.format(_pricePerKg)}/KG',
+                                    '${_weightController.text} KG × ${_currencyFormat.format(pricePerKg)}/KG',
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: Colors.green[600],
@@ -793,13 +729,6 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
                                 _buildHintItem('Isi berat lap majun (> 0)'),
                               if (_capturedPhoto == null)
                                 _buildHintItem('Ambil foto bukti timbangan'),
-                              if (_selectedTailorStock != null &&
-                                  (double.tryParse(_weightController.text) ??
-                                          0) >
-                                      _selectedTailorStock!)
-                                _buildHintItem(
-                                  'Berat melebihi stok penjahit (${_selectedTailorStock!.toStringAsFixed(1)} KG)',
-                                ),
                             ],
                           ),
                         ),

@@ -249,21 +249,20 @@ class _AddPercaTransactionScreenState
         builder: (ctx) => const Center(child: CircularProgressIndicator()),
       );
 
-      // Proses setiap transaksi via RPC - berhenti jika ada yang gagal
+      // Proses setiap transaksi via RPC secara paralel (concurrent) agar backend
+      // bisa me-lock dan membungkus semuanya dalam satu batch WA (time window).
       final notifier = ref.read(percaTransactionNotifierProvider.notifier);
-      final List<Map<String, dynamic>> results = [];
-
-      for (var trx in _transactionList) {
-        // processTransaction akan melempar exception jika gagal,
-        // sehingga loop berhenti dan error ditangani di catch block.
-        final result = await notifier.processTransaction(
+      
+      final futures = _transactionList.map((trx) {
+        return notifier.processTransaction(
           idTailor: trx['idTailor'],
           sackCode: trx['sackCode'],
           sackCount: trx['sackCount'],
           dateEntry: trx['dateEntry'],
         );
-        results.add(result);
-      }
+      });
+      
+      final results = await Future.wait(futures);
 
       if (mounted) Navigator.of(context).pop(); // Tutup loading
 

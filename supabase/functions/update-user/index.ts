@@ -1,5 +1,8 @@
 // Supabase Edge Function to update a user
-// This function is called by admins/managers to update user information
+// This function is called by:
+// - Admins/managers to update any user's information
+// - Drivers and other users to update their own profile (name, email, phone, address)
+// Note: Users cannot change their own role (only admins/managers can)
 //
 // Profiles Table Structure:
 // - id (uuid, primary key, foreign key to auth.users)
@@ -96,13 +99,35 @@ serve(async (req) => {
       profileRole
     ) || ["admin", "manager"].includes(appMetadataRole);
 
-    if (profileError || !requestingProfile || !isAllowedRequesterRole) {
+    // Parse request body
+    const requestData: UpdateUserRequest = await req.json();
+    const { user_id, email, password, username, name, no_telp, role, address } =
+      requestData;
+
+    // Check authorization:
+    // - Admins/managers can update any user
+    // - Other users can only update their own profile
+    const isUpdatingSelf = requestingUser.id === user_id;
+    const isAuthorized = isAllowedRequesterRole || isUpdatingSelf;
+
+    console.log("Authorization check:", {
+      requestingUserId: requestingUser.id,
+      targetUserId: user_id,
+      isUpdatingSelf,
+      isAllowedRequesterRole,
+      isAuthorized,
+      profileRole,
+    });
+
+    if (profileError || !requestingProfile || !isAuthorized) {
       return new Response(
         JSON.stringify({
-          error: "Forbidden - Only admins and managers can update users",
+          error: "Forbidden - You don't have permission to update this profile",
           details: {
             detected_profile_role: profileRole || null,
             detected_app_metadata_role: appMetadataRole || null,
+            is_updating_self: isUpdatingSelf,
+            is_admin_or_manager: isAllowedRequesterRole,
           },
         }),
         {
@@ -111,11 +136,6 @@ serve(async (req) => {
         }
       );
     }
-
-    // Parse request body
-    const requestData: UpdateUserRequest = await req.json();
-    const { user_id, email, password, username, name, no_telp, role, address } =
-      requestData;
     const normalizedRole = normalizeRole(role);
 
     // Validate required fields
@@ -137,8 +157,6 @@ serve(async (req) => {
         "admin",
         "manager",
         "driver",
-        "partner_pabrik",
-        "penjahit",
       ];
       if (!validRoles.includes(normalizedRole)) {
         return new Response(
@@ -147,6 +165,20 @@ serve(async (req) => {
           }),
           {
             status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      // Only allow role changes by admins/managers, not by regular users updating themselves
+      // If a regular user passes their current role, that's fine (it will just be ignored later)
+      if (!isAllowedRequesterRole && isUpdatingSelf && normalizedRole !== profileRole) {
+        return new Response(
+          JSON.stringify({
+            error: "Forbidden - Only admins and managers can change user roles",
+          }),
+          {
+            status: 403,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           }
         );
@@ -186,7 +218,7 @@ serve(async (req) => {
         userMetadata.name = name;
       }
       if (no_telp) userMetadata.no_telp = no_telp;
-  if (role) userMetadata.role = normalizedRole;
+      if (role && isAllowedRequesterRole) userMetadata.role = normalizedRole;
       if (address) userMetadata.address = address;
 
       const { error: metadataError } =
@@ -205,10 +237,19 @@ serve(async (req) => {
     if (name !== undefined) profileUpdateData.name = name;
     if (email !== undefined) profileUpdateData.email = email;
     if (no_telp !== undefined) profileUpdateData.no_telp = no_telp;
-  if (role !== undefined) profileUpdateData.role = normalizedRole;
+    if (role !== undefined && isAllowedRequesterRole) {
+      // Only admins/managers can update role
+      profileUpdateData.role = normalizedRole;
+    }
     if (address !== undefined) profileUpdateData.address = address;
 
     if (Object.keys(profileUpdateData).length > 0) {
+      console.log("Updating profile with data:", {
+        userId: user_id,
+        updateData: profileUpdateData,
+        isAllowedRequesterRole,
+      });
+
       const { error: profileUpdateError } = await supabaseAdmin
         .from("profiles")
         .update(profileUpdateData)
