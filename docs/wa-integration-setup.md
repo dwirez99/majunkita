@@ -234,7 +234,8 @@ supabase db reset --db-url "postgresql://postgres:<password>@db.<project-ref>.su
 
 ```bash
 supabase functions deploy process-wa-notification-queue \
-  --project-ref fswmiqldurziscghckpc
+  --project-ref fswmiqldurziscghckpc \
+  --no-verify-jwt
 ```
 
 The function source is at:
@@ -251,10 +252,10 @@ All secrets are injected as environment variables into the Edge Function. Run th
 
 ```bash
 supabase secrets set \
-  WA_API_BASE_URL="https://wa.dwirez.app" \
+  WA_API_BASE_URL="https://chat.dwirez.app" \
   WA_API_USERNAME="dwirez" \
   WA_API_PASSWORD="dwirez123" \
-  WA_API_DEVICE_ID="a76ddb08-02ab-47f0-be03-66d2f3646864" \
+  WA_API_DEVICE_ID="2f97b967-9075-47e3-897e-f2c3d1820a32" \
   WA_QUEUE_SECRET="dR2gPDpA8PHHZzCoXdlutFc1TSx+fMtpelr1wSPUsZE=" \
   --project-ref fswmiqldurziscghckpc
 ```
@@ -267,7 +268,7 @@ supabase secrets set \
 
 The Edge Function must be called periodically to drain the queue. Choose one of the following approaches:
 
-### Option A — Supabase pg_cron (recommended)
+### Option A — Supabase pg_cron (manual setup)
 
 Enable `pg_cron` in your Supabase project (Dashboard → Database → Extensions), then run:
 
@@ -277,8 +278,8 @@ SELECT cron.schedule(
   '* * * * *',   -- every 1 minute
   $$
     SELECT net.http_post(
-      url    := 'https://<project-ref>.supabase.co/functions/v1/process-wa-notification-queue',
-      headers := '{"Content-Type": "application/json", "x-queue-secret": "<WA_QUEUE_SECRET>"}'::jsonb,
+      url    := 'https://fswmiqldurziscghckpc.supabase.co/functions/v1/process-wa-notification-queue',
+      headers := '{"Content-Type": "application/json", "x-queue-secret": "dR2gPDpA8PHHZzCoXdlutFc1TSx+fMtpelr1wSPUsZE="}'::jsonb,
       body   := '{}'::jsonb
     );
   $$
@@ -286,6 +287,8 @@ SELECT cron.schedule(
 ```
 
 Requires the `pg_net` extension as well (enable it in Extensions).
+
+> **Note:** This is a manual setup. For automatic migration-based setup, use the migration `20260429080000_add_wa_pg_cron_and_stale_cleanup.sql` (apply after enabling extensions).
 
 ### Option B — External cron (crontab / GitHub Actions / etc.)
 

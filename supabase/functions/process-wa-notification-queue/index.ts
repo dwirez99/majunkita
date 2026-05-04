@@ -29,6 +29,12 @@ const password = Deno.env.get("WA_API_PASSWORD") ?? "";
 const deviceId = Deno.env.get("WA_API_DEVICE_ID") ?? "";
 const queueSecret = Deno.env.get("WA_QUEUE_SECRET") ?? "";
 const MAX_ERROR_BODY_LENGTH = 300;
+// Per-message send timeout (ms). Mencegah satu pesan lambat memblokir seluruh batch.
+// WA gateway di laptop/Docker kadang lambat saat mengirim gambar; 20 detik sudah cukup.
+const SEND_TIMEOUT_MS = 20_000;
+// Status-check timeout lebih singkat — jika gateway tidak merespons dalam 8 detik,
+// langsung kembalikan batch ke pending daripada menunggu lama.
+const STATUS_CHECK_TIMEOUT_MS = 8_000;
 
 function apiHeaders(contentType?: string): HeadersInit {
   const headers: Record<string, string> = {
@@ -40,8 +46,9 @@ function apiHeaders(contentType?: string): HeadersInit {
 }
 
 function retryDelayMinutes(retryCount: number): number {
-  // Exponential backoff (1, 2, 4, 8, ...) capped at 60 minutes.
-  return Math.min(2 ** Math.max(retryCount, 0), 60);
+  // Exponential backoff (1, 2, 4, 8, ...) capped at 30 minutes.
+  // Dikurangi dari 60 menit agar notifikasi tidak menunggu terlalu lama.
+  return Math.min(2 ** Math.max(retryCount, 0), 30);
 }
 
 function filenameFromContentType(contentType: string | null): string {
@@ -50,6 +57,19 @@ function filenameFromContentType(contentType: string | null): string {
   if (contentType.includes("webp")) return "proof.webp";
   if (contentType.includes("gif")) return "proof.gif";
   return "proof.jpg";
+}
+
+/** Bungkus fetch dengan AbortController timeout agar tidak hang selamanya. */
+function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  timeoutMs: number,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() =>
+    clearTimeout(timer)
+  );
 }
 
 serve(async (req) => {
@@ -118,10 +138,11 @@ serve(async (req) => {
       );
     }
 
-    const statusResponse = await fetch(`${normalizedBaseUrl}/app/status`, {
-      method: "GET",
-      headers: apiHeaders(),
-    });
+    const statusResponse = await fetchWithTimeout(
+      `${normalizedBaseUrl}/app/status`,
+      { method: "GET", headers: apiHeaders() },
+      STATUS_CHECK_TIMEOUT_MS,
+    );
     const statusText = await statusResponse.text();
 
     await supabase.from("wa_notification_logs").insert({
@@ -182,7 +203,11 @@ serve(async (req) => {
 
         if (row.image_url) {
           endpoint = "/send/image";
-          const imageResponse = await fetch(row.image_url);
+          const imageResponse = await fetchWithTimeout(
+            row.image_url,
+            {},
+            SEND_TIMEOUT_MS,
+          );
           if (!imageResponse.ok) {
             const imageErrorBody = (await imageResponse.text()).slice(
               0,
@@ -206,22 +231,26 @@ serve(async (req) => {
             image_url: row.image_url,
             caption: row.message,
           };
-          response = await fetch(`${normalizedBaseUrl}${endpoint}`, {
-            method: "POST",
-            headers: apiHeaders(),
-            body: formData,
-          });
+          response = await fetchWithTimeout(
+            `${normalizedBaseUrl}${endpoint}`,
+            { method: "POST", headers: apiHeaders(), body: formData },
+            SEND_TIMEOUT_MS,
+          );
         } else {
           endpoint = "/send/message";
           requestPayload = {
             phone: row.recipient_phone,
             message: row.message,
           };
-          response = await fetch(`${normalizedBaseUrl}${endpoint}`, {
-            method: "POST",
-            headers: apiHeaders("application/json"),
-            body: JSON.stringify(requestPayload),
-          });
+          response = await fetchWithTimeout(
+            `${normalizedBaseUrl}${endpoint}`,
+            {
+              method: "POST",
+              headers: apiHeaders("application/json"),
+              body: JSON.stringify(requestPayload),
+            },
+            SEND_TIMEOUT_MS,
+          );
         }
 
         const responseBody = await response.text();

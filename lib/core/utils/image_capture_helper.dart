@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../widgets/success_dialog.dart'; // Impor dialog sukses kita
+
 
 /// Kelas helper untuk mengelola alur pengambilan gambar, pratinjau, dan pengiriman.
 class ImageCaptureHelper {
@@ -9,7 +9,7 @@ class ImageCaptureHelper {
   ///
   /// [context]: BuildContext untuk menampilkan dialog.
   /// [source]: Sumber gambar (kamera atau galeri). Default: kamera.
-  /// [onSubmit]: Fungsi yang akan dijalankan saat tombol "Kirim Bukti" ditekan.
+  /// [onSubmit]: Fungsi yang akan dijalankan saat tombol "GUNAKAN" ditekan.
   ///            Fungsi ini harus menerima File gambar dan bersifat async.
   static Future<void> showCaptureFlow({
     required BuildContext context,
@@ -40,11 +40,11 @@ class ImageCaptureHelper {
 
       // 3. Proses Aksi Pengguna
       if (shouldSubmit == true) {
-        // Pengguna menekan "Kirim Bukti"
+        // Pengguna menekan "GUNAKAN"
         try {
           // Check if the context is still mounted before using it
           if (!context.mounted) return;
-          
+
           // Tampilkan loading indicator di atas layar
           showDialog(
             context: context,
@@ -57,22 +57,27 @@ class ImageCaptureHelper {
 
           // Check if the context is still mounted before using it
           if (!context.mounted) return;
-          
+
           // Tutup loading indicator
           Navigator.of(context).pop();
 
           // Check if the context is still mounted before using it
           if (!context.mounted) return;
-          
+
           // Tampilkan notifikasi sukses
-          showSuccessDialog(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Berhasil dikirim'),
+              backgroundColor: Colors.green,
+            ),
+          );
         } catch (e) {
           // Check if the context is still mounted before using it
           if (!context.mounted) return;
-          
+
           // Jika terjadi error saat submit, tutup loading dan tampilkan pesan
           Navigator.of(context).pop();
-          
+
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Gagal mengirim: ${e.toString()}')),
@@ -104,13 +109,15 @@ class _PreviewDialog extends StatelessWidget {
       actions: [
         // Tombol "Foto Ulang"
         TextButton(
-          onPressed: () => Navigator.of(context).pop(false), // Mengembalikan false
+          onPressed:
+              () => Navigator.of(context).pop(false), // Mengembalikan false
           child: const Text('FOTO ULANG'),
         ),
-        // Tombol "Kirim Bukti"
+        // Tombol "GUNAKAN"
         ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(true), // Mengembalikan true
-          child: const Text('KIRIM BUKTI'),
+          onPressed:
+              () => Navigator.of(context).pop(true), // Mengembalikan true
+          child: const Text('GUNAKAN'),
         ),
       ],
     );

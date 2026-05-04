@@ -60,11 +60,15 @@ class PercaRepository {
     }
   }
 
-  // 4. Simpan multiple stocks ke database
+  // 4. Simpan multiple stocks ke database via Bulk RPC
+  // Menjamin trigger WA tereksekusi 1 kali saja setelah semua data masuk
   Future<void> saveMultipleStocksToDatabase(List<PercasStock> stockList) async {
     try {
-      final dataList = stockList.map((stock) => stock.toJson()).toList();
-      await _supabase.from('percas_stock').insert(dataList);
+      final itemsJson = stockList.map((s) => s.toJson()).toList();
+      await _supabase.rpc(
+        'process_bulk_percas_stock',
+        params: {'p_items': itemsJson},
+      );
     } catch (e) {
       throw Exception('Gagal menyimpan multiple stocks ke database: $e');
     }

@@ -404,6 +404,7 @@ DECLARE
   v_stock_arr_idx   INT;
   v_weight          NUMERIC;
   v_perca_ref       NUMERIC;
+  v_sack_code       TEXT;
 
 BEGIN
   v_perca_stock_ids := ARRAY[]::UUID[];
@@ -423,14 +424,23 @@ BEGIN
       v_stock_id := gen_random_uuid();
       v_weight   := 100 + ((v_month_num * 7 + v_shipment_num * 13) % 30);
 
+      -- sack_code: K-{weight} untuk kaos, B-{weight} untuk kain
+      -- Format berat: integer tanpa desimal (weight selalu bilangan bulat di sini)
+      v_sack_code :=
+        CASE v_perca_types[((v_month_num + v_shipment_num) % 2) + 1]
+          WHEN 'kaos' THEN 'K-' || trunc(v_weight)::TEXT
+          ELSE              'B-' || trunc(v_weight)::TEXT
+        END;
+
       INSERT INTO public.percas_stock
-        (id, id_factory, date_entry, perca_type, weight, delivery_proof)
+        (id, id_factory, date_entry, perca_type, weight, sack_code, delivery_proof)
       VALUES (
         v_stock_id,
         v_factory_ids[((v_month_num * 3 + v_shipment_num - 1) % 5) + 1],
         v_month_date + ((v_shipment_num - 1) * 10),
-  v_perca_types[((v_month_num + v_shipment_num) % 2) + 1],
+        v_perca_types[((v_month_num + v_shipment_num) % 2) + 1],
         v_weight,
+        v_sack_code,
         'SJ/' || TO_CHAR(v_month_date, 'YYYYMM') || '/' ||
           LPAD((v_month_num * 3 + v_shipment_num)::TEXT, 4, '0')
       );
@@ -486,7 +496,7 @@ BEGIN
   -- ==========================================================
   FOR v_month_num IN 2..14 LOOP
     v_month_date := DATE '2025-01-01' + (v_month_num * INTERVAL '1 month');
-
+4
     FOR v_tailor_idx IN 0..21 LOOP
       -- Referensi perca yang diterima 2 bulan lalu
       v_perca_ref := 8 + ((v_tailor_idx * 3 + (v_month_num - 2) * 7) % 10);

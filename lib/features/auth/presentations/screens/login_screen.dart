@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-import '../../../../core/api/supabase_client_api.dart';
-import '../../data/repositories/auth_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/providers/auth_provider.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  // 1. Inisialisasi Repository & Controller
-  final _authRepo = AuthRepository(supabaseClient);
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  // 1. Inisialisasi Controller
   final _formKey = GlobalKey<FormState>();
 
   final _identifierController = TextEditingController(); // Email atau Username
@@ -30,11 +29,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       // A. Proses Autentikasi ke Supabase Auth
-      await _authRepo.signIn(
-        identifier:
-            _identifierController.text.trim(), // Bisa email atau username
-        password: _passwordController.text,
-      );
+      await ref
+          .read(authRepositoryProvider)
+          .signIn(
+            identifier:
+                _identifierController.text.trim(), // Bisa email atau username
+            password: _passwordController.text,
+          );
 
       // B. Login berhasil - AuthWrapper akan otomatis handle navigation
       // Tidak perlu manual navigation karena sudah ada auth state listener

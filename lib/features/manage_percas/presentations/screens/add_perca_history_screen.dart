@@ -16,6 +16,9 @@ class _AddPercaHistoryScreenState extends ConsumerState<AddPercaHistoryScreen> {
   final TextEditingController _searchController = TextEditingController();
   DateTimeRange? _dateRange;
 
+  int _currentPage = 0;
+  static const int _pageSize = 10;
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -40,6 +43,7 @@ class _AddPercaHistoryScreenState extends ConsumerState<AddPercaHistoryScreen> {
     setState(() {
       _searchController.clear();
       _dateRange = null;
+      _currentPage = 0;
     });
   }
 
@@ -105,7 +109,9 @@ class _AddPercaHistoryScreenState extends ConsumerState<AddPercaHistoryScreen> {
         children: [
           TextField(
             controller: _searchController,
-            onChanged: (_) => setState(() {}),
+            onChanged: (_) => setState(() {
+              _currentPage = 0;
+            }),
             decoration: InputDecoration(
               hintText: 'Cari pabrik atau tipe perca...',
               prefixIcon: const Icon(Icons.search, color: AppColors.greyDark),
@@ -221,133 +227,170 @@ class _AddPercaHistoryScreenState extends ConsumerState<AddPercaHistoryScreen> {
 
                   final keys = grouped.keys.toList();
 
-                  return ListView.builder(
-                    itemCount: keys.length,
-                    itemBuilder: (context, index) {
-                      final key = keys[index];
-                      final parts = key.split('|');
-                      final dateStr = parts[0];
-                      final factoryName = parts[1];
-                      final items = grouped[key]!;
+                  final totalPages = (keys.length / _pageSize).ceil();
+                  final safePage = _currentPage.clamp(0, totalPages - 1 >= 0 ? totalPages - 1 : 0);
+                  final start = safePage * _pageSize;
+                  final end = (start + _pageSize).clamp(0, keys.length);
+                  final pageKeys = keys.sublist(start, end);
 
-                      final formattedDate = _formatDate(dateStr);
-                      double totalWeight = 0;
-                      int totalKarung = items.length;
-                      final Map<String, double> weightByType = {};
-                      final Map<String, int> karungByType = {};
-                      String proofUrl = '';
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: pageKeys.length,
+                          itemBuilder: (context, index) {
+                            final key = pageKeys[index];
+                            final parts = key.split('|');
+                            final dateStr = parts[0];
+                            final factoryName = parts[1];
+                            final items = grouped[key]!;
 
-                      for (final item in items) {
-                        final type = item['perca_type'] as String? ?? '-';
-                        final weight = (item['weight'] as num?)?.toDouble() ?? 0;
-                        totalWeight += weight;
-                        weightByType[type] = (weightByType[type] ?? 0) + weight;
-                        karungByType[type] = (karungByType[type] ?? 0) + 1;
-                        if (proofUrl.isEmpty) {
-                          final url = item['delivery_proof'] as String? ?? '';
-                          if (url.isNotEmpty) {
-                            proofUrl = url;
-                          }
-                        }
-                      }
+                            final formattedDate = _formatDate(dateStr);
+                            double totalWeight = 0;
+                            int totalKarung = items.length;
+                            final Map<String, double> weightByType = {};
+                            final Map<String, int> karungByType = {};
+                            String proofUrl = '';
 
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ExpansionTile(
-                          tilePadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          title: Text(
-                            factoryName,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Padding(
-                            padding: const EdgeInsets.only(top: 4.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  formattedDate,
-                                  style: const TextStyle(
-                                    color: AppColors.greyDark,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Total Input: $totalKarung Karung',
-                                  style: const TextStyle(
-                                    color: AppColors.greyDark,
-                                  ),
-                                ),
-                                Text(
-                                  'Total Berat: $totalWeight KG',
-                                  style: const TextStyle(
-                                    color: AppColors.greyDark,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          children: [
-                            ...weightByType.entries.map((entry) {
-                              final type = entry.key;
-                              final weight = entry.value;
-                              final karung = karungByType[type] ?? 0;
+                            for (final item in items) {
+                              final type = item['perca_type'] as String? ?? '-';
+                              final weight = (item['weight'] as num?)?.toDouble() ?? 0;
+                              totalWeight += weight;
+                              weightByType[type] = (weightByType[type] ?? 0) + weight;
+                              karungByType[type] = (karungByType[type] ?? 0) + 1;
+                              if (proofUrl.isEmpty) {
+                                final url = item['delivery_proof'] as String? ?? '';
+                                if (url.isNotEmpty) {
+                                  proofUrl = url;
+                                }
+                              }
+                            }
 
-                              return ListTile(
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 4,
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              child: ExpansionTile(
+                                tilePadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
                                 ),
-                                title: Text('Total $type'),
-                                trailing: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      '$karung Karung',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
+                                title: Text(
+                                  factoryName,
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                subtitle: Padding(
+                                  padding: const EdgeInsets.only(top: 4.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        formattedDate,
+                                        style: const TextStyle(
+                                          color: AppColors.greyDark,
+                                        ),
                                       ),
-                                    ),
-                                    Text(
-                                      '$weight KG',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 12,
-                                        color: AppColors.grey,
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Total Input: $totalKarung Karung',
+                                        style: const TextStyle(
+                                          color: AppColors.greyDark,
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }),
-                            if (proofUrl.isNotEmpty)
-                              ListTile(
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 0,
-                                ),
-                                title: GestureDetector(
-                                  onTap: () => _showProofImage(context, proofUrl),
-                                  child: const Text(
-                                    'Lihat Bukti Foto',
-                                    style: TextStyle(
-                                      color: AppColors.secondary,
-                                      decoration: TextDecoration.underline,
-                                    ),
+                                      Text(
+                                        'Total Berat: $totalWeight KG',
+                                        style: const TextStyle(
+                                          color: AppColors.greyDark,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                dense: true,
+                                children: [
+                                  ...weightByType.entries.map((entry) {
+                                    final type = entry.key;
+                                    final weight = entry.value;
+                                    final karung = karungByType[type] ?? 0;
+
+                                    return ListTile(
+                                      contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 24,
+                                        vertical: 4,
+                                      ),
+                                      title: Text('Total $type'),
+                                      trailing: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Text(
+                                            '$karung Karung',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          Text(
+                                            '$weight KG',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w500,
+                                              fontSize: 12,
+                                              color: AppColors.grey,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }),
+                                  if (proofUrl.isNotEmpty)
+                                    ListTile(
+                                      contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 24,
+                                        vertical: 0,
+                                      ),
+                                      title: GestureDetector(
+                                        onTap: () => _showProofImage(context, proofUrl),
+                                        child: const Text(
+                                          'Lihat Bukti Foto',
+                                          style: TextStyle(
+                                            color: AppColors.secondary,
+                                            decoration: TextDecoration.underline,
+                                          ),
+                                        ),
+                                      ),
+                                      dense: true,
+                                    ),
+                                  const SizedBox(height: 8),
+                                ],
                               ),
-                            const SizedBox(height: 8),
+                            );
+                          },
+                        ),
+                      ),
+                      if (totalPages > 1)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                            IconButton(
+                              icon: const Icon(Icons.chevron_left),
+                              onPressed: safePage > 0
+                                  ? () => setState(() => _currentPage = safePage - 1)
+                                  : null,
+                            ),
+                            Text(
+                              'Halaman ${safePage + 1} dari $totalPages',
+                              style: const TextStyle(fontSize: 14, color: AppColors.greyDark),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.chevron_right),
+                              onPressed: safePage < totalPages - 1
+                                  ? () => setState(() => _currentPage = safePage + 1)
+                                  : null,
+                            ),
                           ],
                         ),
-                      );
-                    },
-                  );
+                      ),
+                  ],
+                );
                 },
               ),
             ),

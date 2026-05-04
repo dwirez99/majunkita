@@ -17,6 +17,9 @@ class ManageExpeditionPartnersScreen extends ConsumerStatefulWidget {
 class _ManageExpeditionPartnersScreenState
     extends ConsumerState<ManageExpeditionPartnersScreen> {
   final _searchController = TextEditingController();
+  
+  int _currentPage = 0;
+  static const int _pageSize = 10;
 
   @override
   void dispose() {
@@ -100,16 +103,22 @@ class _ManageExpeditionPartnersScreenState
                           border: InputBorder.none,
                           hintText: 'Cari nama mitra expedisi...',
                         ),
-                        onChanged: (value) => ref
-                            .read(expeditionPartnerSearchQueryProvider.notifier)
-                            .setQuery(value),
+                        onChanged: (value) {
+                          setState(() => _currentPage = 0);
+                          ref
+                              .read(expeditionPartnerSearchQueryProvider.notifier)
+                              .setQuery(value);
+                        },
                       ),
                     ),
                     if (_searchController.text.isNotEmpty)
                       IconButton(
                         icon: const Icon(Icons.clear, color: AppColors.grey),
                         onPressed: () {
-                          _searchController.clear();
+                          setState(() {
+                            _searchController.clear();
+                            _currentPage = 0;
+                          });
                           ref
                               .read(expeditionPartnerSearchQueryProvider
                                   .notifier)
@@ -172,13 +181,50 @@ class _ManageExpeditionPartnersScreenState
                       );
                     }
 
-                    return ListView.builder(
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: partners.length,
-                      itemBuilder: (context, index) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12.0),
-                        child: _buildPartnerCard(context, partners[index]),
-                      ),
+                    final totalPages = (partners.length / _pageSize).ceil();
+                    final safePage = _currentPage.clamp(0, totalPages - 1 >= 0 ? totalPages - 1 : 0);
+                    final start = safePage * _pageSize;
+                    final end = (start + _pageSize).clamp(0, partners.length);
+                    final pagePartners = partners.sublist(start, end);
+
+                    return Column(
+                      children: [
+                        Expanded(
+                          child: ListView.builder(
+                            physics: const BouncingScrollPhysics(),
+                            itemCount: pagePartners.length,
+                            itemBuilder: (context, index) => Padding(
+                              padding: const EdgeInsets.only(bottom: 12.0),
+                              child: _buildPartnerCard(context, pagePartners[index]),
+                            ),
+                          ),
+                        ),
+                        if (totalPages > 1)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.chevron_left),
+                                  onPressed: safePage > 0
+                                      ? () => setState(() => _currentPage = safePage - 1)
+                                      : null,
+                                ),
+                                Text(
+                                  'Halaman ${safePage + 1} dari $totalPages',
+                                  style: const TextStyle(fontSize: 14, color: AppColors.greyDark),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.chevron_right),
+                                  onPressed: safePage < totalPages - 1
+                                      ? () => setState(() => _currentPage = safePage + 1)
+                                      : null,
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     );
                   },
                 ),

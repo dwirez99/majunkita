@@ -89,6 +89,30 @@ class PercaTransactionsRepository {
     }
   }
 
+  /// Proses transaksi secara bulk (banyak karung sekaligus) via RPC
+  /// Menjamin seluruh karung diproses dalam satu transaksi dan 1 pesan WA.
+  Future<Map<String, dynamic>> processBulkTransactions({
+    required String idTailor,
+    required String staffId,
+    required DateTime dateEntry,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    try {
+      final response = await _supabase.rpc(
+        'process_bulk_transactions_by_sack_codes',
+        params: {
+          'p_id_tailor': idTailor,
+          'p_staff_id': staffId,
+          'p_date_entry': dateEntry.toIso8601String().split('T').first,
+          'p_items': items,
+        },
+      );
+      return Map<String, dynamic>.from(response);
+    } catch (e) {
+      throw Exception('Gagal memproses transaksi bulk: $e');
+    }
+  }
+
   // ============================================================
   // 4. READ - Ambil Riwayat Transaksi Perca
   // ============================================================

@@ -40,7 +40,7 @@ class _StaffFormDialogState extends ConsumerState<StaffFormDialog> {
       text: widget.staffToEdit?.username ?? '',
     );
     _noTelpController = TextEditingController(
-      text: widget.staffToEdit?.noTelp ?? '',
+      text: widget.staffToEdit?.noTelp ?? '62',
     );
     _emailController = TextEditingController(
       text: widget.staffToEdit?.email ?? '',
@@ -123,7 +123,6 @@ class _StaffFormDialogState extends ConsumerState<StaffFormDialog> {
                 _buildLabel('Nomor'),
                 _buildTextField(
                   controller: _noTelpController,
-                  hint: '62xxxxxxxxxxx',
                   keyboardType: TextInputType.phone,
                   validator: (v) {
                     final value = (v ?? '').trim();
@@ -202,11 +201,17 @@ class _StaffFormDialogState extends ConsumerState<StaffFormDialog> {
                   children: [
                     Expanded(
                       child: TextButton(
-                        onPressed:
-                            isLoading ? null : () => Navigator.pop(context),
+                        onPressed: isLoading ? null : () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          backgroundColor: const Color.fromARGB(255, 255, 62, 48), // Warna background tombol Batal
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                         child: const Text(
                           'Batal',
-                          style: TextStyle(color: Colors.grey),
+                          style: TextStyle(color: Color.fromARGB(255, 255, 255, 255)),
                         ),
                       ),
                     ),
@@ -224,19 +229,18 @@ class _StaffFormDialogState extends ConsumerState<StaffFormDialog> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child:
-                            isLoading
-                                ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                                : Text(
-                                  _isEdit ? 'simpan' : 'Buat Akun',
+                        child: isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
                                 ),
+                              )
+                            : Text(
+                                _isEdit ? 'simpan' : 'Buat Akun',
+                              ),
                       ),
                     ),
                   ],

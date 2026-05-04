@@ -14,6 +14,8 @@ class FactoryListScreen extends ConsumerStatefulWidget {
 
 class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
   final TextEditingController _searchController = TextEditingController();
+  static const int _pageSize = 5;
+  int _currentPage = 0;
 
   @override
   void dispose() {
@@ -90,6 +92,7 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
                           ref
                               .read(factorySearchQueryProvider.notifier)
                               .setQuery(value);
+                          setState(() => _currentPage = 0);
                         },
                       ),
                     ),
@@ -101,6 +104,7 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
                           ref
                               .read(factorySearchQueryProvider.notifier)
                               .clear();
+                          setState(() => _currentPage = 0);
                         },
                       )
                     else
@@ -160,16 +164,29 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
                       );
                     }
 
-                    return ListView.builder(
-                      itemCount: factories.length,
-                      physics: const BouncingScrollPhysics(),
-                      itemBuilder: (context, index) {
-                        final factory = factories[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12.0),
-                          child: _buildFactoryCard(context, factory),
-                        );
-                      },
+                    final totalPages = (factories.length / _pageSize).ceil();
+                    final safePage = _currentPage.clamp(0, totalPages - 1);
+                    final start = safePage * _pageSize;
+                    final end = (start + _pageSize).clamp(0, factories.length);
+                    final pageFactories = factories.sublist(start, end);
+
+                    return Column(
+                      children: [
+                        Expanded(
+                          child: ListView.builder(
+                            itemCount: pageFactories.length,
+                            physics: const BouncingScrollPhysics(),
+                            itemBuilder: (context, index) {
+                              final factory = pageFactories[index];
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12.0),
+                                child: _buildFactoryCard(context, factory),
+                              );
+                            },
+                          ),
+                        ),
+                        if (totalPages > 1) _buildPaginationBar(safePage, totalPages),
+                      ],
                     );
                   },
                   loading:
@@ -199,6 +216,68 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // --- PAGINATION BAR ---
+  Widget _buildPaginationBar(int currentPage, int totalPages) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0, bottom: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            onPressed: currentPage > 0
+                ? () => setState(() => _currentPage = currentPage - 1)
+                : null,
+            icon: const Icon(Icons.chevron_left),
+            style: IconButton.styleFrom(
+              backgroundColor:
+                  currentPage > 0 ? AppColors.primary : AppColors.surfaceDark,
+              foregroundColor:
+                  currentPage > 0 ? AppColors.white : AppColors.grey,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'Halaman ${currentPage + 1} / $totalPages',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primaryDark,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          IconButton(
+            onPressed: currentPage < totalPages - 1
+                ? () => setState(() => _currentPage = currentPage + 1)
+                : null,
+            icon: const Icon(Icons.chevron_right),
+            style: IconButton.styleFrom(
+              backgroundColor: currentPage < totalPages - 1
+                  ? AppColors.primary
+                  : AppColors.surfaceDark,
+              foregroundColor: currentPage < totalPages - 1
+                  ? AppColors.white
+                  : AppColors.grey,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

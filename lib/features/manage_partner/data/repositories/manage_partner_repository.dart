@@ -279,6 +279,52 @@ class ManagePartnerRepository {
     }
   }
 
+  /// Update profile directly for the logged-in user. This performs an
+  /// update on the `profiles` table and is intended for self-service updates
+  /// (user updating their own profile). This avoids calling the admin-only
+  /// Edge Function `update-user` which returns 403 for non-admin users.
+  Future<void> updateMyProfile({
+    required String id,
+    required String name,
+    String? username,
+    required String email,
+    required String noTelp,
+    String? password,
+    String? role,
+    String? address,
+  }) async {
+    _log('Updating own profile (direct): id=$id, name=$name, email=$email');
+    try {
+      final updates = <String, dynamic>{
+        'name': name,
+        'email': email,
+        'no_telp': noTelp,
+      };
+
+      if (username != null && username.isNotEmpty) updates['username'] = username;
+      if (role != null && role.isNotEmpty) updates['role'] = role;
+      if (address != null && address.isNotEmpty) updates['address'] = address;
+
+      // Update the profiles row for the user. RLS should allow users to
+      // update their own profile; if not, backend RLS/policies need adjusting.
+      final res = await _supabase.from('profiles').update(updates).eq('id', id);
+
+      // Supabase client returns a list on success; check for errors
+      if (res == null) {
+        throw Exception('Gagal mengupdate profil (no response)');
+      }
+
+      // Note: updating email/password for auth should use auth.updateUser
+      // which requires session credentials. If password/email changes are
+      // needed, caller should also call supabase.auth.updateUser as needed.
+
+      _log('Successfully updated own profile (direct): id=$id');
+    } catch (e) {
+      _log('Error updating own profile (direct) $id: $e', level: 'ERROR');
+      rethrow;
+    }
+  }
+
   Future<void> deleteUser(String id) async {
     _log('Deleting user: id=$id');
     try {

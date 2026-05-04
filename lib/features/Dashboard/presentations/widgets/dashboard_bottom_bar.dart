@@ -25,11 +25,11 @@ class DashboardBottomBar extends StatelessWidget {
           label: 'Perca',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.local_shipping, size: 30),
+          icon: Icon(Icons.shopping_bag, size: 30),
           label: 'Majun',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.delivery_dining, size: 30),
+          icon: Icon(Icons.local_shipping, size: 30),
           label: 'Pengiriman',
         ),
       ];

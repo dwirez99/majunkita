@@ -29,18 +29,10 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
   File? _capturedPhoto;
   bool _isSubmitting = false;
 
-  double _estimatedWage = 0;
-  double _pricePerKg = 0;
-
   @override
   void initState() {
     super.initState();
-    _weightController.addListener(_calculateEstimate);
-  }
-
-  void _calculateEstimate() {
-    final weight = double.tryParse(_weightController.text) ?? 0;
-    setState(() => _estimatedWage = weight * _pricePerKg);
+    _weightController.addListener(() => setState(() {}));
   }
 
   Future<void> _capturePhoto() async {
@@ -118,12 +110,12 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
                 const SizedBox(height: 8),
                 _buildConfirmRow(
                   'Estimasi Upah',
-                  _currencyFormat.format(_estimatedWage),
+                  _currencyFormat.format((double.tryParse(_weightController.text) ?? 0) * (ref.read(majunPricePerKgProvider).value ?? 0.0)),
                 ),
                 const SizedBox(height: 8),
                 _buildConfirmRow(
                   'Harga/KG',
-                  _currencyFormat.format(_pricePerKg),
+                  _currencyFormat.format(ref.read(majunPricePerKgProvider).value ?? 0.0),
                 ),
               ],
             ),
@@ -280,7 +272,6 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
 
   @override
   void dispose() {
-    _weightController.removeListener(_calculateEstimate);
     _weightController.dispose();
     super.dispose();
   }
@@ -290,16 +281,9 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
     final tailorListState = ref.watch(tailorListForMajunProvider);
     final priceState = ref.watch(majunPricePerKgProvider);
 
-    priceState.whenData((price) {
-      if (_pricePerKg != price) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            setState(() => _pricePerKg = price);
-            _calculateEstimate();
-          }
-        });
-      }
-    });
+    final pricePerKg = priceState.value ?? 0.0;
+    final weight = double.tryParse(_weightController.text) ?? 0;
+    final estimatedWage = weight * pricePerKg;
 
     return Scaffold(
       appBar: AppBar(
@@ -493,7 +477,7 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
                       const SizedBox(height: 16),
 
                       // ── Estimasi Upah (auto-calculate) ──
-                      if (_estimatedWage > 0)
+                      if (estimatedWage > 0)
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -526,7 +510,7 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
                                     ],
                                   ),
                                   Text(
-                                    _currencyFormat.format(_estimatedWage),
+                                    _currencyFormat.format(estimatedWage),
                                     style: TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
@@ -540,7 +524,7 @@ class _SetorMajunScreenState extends ConsumerState<SetorMajunScreen> {
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
                                   Text(
-                                    '${_weightController.text} KG × ${_currencyFormat.format(_pricePerKg)}/KG',
+                                    '${_weightController.text} KG × ${_currencyFormat.format(pricePerKg)}/KG',
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: Colors.green[600],
@@ -838,7 +822,7 @@ class _PhotoPreviewDialog extends StatelessWidget {
             backgroundColor: AppColors.secondary,
             foregroundColor: AppColors.white,
           ),
-          child: const Text('GUNAKAN FOTO INI'),
+          child: const Text('GUNAKAN INI'),
         ),
       ],
     );

@@ -34,6 +34,7 @@ class _AddPercaTransactionScreenState
   String? _selectedTailorId;
   String? _selectedTailorName;
   String? _selectedSackCode;
+  String? _selectedPercaType;
   final _sackCountController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
 
@@ -76,17 +77,11 @@ class _AddPercaTransactionScreenState
     return count;
   }
 
-  void _onSackCodeSelected(
-    String sackCode,
-    List<Map<String, dynamic>> summaryList,
-  ) {
-    final match = summaryList.firstWhere(
-      (item) => item['sack_code'] == sackCode,
-      orElse: () => {},
-    );
-
-    final totalSacks = (match['total_sacks'] as num?)?.toInt() ?? 0;
-    final totalWeight = (match['total_weight'] as num?)?.toDouble() ?? 0;
+  void _onSackCodeSelected(Map<String, dynamic> item) {
+    final sackCode = item['sack_code'] as String? ?? '';
+    final percaType = item['perca_type'] as String? ?? '-';
+    final totalSacks = (item['total_sacks'] as num?)?.toInt() ?? 0;
+    final totalWeight = (item['total_weight'] as num?)?.toDouble() ?? 0;
 
     // Kurangi dengan jumlah yang sudah ditambahkan ke daftar
     final alreadyAdded = _addedSacksForCode(sackCode);
@@ -96,6 +91,7 @@ class _AddPercaTransactionScreenState
 
     setState(() {
       _selectedSackCode = sackCode;
+      _selectedPercaType = percaType;
       _availableSacks = remainingSacks;
       _availableWeight = remainingWeight;
       _weightPerSack = weightPerSack;
@@ -115,6 +111,7 @@ class _AddPercaTransactionScreenState
           'idTailor': _selectedTailorId!,
           'tailorName': _selectedTailorName ?? '',
           'sackCode': _selectedSackCode!,
+          'percaType': _selectedPercaType ?? '-',
           'sackCount': sackCount,
           'dateEntry': _selectedDate,
           'totalWeight': _calculatedWeight,
@@ -131,6 +128,7 @@ class _AddPercaTransactionScreenState
 
         // Clear for next entry
         _selectedSackCode = null;
+        _selectedPercaType = null;
         _sackCountController.clear();
         _availableSacks = 0;
         _availableWeight = 0;
@@ -167,62 +165,67 @@ class _AddPercaTransactionScreenState
     });
   }
 
-/// Tampilkan dialog peringatan jika sisa perca penjahit > [threshold] Kg.
-/// Ini adalah bahan perca mentah yang masih ada di rumah penjahit dan belum diproses.
-/// Tujuan: pastikan admin menanyakan stok sisa sebelum memberikan bahan perca baru
-/// agar tidak ada bahan perca yang tersesat atau tidak teraccounting.
+  /// Tampilkan dialog peringatan jika sisa perca penjahit > [threshold] Kg.
+  /// Ini adalah bahan perca mentah yang masih ada di rumah penjahit dan belum diproses.
+  /// Tujuan: pastikan admin menanyakan stok sisa sebelum memberikan bahan perca baru
+  /// agar tidak ada bahan perca yang tersesat atau tidak teraccounting.
   Future<bool> _showSisaPercaWarning(
     TailorModel tailor, {
     double threshold = 5.0,
   }) async {
     if (tailor.totalStock <= threshold) return true; // tidak perlu peringatan
 
-    final sisaFmt = tailor.totalStock == tailor.totalStock.truncateToDouble()
-    ? tailor.totalStock.toStringAsFixed(0)
-    : tailor.totalStock.toStringAsFixed(1);
+    final sisaFmt =
+        tailor.totalStock == tailor.totalStock.truncateToDouble()
+            ? tailor.totalStock.toStringAsFixed(0)
+            : tailor.totalStock.toStringAsFixed(1);
 
     final proceed = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        icon: Icon(Icons.warning_amber_rounded,
-            color: Colors.amber[700], size: 48),
-        title: const Text(
-          'Peringatan: Sisa bahan perca Cukup Banyak',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          'Penjahit "${tailor.name}" masih memiliki estimasi sisa bahan perca/limbah '
-          'sebanyak $sisaFmt Kg.\n\n'
-          'Pastikan menanyakan sisa bahan perca tersebut sebelum memberikan bahan perca baru.',
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 14),
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.grey[700],
+      builder:
+          (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: const Text('Batal'),
-          ),
-          const SizedBox(width: 8),
-          ElevatedButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.amber[700],
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+            icon: Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.amber[700],
+              size: 48,
+            ),
+            title: const Text(
+              'Peringatan: Sisa bahan perca Cukup Banyak',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            content: Text(
+              'Penjahit "${tailor.name}" masih memiliki estimasi sisa bahan perca/limbah '
+              'sebanyak $sisaFmt Kg.\n\n'
+              'Pastikan menanyakan sisa bahan perca tersebut sebelum memberikan bahan perca baru.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 14),
+            ),
+            actionsAlignment: MainAxisAlignment.center,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                style: TextButton.styleFrom(foregroundColor: Colors.grey[700]),
+                child: const Text('Batal'),
               ),
-            ),
-            child: const Text('Lanjutkan'),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber[700],
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text('Lanjutkan'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
 
     return proceed ?? false;
@@ -246,31 +249,26 @@ class _AddPercaTransactionScreenState
         builder: (ctx) => const Center(child: CircularProgressIndicator()),
       );
 
-      // Proses setiap transaksi via RPC - berhenti jika ada yang gagal
+      // Proses seluruh transaksi SEKALIGUS via 1 RPC (Bulk Processing)
+      // Ini menjamin backend tidak akan memecah pesan WA menjadi beberapa bagian.
       final notifier = ref.read(percaTransactionNotifierProvider.notifier);
-      final List<Map<String, dynamic>> results = [];
+      
+      final items = _transactionList.map((trx) => {
+        'sackCode': trx['sackCode'],
+        'sackCount': trx['sackCount'],
+      }).toList();
 
-      for (var trx in _transactionList) {
-        // processTransaction akan melempar exception jika gagal,
-        // sehingga loop berhenti dan error ditangani di catch block.
-        final result = await notifier.processTransaction(
-          idTailor: trx['idTailor'],
-          sackCode: trx['sackCode'],
-          sackCount: trx['sackCount'],
-          dateEntry: trx['dateEntry'],
-        );
-        results.add(result);
-      }
+      final result = await notifier.processBulkTransactions(
+        idTailor: _transactionList.first['idTailor'],
+        dateEntry: _transactionList.first['dateEntry'],
+        items: items,
+      );
 
       if (mounted) Navigator.of(context).pop(); // Tutup loading
 
-      // Hitung total dari semua transaksi yang berhasil
-      double totalWeight = 0;
-      int totalSacks = 0;
-      for (var r in results) {
-        totalWeight += (r['total_weight_kg'] as num?)?.toDouble() ?? 0;
-        totalSacks += (r['sacks_taken'] as num?)?.toInt() ?? 0;
-      }
+      // Ambil total dari response RPC bulk
+      final double totalWeight = (result['total_weight_kg'] as num?)?.toDouble() ?? 0;
+      final int totalSacks = (result['total_sacks_taken'] as num?)?.toInt() ?? 0;
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -430,8 +428,9 @@ class _AddPercaTransactionScreenState
                                     _selectedTailorName = previousName;
                                   });
                                   // Reset nilai yang ditampilkan dropdown ke previousId
-                                  _tailorDropdownKey.currentState
-                                      ?.didChange(previousId);
+                                  _tailorDropdownKey.currentState?.didChange(
+                                    previousId,
+                                  );
                                   return;
                                 }
                                 setState(() {
@@ -587,8 +586,17 @@ class _AddPercaTransactionScreenState
                             );
                           }
 
-                          return DropdownButtonFormField<String>(
-                            value: _selectedSackCode,
+                          Map<String, dynamic>? dropdownValue;
+                          try {
+                            dropdownValue = filteredList.firstWhere(
+                              (item) => item['sack_code'] == _selectedSackCode,
+                            );
+                          } catch (_) {
+                            dropdownValue = null;
+                          }
+
+                          return DropdownButtonFormField<Map<String, dynamic>>(
+                            value: dropdownValue,
                             hint: const Text('Pilih Kode Karung'),
                             isExpanded: true,
                             decoration: InputDecoration(
@@ -598,11 +606,13 @@ class _AddPercaTransactionScreenState
                               ),
                             ),
                             items:
-                                filteredList.map<DropdownMenuItem<String>>((
-                                  item,
-                                ) {
+                                filteredList.map<
+                                  DropdownMenuItem<Map<String, dynamic>>
+                                >((item) {
                                   final code =
                                       item['sack_code'] as String? ?? '-';
+                                  final percaType =
+                                      item['perca_type'] as String? ?? '-';
                                   final totalSacks =
                                       (item['total_sacks'] as num?)?.toInt() ??
                                       0;
@@ -622,17 +632,17 @@ class _AddPercaTransactionScreenState
                                   final remainingWeight =
                                       weightPerSack * remainingSacks;
 
-                                  return DropdownMenuItem<String>(
-                                    value: code,
+                                  return DropdownMenuItem<Map<String, dynamic>>(
+                                    value: item,
                                     child: Text(
-                                      '${_readableSackCode(code)} — $remainingSacks karung, ${remainingWeight.toStringAsFixed(1)} KG',
+                                      '${_readableSackCode(code)}',
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   );
                                 }).toList(),
                             onChanged: (value) {
                               if (value != null) {
-                                _onSackCodeSelected(value, summaryList);
+                                _onSackCodeSelected(value);
                               }
                             },
                             validator:
@@ -919,7 +929,7 @@ class _AddPercaTransactionScreenState
                                       ),
                                     ),
                                     title: Text(
-                                      '${_readableSackCode(trx['sackCode'] as String)} — ${trx['sackCount']} karung',
+                                      '${_readableSackCode(trx['sackCode'] as String)} (${trx['percaType']}) — ${trx['sackCount']} karung',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w600,
                                       ),

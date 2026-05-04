@@ -85,28 +85,30 @@ class AuthWrapper extends ConsumerWidget {
           error:
               (error, stack) => Scaffold(
                 body: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error, size: 64, color: Colors.red),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Error loading profile',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error, size: 64, color: Colors.red),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Error loading profile',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(error.toString(), textAlign: TextAlign.center),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () async {
-                          await ref.read(authRepositoryProvider).signOut();
-                        },
-                        child: const Text('Logout'),
-                      ),
-                    ],
+                        const SizedBox(height: 8),
+                        Text(error.toString(), textAlign: TextAlign.center),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: () async {
+                            await ref.read(authRepositoryProvider).signOut();
+                          },
+                          child: const Text('Logout'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -118,18 +120,23 @@ class AuthWrapper extends ConsumerWidget {
       error:
           (error, stack) => Scaffold(
             body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Authentication Error',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(error.toString(), textAlign: TextAlign.center),
-                ],
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error, size: 64, color: Colors.red),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Authentication Error',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(error.toString(), textAlign: TextAlign.center),
+                  ],
+                ),
               ),
             ),
           ),
