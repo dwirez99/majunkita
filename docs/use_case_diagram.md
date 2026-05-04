@@ -1,6 +1,14 @@
 # Use Case Diagram — Majunkita
 
-Diagram ini menggambarkan use case untuk tiga peran utama dalam sistem: **Admin**, **Driver**, dan **Manager**.
+Diagram gabungan seluruh peran. Lihat diagram per peran di folder [`use_case/`](use_case/):
+
+- 👤 [Admin](use_case/admin.md)
+- 🚚 [Driver](use_case/driver.md)
+- 👔 [Manager](use_case/manager.md)
+
+---
+
+## Diagram Gabungan
 
 ```mermaid
 flowchart LR
@@ -86,6 +94,8 @@ flowchart LR
     Manager --> UC_M_ExpHist
     Manager --> UC_M_Partner
 ```
+
+---
 
 ## Ringkasan Use Case per Peran
 
