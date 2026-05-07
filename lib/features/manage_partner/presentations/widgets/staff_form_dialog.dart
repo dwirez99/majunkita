@@ -120,9 +120,10 @@ class _StaffFormDialogState extends ConsumerState<StaffFormDialog> {
                 ),
 
                 // No Telp
-                _buildLabel('Nomor'),
+                _buildLabel('Nomor Telepon'),
                 _buildTextField(
                   controller: _noTelpController,
+                  hint: 'Pastikan diawali 62 (contoh: 62812...)',
                   keyboardType: TextInputType.phone,
                   validator: (v) {
                     final value = (v ?? '').trim();

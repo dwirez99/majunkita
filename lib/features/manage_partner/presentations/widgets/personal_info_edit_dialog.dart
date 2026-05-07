@@ -148,7 +148,7 @@ class _PersonalInfoEditDialogState
                     _buildLabel('Nomor Telepon'),
                     _buildTextField(
                       controller: _noTelpController,
-                      hint: '62xxxxxxxxxxx',
+                      hint: 'Pastikan diawali 62 (contoh: 62812...)',
                       keyboardType: TextInputType.phone,
                       validator: (v) {
                         final value = (v ?? '').trim();

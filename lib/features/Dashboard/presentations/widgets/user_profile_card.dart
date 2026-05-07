@@ -64,21 +64,24 @@ class UserProfileCard extends ConsumerWidget {
           end: Alignment.bottomRight,
         );
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: effectiveGradient,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.secondary.withValues(alpha: 0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
+    return InkWell(
+      onTap: onEdit,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: effectiveGradient,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.secondary.withValues(alpha: 0.25),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
           // Avatar circle
           Container(
             width: 56,
@@ -145,7 +148,7 @@ class UserProfileCard extends ConsumerWidget {
           Icon(trailingIcon, color: AppColors.white, size: 32),
         ],
       ),
-    );
+    ));
   }
 
   void _openEditDialog(BuildContext context) {
