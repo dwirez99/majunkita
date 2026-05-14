@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:majunkita/features/manage_expeditions/presentations/screens/manage_expeditions_screen.dart';
 import '../../../auth/domain/providers/auth_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../manage_expeditions/presentations/screens/expedition_history_screen.dart';
@@ -8,6 +9,9 @@ import '../../../manage_expeditions/domain/expedition_provider.dart';
 import '../../../manage_expeditions/data/models/expedition_model.dart';
 import '../../../manage_partner/presentations/screens/manage_partner_screen.dart';
 import '../../../manage_percas/presentations/screens/add_perca_history_screen.dart';
+import '../../../manage_percas/presentations/screens/manage_perca_screen.dart';
+import '../../../manage_majun/presentations/screens/manage_majun_screen.dart';
+// import '../../../manage_tailors/presentations/screens/manage_tailors_screen.dart';
 import '../../../manage_notifications/presentations/screens/admin_notifications_screen.dart';
 import '../../../manage_notifications/domain/providers/wa_notifications_provider.dart';
 import '../widgets/dashboard_appbar.dart';
@@ -104,13 +108,13 @@ class _DashboardManagerScreenState
 
                   // 5. ACTION BUTTONS (Menu Utama)
                   _buildMenuButton(
-                    label: 'RIWAYAT AMBIL DAN SETOR\nPERCA',
+                    label: 'MANAJEMEN AMBIL PERCA DARI PABRIK',
                     backgroundColor: AppColors.secondary,
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const AddPercaHistoryScreen(),
+                          builder: (context) => const ManagePercaScreen(),
                         ),
                       );
                     },
@@ -118,7 +122,21 @@ class _DashboardManagerScreenState
                   const SizedBox(height: 16),
 
                   _buildMenuButton(
-                    label: 'RIWAYAT PENGIRIMAN',
+                    label: 'MANAJEMEN SETOR MAJUN OLEH PENJAHIT',
+                    backgroundColor: AppColors.primary,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ManageMajunScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  _buildMenuButton(
+                    label: 'MANAJEMEN PENGIRIMAN',
                     backgroundColor: AppColors.accent,
                     onTap: () {
                       Navigator.push(
@@ -126,7 +144,7 @@ class _DashboardManagerScreenState
                         MaterialPageRoute(
                           builder:
                               (context) =>
-                                  const ExpeditionHistoryScreen(openLatestOnLoad: true),
+                                  const ManageExpeditionsScreen( )
                         ),
                       );
                     },
