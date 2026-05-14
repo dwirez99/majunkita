@@ -8,7 +8,7 @@ import 'widgets/chart.dart';
 import 'add_perca_history_screen.dart';
 import 'add_perca_transaction_screen.dart';
 import 'perca_transaction_history_screen.dart';
-
+import '../../../auth/domain/providers/auth_provider.dart';
 /// Screen untuk menampilkan kategori manajemen penjahit
 /// Similar to ManagePartnerScreen
 class ManagePercaScreen extends ConsumerWidget {
@@ -16,6 +16,14 @@ class ManagePercaScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final userProfileAsync = ref.watch(userProfileProvider);
+    
+    final isManager = userProfileAsync.when(
+      data: (profile) => (profile?['role']?.toString().toLowerCase() ?? '') == 'manager',
+      loading: () => false,
+      error: (_, __) => false,
+    );
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -61,20 +69,21 @@ class ManagePercaScreen extends ConsumerWidget {
                 mainAxisSpacing: 10,
                 childAspectRatio: 1.5,
                 children: [
-                  _buildMenuCard(
-                    context: context,
-                    icon: Icons.add_box,
-                    title: 'Tambah\nStok Perca',
-                    color: AppColors.primary,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AddPercaScreen(),
-                        ),
-                      );
-                    },
-                  ),
+                  if (!isManager)
+                    _buildMenuCard(
+                      context: context,
+                      icon: Icons.add_box,
+                      title: 'Tambah\nStok Perca',
+                      color: AppColors.primary,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AddPercaScreen(),
+                          ),
+                        );
+                      },
+                    ),
                   _buildMenuCard(
                     context: context,
                     icon: Icons.history,
@@ -89,21 +98,22 @@ class ManagePercaScreen extends ConsumerWidget {
                       );
                     },
                   ),
-                  _buildMenuCard(
-                    context: context,
-                    icon: Icons.swap_horiz,
-                    title: 'Tambah\nTransaksi',
-                    color: AppColors.accent,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => const AddPercaTransactionScreen(),
-                        ),
-                      );
-                    },
-                  ),
+                  if (!isManager)
+                    _buildMenuCard(
+                      context: context,
+                      icon: Icons.swap_horiz,
+                      title: 'Tambah\nTransaksi',
+                      color: AppColors.accent,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => const AddPercaTransactionScreen(),
+                          ),
+                        );
+                      },
+                    ),
                   _buildMenuCard(
                     context: context,
                     icon: Icons.receipt_long,

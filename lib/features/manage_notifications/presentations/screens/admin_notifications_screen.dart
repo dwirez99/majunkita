@@ -205,7 +205,16 @@ class _AdminNotificationsScreenState
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Batal'),
+              style: TextButton.styleFrom(
+                backgroundColor: const Color.fromARGB(255, 255, 62, 48), // Warna background tombol Batal
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                'Batal',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
             TextButton.icon(
               onPressed: () async {

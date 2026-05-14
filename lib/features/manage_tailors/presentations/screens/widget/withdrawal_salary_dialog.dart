@@ -282,16 +282,19 @@ class _WithdrawalSalaryDialogState
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(
-                      onPressed:
-                          _isLoading ? null : () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
+                    child: TextButton(
+                      onPressed: _isLoading ? null : () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 255, 62, 48), // Warna background tombol Batal
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      child: const Text('Batal'),
+                      child: const Text(
+                        'Batal',
+                        style: TextStyle(color: Colors.white),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),

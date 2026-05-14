@@ -7,6 +7,7 @@ import '../../domain/providers/majun_provider.dart';
 import 'setor_majun_screen.dart';
 import 'setor_limbah_screen.dart';
 import 'majun_history_screen.dart';
+import '../../../auth/domain/providers/auth_provider.dart';
 
 /// Screen utama untuk manajemen majun
 /// Hub yang menampilkan menu dan statistik
@@ -16,6 +17,14 @@ class ManageMajunScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final priceState = ref.watch(majunPricePerKgProvider);
+    final userProfileAsync = ref.watch(userProfileProvider);
+    
+    final isManager = userProfileAsync.when(
+      data: (profile) => (profile?['role']?.toString().toLowerCase() ?? '') == 'manager',
+      loading: () => false,
+      error: (_, __) => false,
+    );
+
     final currencyFormat = NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp',
@@ -70,34 +79,36 @@ class ManageMajunScreen extends ConsumerWidget {
                 mainAxisSpacing: 10,
                 childAspectRatio: 1.5,
                 children: [
-                  _buildMenuCard(
-                    context: context,
-                    icon: Icons.add_circle,
-                    title: 'Setor\nMajun',
-                    color: AppColors.secondary,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SetorMajunScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildMenuCard(
-                    context: context,
-                    icon: Icons.delete_outline,
-                    title: 'Setor\nLimbah',
-                    color: Colors.orange,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SetorLimbahScreen(),
-                        ),
-                      );
-                    },
-                  ),
+                  if (!isManager)
+                    _buildMenuCard(
+                      context: context,
+                      icon: Icons.add_circle,
+                      title: 'Setor\nMajun',
+                      color: AppColors.secondary,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SetorMajunScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  if (!isManager)
+                    _buildMenuCard(
+                      context: context,
+                      icon: Icons.delete_outline,
+                      title: 'Setor\nLimbah',
+                      color: Colors.orange,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SetorLimbahScreen(),
+                          ),
+                        );
+                      },
+                    ),
                   _buildMenuCard(
                     context: context,
                     icon: Icons.history,
@@ -320,7 +331,16 @@ class ManageMajunScreen extends ConsumerWidget {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Text('BATAL'),
+                  style: TextButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(255, 255, 62, 48), // Warna background tombol Batal
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'BATAL',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
                 ElevatedButton(
                   onPressed:

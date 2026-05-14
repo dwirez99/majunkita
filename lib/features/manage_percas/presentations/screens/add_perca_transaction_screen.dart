@@ -209,8 +209,16 @@ class _AddPercaTransactionScreenState
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(false),
-                style: TextButton.styleFrom(foregroundColor: Colors.grey[700]),
-                child: const Text('Batal'),
+                style: TextButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 255, 62, 48), // Warna background tombol Batal
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'Batal',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
               const SizedBox(width: 8),
               ElevatedButton(

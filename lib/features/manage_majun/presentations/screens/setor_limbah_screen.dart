@@ -85,7 +85,16 @@ class _SetorLimbahScreenState extends ConsumerState<SetorLimbahScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('BATAL'),
+                style: TextButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 255, 62, 48), // Warna background tombol Batal
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'BATAL',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.of(ctx).pop(true),
