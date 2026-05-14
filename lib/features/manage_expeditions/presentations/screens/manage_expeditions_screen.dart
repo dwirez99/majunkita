@@ -8,7 +8,7 @@ import '../../domain/expedition_provider.dart';
 import 'add_expedition_screen.dart';
 import 'expedition_history_screen.dart';
 import 'manage_expedition_partners_screen.dart';
-
+import '../../../auth/domain/providers/auth_provider.dart';
 /// Screen hub untuk Manage Expeditions.
 /// Menampilkan menu navigasi dan ringkasan statistik pengiriman,
 /// mengikuti pola ManagePercaScreen / ManageMajunScreen.
@@ -19,6 +19,13 @@ class ManageExpeditionsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final expeditionsAsync = ref.watch(expeditionListProvider);
     final weightAsync = ref.watch(weightPerSackProvider);
+    final userProfileAsync = ref.watch(userProfileProvider);
+    
+    final isManager = userProfileAsync.when(
+      data: (profile) => (profile?['role']?.toString().toLowerCase() ?? '') == 'manager',
+      loading: () => false,
+      error: (_, __) => false,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -66,18 +73,19 @@ class ManageExpeditionsScreen extends ConsumerWidget {
                 mainAxisSpacing: 10,
                 childAspectRatio: 1.5,
                 children: [
-                  _buildMenuCard(
-                    context: context,
-                    icon: Icons.add_road,
-                    title: 'Tambah\nExpedisi',
-                    color: AppColors.secondary,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const AddExpeditionScreen(),
+                  if (!isManager)
+                    _buildMenuCard(
+                      context: context,
+                      icon: Icons.add_road,
+                      title: 'Tambah\nExpedisi',
+                      color: AppColors.secondary,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AddExpeditionScreen(),
+                        ),
                       ),
                     ),
-                  ),
                   _buildMenuCard(
                     context: context,
                     icon: Icons.history,
@@ -90,29 +98,31 @@ class ManageExpeditionsScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  _buildMenuCard(
-                    context: context,
-                    icon: Icons.scale,
-                    title: 'Berat\nper Karung',
-                    color: AppColors.secondaryDark,
-                    onTap: () => _showEditWeightDialog(
-                      context,
-                      ref,
-                      weightAsync.value ?? 50,
-                    ),
-                  ),
-                  _buildMenuCard(
-                    context: context,
-                    icon: Icons.business_outlined,
-                    title: 'Mitra\nExpedisi',
-                    color: AppColors.primaryDark,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ManageExpeditionPartnersScreen(),
+                  if (!isManager)
+                    _buildMenuCard(
+                      context: context,
+                      icon: Icons.scale,
+                      title: 'Berat\nper Karung',
+                      color: AppColors.secondaryDark,
+                      onTap: () => _showEditWeightDialog(
+                        context,
+                        ref,
+                        weightAsync.value ?? 50,
                       ),
                     ),
-                  ),
+                  if (!isManager)
+                    _buildMenuCard(
+                      context: context,
+                      icon: Icons.business_outlined,
+                      title: 'Mitra\nExpedisi',
+                      color: AppColors.primaryDark,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ManageExpeditionPartnersScreen(),
+                        ),
+                      ),
+                    ),
                 ],
               ),
 
@@ -462,7 +472,16 @@ class ManageExpeditionsScreen extends ConsumerWidget {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('BATAL'),
+                style: TextButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 255, 62, 48), // Warna background tombol Batal
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'BATAL',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
               ElevatedButton(
                 onPressed: isChanged

@@ -8,6 +8,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../data/models/expedition_model.dart';
 import '../../domain/expedition_provider.dart';
 import 'manage_expedition_partners_screen.dart';
+import '../../../auth/domain/providers/auth_provider.dart';
 
 /// Screen untuk menambah expedisi baru (pencatatan pengiriman).
 /// Merupakan full-screen terpisah yang dipanggil dari ManageExpeditionsScreen.
@@ -221,6 +222,24 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Auto-fill driver jika user yang login adalah driver
+    final userProfile = ref.watch(userProfileProvider).value;
+    final drivers = ref.watch(driverOptionsProvider).value;
+
+    if (userProfile != null && userProfile['role'] == 'driver' && drivers != null && _selectedDriverId == null) {
+      final driverId = userProfile['id'];
+      if (drivers.any((d) => d.id == driverId)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _selectedDriverId == null) {
+            setState(() {
+              _selectedDriverId = driverId;
+              _selectedDriverName = userProfile['name'] ?? 'Driver';
+            });
+          }
+        });
+      }
+    }
+
     final actionState = ref.watch(manageExpeditionNotifierProvider);
     final isLoading = actionState.isLoading;
     final weightAsync = ref.watch(weightPerSackProvider);
@@ -358,19 +377,20 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
                       const SizedBox(height: 12),
 
                       // ── Tombol Batal ─────────────────────────────────────
-                      OutlinedButton(
+                      TextButton(
                         onPressed:
                             isLoading ? null : () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 14),
-                          side: const BorderSide(color: AppColors.grey),
-                          foregroundColor: AppColors.greyDark,
+                        style: TextButton.styleFrom(
+                          backgroundColor: const Color.fromARGB(255, 255, 62, 48),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        child: const Text('Batal'),
+                        child: const Text(
+                          'Batal',
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
 
                       const SizedBox(height: 20),

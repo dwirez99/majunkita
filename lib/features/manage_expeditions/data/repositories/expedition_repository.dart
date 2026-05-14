@@ -214,12 +214,12 @@ class ExpeditionRepository {
       final staffId = _supabase.auth.currentUser?.id;
       await _supabase
           .from('app_settings')
-          .update({
+          .upsert({
+            'key': 'weight_per_sack',
             'value': newWeight.toString(),
             'updated_at': DateTime.now().toIso8601String(),
             'updated_by': staffId,
-          })
-          .eq('key', 'weight_per_sack');
+          });
       _log('weight_per_sack updated successfully');
     } catch (e) {
       _log('Error updating weight_per_sack: $e', level: 'ERROR');

@@ -104,7 +104,16 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Batal'),
+              style: TextButton.styleFrom(
+                backgroundColor: const Color.fromARGB(255, 255, 62, 48), // Warna background tombol Batal
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                'Batal',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
             ElevatedButton(
               onPressed: () async {
