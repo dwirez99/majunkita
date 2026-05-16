@@ -116,9 +116,9 @@ class _FactoryFormDialogState extends ConsumerState<FactoryFormDialog> {
                 Row(
                   children: [
                     Expanded(
-                      child: TextButton(
+                      child: ElevatedButton(
                         onPressed: isLoading ? null : () => Navigator.pop(context),
-                        style: TextButton.styleFrom(
+                        style: ElevatedButton.styleFrom(
                           backgroundColor: const Color.fromARGB(255, 255, 62, 48), // Warna background tombol Batal
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(

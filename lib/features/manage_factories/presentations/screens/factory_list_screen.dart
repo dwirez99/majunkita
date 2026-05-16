@@ -397,11 +397,14 @@ class _FactoryListScreenState extends ConsumerState<FactoryListScreen> {
           borderRadius: BorderRadius.circular(12),
         ),
         actions: [
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromARGB(255, 255, 62, 48),
+            ),
             child: const Text(
               'Batal',
-              style: TextStyle(color: AppColors.grey),
+              style: TextStyle(color: Colors.white),
             ),
           ),
           ElevatedButton(
