@@ -79,7 +79,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // LOGO & JUDUL
-                const Icon(Icons.recycling, size: 80, color: Colors.green),
+                Image.asset(
+                  'lib/core/utils/images/logomajunkita.png',
+                  height: 120,
+                ),
                 const SizedBox(height: 16),
                 const Text(
                   'MAJUNKITA',
@@ -91,7 +94,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
                 const Text(
-                  'Sistem Manajemen Distribusi',
+                  'Sistem Manajemen Distribusi Bahan Baku Daur Ulang Textil',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey),
                 ),
@@ -189,11 +192,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                 const SizedBox(height: 24),
 
+                // CAPTION
+                const Text(
+                  '"Mengubah bongkahan kain tidak terpakai menjadi rezeki bagi keluarga"',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontStyle: FontStyle.italic,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
                 // INFO FOOTER
                 const Text(
                   'Jika lupa password, hubungi Manager Operasional\nuntuk reset akun.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  style: TextStyle(fontSize: 12, color: Colors.black54),
                 ),
               ],
             ),
