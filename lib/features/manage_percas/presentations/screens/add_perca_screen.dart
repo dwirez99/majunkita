@@ -35,38 +35,15 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
   bool _isInputStockMode = true;
 
   // Fungsi untuk mengambil foto dengan kamera atau galeri
-  Future<void> _pickImage() async {
-    // Show source selection dialog
-    final ImageSource? source = await showDialog<ImageSource>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Pilih Sumber Gambar'),
-        actions: [
-          TextButton.icon(
-            onPressed: () => Navigator.of(ctx).pop(ImageSource.camera),
-            icon: const Icon(Icons.camera_alt),
-            label: const Text('Kamera'),
-          ),
-          TextButton.icon(
-            onPressed: () => Navigator.of(ctx).pop(ImageSource.gallery),
-            icon: const Icon(Icons.photo_library),
-            label: const Text('Galeri'),
-          ),
-        ],
-      ),
-    );
-    if (source == null) return;
+  Future<void> _pickImage({required bool fromCamera}) async {
+    final ImageSource source = fromCamera ? ImageSource.camera : ImageSource.gallery;
     await ImageCaptureHelper.showCaptureFlow(
       context: context,
       source: source,
       onSubmit: (File imageFile) async {
-        // Set image file ke state
         setState(() {
           _imageFile = imageFile;
         });
-        
-        // Tidak perlu melakukan penyimpanan di sini karena ini hanya untuk pratinjau
-        // Penyimpanan akan dilakukan di _finishAddingStock
       },
     );
   }
@@ -304,7 +281,7 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
 
           // Dropdown Jenis Perca
           DropdownButtonFormField<String>(
-            value: _selectedJenis,
+            initialValue: _selectedJenis,
             hint: const Text('Pilih Jenis Perca'),
             items: jenisPercaList.map<DropdownMenuItem<String>>((jenis) {
               return DropdownMenuItem<String>(value: jenis, child: Text(jenis));
@@ -404,19 +381,16 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
         const SizedBox(height: 24),
         
         // Tombol Foto Bukti (dengan pratinjau)
-        OutlinedButton.icon(
-          onPressed: _pickImage,
-          icon: const Icon(Icons.camera_alt),
-          label: Text(_imageFile == null ? 'AMBIL FOTO BUKTI' : 'GANTI FOTO BUKTI'),
-        ),
-        if (_imageFile != null) ...[
-          const SizedBox(height: 8),
-          Text(
-            'Gambar dipilih: ${_imageFile!.path.split('/').last}',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey[600]),
+        const Text(
+          'Bukti Pengambilan',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.black,
           ),
-        ],
+        ),
+        const SizedBox(height: 8),
+        _buildImageSection(false),
         const SizedBox(height: 24),
 
         // Tombol Selesai
@@ -438,6 +412,80 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
             });
           },
           child: const Text('Kembali ke Input Stok'),
+        ),
+      ],
+    );
+  }
+
+  /// Section preview gambar + tombol kamera / galeri
+  Widget _buildImageSection(bool isLoading) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Preview gambar jika sudah dipilih
+        if (_imageFile != null) ...[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.file(
+              _imageFile!,
+              height: 180,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: isLoading
+                ? null
+                : () => setState(() => _imageFile = null),
+            icon: const Icon(Icons.delete_outline,
+                size: 16, color: AppColors.error),
+            label: const Text(
+              'Hapus Foto',
+              style: TextStyle(color: AppColors.error, fontSize: 13),
+            ),
+          ),
+        ],
+
+        // Tombol Kamera & Galeri
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: isLoading
+                    ? null
+                    : () => _pickImage(fromCamera: true),
+                icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                label: const Text('Kamera',
+                    style: TextStyle(fontSize: 13)),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  side: const BorderSide(color: AppColors.secondary),
+                  foregroundColor: AppColors.secondary,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: isLoading
+                    ? null
+                    : () => _pickImage(fromCamera: false),
+                icon: const Icon(Icons.photo_library_outlined, size: 18),
+                label: const Text('Galeri',
+                    style: TextStyle(fontSize: 13)),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  side: const BorderSide(color: AppColors.secondary),
+                  foregroundColor: AppColors.secondary,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );

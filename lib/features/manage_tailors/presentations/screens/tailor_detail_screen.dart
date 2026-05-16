@@ -223,7 +223,7 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
     final totalPercaDiambil = stats['total_perca_diambil'] ?? 0.0;
     final totalMajunDisetor = stats['total_majun_disetor'] ?? 0.0;
     final totalLimbahDisetor = stats['total_limbah_disetor'] ?? 0.0;
-    final reffPercent = (reff * 100).toStringAsFixed(1);
+    final reffPercent = (reff * 50).toStringAsFixed(1);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -272,7 +272,7 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
 
         // ── Reff & Prediksi ──
         const Text(
-          'Perkiraan Hasil',
+          'Kinerja & Perkiraan Hasil',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
@@ -295,7 +295,7 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
   // ── Widget: Sisa Perca (headline) ─────────────────────────────────────────
 
   Widget _buildSisaPercaCard(double sisaPerca) {
-    final isHighStock = sisaPerca > 5;
+    final isHighStock = sisaPerca >= 50;
 
     return Container(
       width: double.infinity,
@@ -320,9 +320,9 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Sisa Perca di Rumah',
+                'Sisa Bahan di Rumah',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: isHighStock ? Colors.amber[800] : Colors.green[800],
                 ),
@@ -339,22 +339,27 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
             ),
           ),
           if (isHighStock) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.amber[100],
+                color: Colors.amber[50],
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.amber[800], size: 14),
-                  const SizedBox(width: 6),
+                  Icon(Icons.info_outline, color: Colors.amber[800], size: 18),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Sisa perca sudah lebih dari 5 Kg. '
-                      'Cek dulu sebelum memberi perca baru.',
-                      style: TextStyle(fontSize: 12, color: Colors.amber[900]),
+                      'Sisa bahan sudah mencapai 50 Kg atau lebih. '
+                      'Sebaiknya cek dulu sebelum memberi bahan baru.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.amber[900],
+                        fontWeight: FontWeight.w500,
+                        height: 1.3,
+                      ),
                     ),
                   ),
                 ],
@@ -373,6 +378,35 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
     required double reff,
     required bool hasData,
   }) {
+    String statusText = '';
+    Color statusColor = Colors.grey;
+    IconData statusIcon = Icons.info;
+    Color statusBg = Colors.grey[50]!;
+
+    if (hasData) {
+      // Menyesuaikan perhitungan/threshold:
+      // Karena reff = majun / total_perca_diambil, nilai 0.4 - 0.55 adalah nilai rata-rata
+      // yang sangat normal dan wajar untuk penjahit (karena adanya sisa perca dan limbah).
+      if (reff >= 0.55) {
+        statusText = 'Hasil Bagus';
+        statusColor = Colors.green[700]!;
+        statusIcon = Icons.check_circle;
+        statusBg = Colors.green[50]!;
+      } else if (reff >= 0.40) {
+        statusText = 'Hasil Sedang';
+        statusColor = Colors.amber[800]!;
+        statusIcon = Icons.info;
+        statusBg = Colors.amber[50]!;
+      } else {
+        statusText = 'Hasil Rendah';
+        statusColor = Colors.red[700]!;
+        statusIcon = Icons.warning;
+        statusBg = Colors.red[50]!;
+      }
+    }
+
+    final yieldPer50 = (reff * 50).round();
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -386,60 +420,56 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.auto_graph, color: Colors.purple[700], size: 20),
+              Icon(Icons.thumb_up_outlined, color: Colors.purple[700], size: 20),
               const SizedBox(width: 8),
               Text(
-                'Tingkat Efisiensi (Reff)',
+                'Kualitas Kerja Penjahit',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: Colors.purple[800],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           if (!hasData)
             Text(
-              'Belum ada riwayat untuk hitung Reff.',
-              style: TextStyle(fontSize: 13, color: Colors.purple[400]),
+              'Belum ada riwayat pekerjaan.',
+              style: TextStyle(fontSize: 14, color: Colors.purple[600]),
             )
           else ...[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '$reffPercent%',
-                  style: TextStyle(
-                    fontSize: 34,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.purple[700],
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: statusBg,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(statusIcon, color: statusColor, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    statusText,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: statusColor,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    '(${_fmt(reff)} rasio)',
-                    style: TextStyle(fontSize: 13, color: Colors.purple[400]),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: reff.clamp(0.0, 1.0),
-                backgroundColor: Colors.purple[100],
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.purple[600]!),
-                minHeight: 8,
+                ],
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 16),
             Text(
-              'Reff = total majun disetor ÷ total perca diambil.',
-              style: TextStyle(fontSize: 11, color: Colors.purple[300]),
+              'Dari 50 Kg perca, Perkiraan menjadi sekitar $yieldPer50 Kg majun jadi.',
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.purple[900],
+                height: 1.4,
+              ),
             ),
           ],
         ],
@@ -455,6 +485,8 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
     required double prediksi,
     required bool hasData,
   }) {
+    final roundedPrediksi = prediksi.round();
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -468,44 +500,43 @@ class _TailorDetailScreenState extends ConsumerState<TailorDetailScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.lightbulb_outline, color: Colors.teal[700], size: 20),
+              Icon(Icons.inventory_rounded, color: Colors.teal[700], size: 20),
               const SizedBox(width: 8),
               Text(
-                'Perkiraan Majun Jadi',
+                'Perkiraan Hasil Kedepan',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: Colors.teal[800],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           if (!hasData || sisaPerca == 0)
             Text(
               sisaPerca == 0
-                  ? 'Tidak ada sisa perca saat ini.'
-                  : 'Belum ada riwayat untuk membuat perkiraan.',
-              style: TextStyle(fontSize: 13, color: Colors.teal[400]),
+                  ? 'Penjahit sedang tidak memegang bahan (0 Kg).'
+                  : 'Belum bisa membuat perkiraan.',
+              style: TextStyle(fontSize: 14, color: Colors.teal[600]),
             )
           else ...[
             Text(
-              '≈ ${_fmt(prediksi)} Kg',
+              'Sekitar $roundedPrediksi Kg Majun',
               style: TextStyle(
-                fontSize: 34,
+                fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: Colors.teal[700],
+                color: Colors.teal[800],
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
-              '${_fmt(sisaPerca)} Kg sisa perca  ×  ${(reff * 100).toStringAsFixed(1)}% Reff',
-              style: TextStyle(fontSize: 12, color: Colors.teal[600]),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Perkiraan majun dari sisa perca yang sedang dikerjakan.',
-              style: TextStyle(fontSize: 11, color: Colors.teal[300]),
+              'Sisa bahan saat ini kira-kira bisa menghasilkan sekitar $roundedPrediksi Kg majun.',
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.teal[900],
+                height: 1.4,
+              ),
             ),
           ],
         ],
