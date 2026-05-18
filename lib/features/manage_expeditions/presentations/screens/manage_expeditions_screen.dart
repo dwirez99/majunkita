@@ -12,11 +12,19 @@ import '../../../auth/domain/providers/auth_provider.dart';
 /// Screen hub untuk Manage Expeditions.
 /// Menampilkan menu navigasi dan ringkasan statistik pengiriman,
 /// mengikuti pola ManagePercaScreen / ManageMajunScreen.
-class ManageExpeditionsScreen extends ConsumerWidget {
+class ManageExpeditionsScreen extends ConsumerStatefulWidget {
   const ManageExpeditionsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ManageExpeditionsScreen> createState() => _ManageExpeditionsScreenState();
+}
+
+class _ManageExpeditionsScreenState extends ConsumerState<ManageExpeditionsScreen> {
+  int _currentPage = 1;
+  static const int _itemsPerPage = 5;
+
+  @override
+  Widget build(BuildContext context) {
     final expeditionsAsync = ref.watch(expeditionListProvider);
     final weightAsync = ref.watch(weightPerSackProvider);
     final userProfileAsync = ref.watch(userProfileProvider);
@@ -78,7 +86,7 @@ class ManageExpeditionsScreen extends ConsumerWidget {
                       context: context,
                       icon: Icons.add_road,
                       title: 'Tambah\nExpedisi',
-                      color: AppColors.secondary,
+                      color: AppColors.primary,
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -103,7 +111,7 @@ class ManageExpeditionsScreen extends ConsumerWidget {
                       context: context,
                       icon: Icons.scale,
                       title: 'Berat\nper Karung',
-                      color: AppColors.secondaryDark,
+                      color: AppColors.secondary,
                       onTap: () => _showEditWeightDialog(
                         context,
                         ref,
@@ -184,6 +192,16 @@ class ManageExpeditionsScreen extends ConsumerWidget {
     final totalWeight =
         expeditions.fold<int>(0, (sum, e) => sum + e.totalWeight);
 
+    final totalPages = (expeditions.length / _itemsPerPage).ceil();
+    final startIndex = (_currentPage - 1) * _itemsPerPage;
+    final endIndex = (startIndex + _itemsPerPage > expeditions.length)
+        ? expeditions.length
+        : startIndex + _itemsPerPage;
+
+    final paginatedExpeditions = expeditions.isNotEmpty
+        ? expeditions.sublist(startIndex, endIndex)
+        : <ExpeditionModel>[];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -195,7 +213,7 @@ class ManageExpeditionsScreen extends ConsumerWidget {
                 icon: Icons.local_shipping,
                 label: 'Total Pengiriman',
                 value: '${expeditions.length}',
-                color: AppColors.secondary,
+                color: AppColors.primary,
               ),
             ),
             const SizedBox(width: 12),
@@ -228,7 +246,32 @@ class ManageExpeditionsScreen extends ConsumerWidget {
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 10),
-          ...expeditions.take(5).map(_buildRecentTile),
+          ...paginatedExpeditions.map(_buildRecentTile),
+              if (totalPages > 1)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left),
+                        onPressed: _currentPage > 1
+                            ? () => setState(() => _currentPage--)
+                            : null,
+                      ),
+                      Text(
+                        'Halaman $_currentPage dari $totalPages',
+                        style: const TextStyle(fontSize: 14, color: AppColors.greyDark),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right),
+                        onPressed: _currentPage < totalPages
+                            ? () => setState(() => _currentPage++)
+                            : null,
+                      ),
+                    ],
+                  ),
+                ),
         ] else
           Center(
             child: Padding(
@@ -414,7 +457,7 @@ class ManageExpeditionsScreen extends ConsumerWidget {
                   child: Row(
                     children: [
                       const Icon(Icons.scale,
-                          size: 16, color: AppColors.secondary),
+                          size: 16, color: AppColors.primary),
                       const SizedBox(width: 8),
                       Text(
                         'Saat ini: $currentWeight kg / karung',
@@ -441,7 +484,7 @@ class ManageExpeditionsScreen extends ConsumerWidget {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide:
-                          const BorderSide(color: AppColors.secondary, width: 2),
+                          const BorderSide(color: AppColors.primary, width: 2),
                     ),
                   ),
                   onChanged: (_) => setDialogState(() {}),
@@ -454,16 +497,16 @@ class ManageExpeditionsScreen extends ConsumerWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: AppColors.secondary.withValues(alpha: 0.08),
+                      color: AppColors.primary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                          color: AppColors.secondary.withValues(alpha: 0.3)),
+                          color: AppColors.primary.withValues(alpha: 0.3)),
                     ),
                     child: Text(
                       'Baru: $newWeight kg / karung',
                       style: const TextStyle(
                           fontSize: 13,
-                          color: AppColors.secondary,
+                          color: AppColors.primary,
                           fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -513,7 +556,7 @@ class ManageExpeditionsScreen extends ConsumerWidget {
                       }
                     : null,
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.secondary,
+                    backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.white),
                 child: const Text('SIMPAN'),
               ),

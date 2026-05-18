@@ -366,7 +366,7 @@ class _ExpeditionHistoryScreenState
           children: [
             const Icon(
               Icons.local_shipping,
-              color: AppColors.secondary,
+              color: AppColors.primary,
               size: 20,
             ),
             const SizedBox(width: 8),
@@ -447,7 +447,7 @@ class _ExpeditionHistoryScreenState
                     child: const Text(
                       'Lihat Bukti Pengiriman',
                       style: TextStyle(
-                        color: AppColors.secondary,
+                        color: AppColors.primary,
                         decoration: TextDecoration.underline,
                         fontSize: 13,
                       ),

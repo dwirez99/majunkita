@@ -44,6 +44,8 @@ dependencies:
      path_provider: ^2.1.5
      path: ^1.9.0
      url_launcher: ^6.3.1
+     share_plus: ^13.1.0
+     whatsapp_share_plus: ^1.0.2
 
 dev_dependencies:
      flutter_test:

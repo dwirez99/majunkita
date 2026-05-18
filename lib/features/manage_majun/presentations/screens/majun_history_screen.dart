@@ -16,6 +16,9 @@ class MajunHistoryScreen extends ConsumerStatefulWidget {
 class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
   final TextEditingController _searchController = TextEditingController();
   DateTimeRange? _dateRange;
+  
+  int _currentPage = 1;
+  static const int _itemsPerPage = 10;
 
   @override
   void dispose() {
@@ -27,20 +30,34 @@ class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
     final selectedRange = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 3650)),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
       initialDateRange: _dateRange,
-      helpText: 'Pilih rentang tanggal setor',
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primary,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
 
     if (selectedRange != null) {
-      setState(() => _dateRange = selectedRange);
+      setState(() {
+        _dateRange = selectedRange;
+        _currentPage = 1;
+      });
     }
   }
 
-  void _clearFilters() {
+  void _clearDateFilter() {
     setState(() {
-      _searchController.clear();
       _dateRange = null;
+      _currentPage = 1;
     });
   }
 
@@ -77,67 +94,6 @@ class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
     }).toList();
   }
 
-  Widget _buildFilterSection() {
-    final hasFilter = _searchController.text.isNotEmpty || _dateRange != null;
-    final dateLabel =
-        _dateRange == null
-            ? 'Semua tanggal'
-            : '${DateFormat('dd MMM yyyy').format(_dateRange!.start)} - ${DateFormat('dd MMM yyyy').format(_dateRange!.end)}';
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
-        border: Border.all(color: AppColors.cardBorder),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          TextField(
-            controller: _searchController,
-            onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(
-              hintText: 'Cari nama penjahit...',
-              prefixIcon: const Icon(Icons.search, color: AppColors.greyDark),
-              suffixIcon:
-                  _searchController.text.isEmpty
-                      ? null
-                      : IconButton(
-                        icon: const Icon(Icons.clear, color: AppColors.greyDark),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() {});
-                        },
-                      ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _pickDateRange,
-                  icon: const Icon(Icons.calendar_today_outlined, size: 18),
-                  label: Text(
-                    dateLabel,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-              if (hasFilter) ...[
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: _clearFilters,
-                  child: const Text('Reset'),
-                ),
-              ],
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final historyState = ref.watch(majunHistoryProvider);
@@ -151,8 +107,8 @@ class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Riwayat Setor Majun'),
-        backgroundColor: AppColors.secondary,
-        foregroundColor: AppColors.white,
+        backgroundColor: AppColors.surfaceLight,
+        foregroundColor: AppColors.black,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -162,61 +118,121 @@ class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
         ],
       ),
       backgroundColor: AppColors.background,
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildFilterSection(),
-            const SizedBox(height: 12),
-            Expanded(
-              child: historyState.when(
-                data: (historyList) {
-                  final filteredHistory = _applyFilters(historyList);
+      body: historyState.when(
+        data: (historyList) {
+          final filteredHistory = _applyFilters(historyList);
+          
+          final totalPages = filteredHistory.isEmpty ? 1 : (filteredHistory.length / _itemsPerPage).ceil();
+          
+          int effectivePage = _currentPage;
+          if (effectivePage > totalPages) {
+            effectivePage = totalPages;
+          }
+          if (effectivePage < 1) effectivePage = 1;
 
-                  if (filteredHistory.isEmpty) {
-                    final emptyMessage =
-                        historyList.isEmpty
-                            ? 'Belum ada riwayat setor majun'
-                            : 'Data tidak ditemukan untuk filter saat ini.';
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.inbox_outlined,
-                            size: 64,
-                            color: AppColors.grey,
+          final startIndex = (effectivePage - 1) * _itemsPerPage;
+          final endIndex = (startIndex + _itemsPerPage > filteredHistory.length)
+              ? filteredHistory.length
+              : startIndex + _itemsPerPage;
+              
+          final paginatedHistory = filteredHistory.isEmpty ? <MajunTransactionsModel>[] : filteredHistory.sublist(startIndex, endIndex);
+
+          return Column(
+            children: [
+              // Filters Section
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Cari penjahit...',
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            emptyMessage,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: AppColors.greyDark,
-                            ),
-                          ),
-                          if (historyList.isEmpty) ...[
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Riwayat akan muncul setelah ada setoran',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.grey,
-                              ),
-                            ),
-                          ],
-                        ],
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          isDense: true,
+                        ),
+                        onChanged: (val) {
+                          setState(() {
+                            _currentPage = 1;
+                          });
+                        },
                       ),
-                    );
-                  }
+                    ),
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      onPressed: _pickDateRange,
+                      icon: const Icon(Icons.date_range, size: 18),
+                      label: Text(
+                        _dateRange == null 
+                          ? 'Tanggal' 
+                          : '${DateFormat('dd/MM').format(_dateRange!.start)} - ${DateFormat('dd/MM').format(_dateRange!.end)}'
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                      ),
+                    ),
+                    if (_dateRange != null)
+                      IconButton(
+                        icon: const Icon(Icons.clear, color: AppColors.error, size: 20),
+                        onPressed: _clearDateFilter,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                  ],
+                ),
+              ),
 
-                  return ListView.builder(
-                    itemCount: filteredHistory.length,
+              if (filteredHistory.isEmpty)
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.inbox_outlined,
+                          size: 64,
+                          color: AppColors.greyLight,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          historyList.isEmpty
+                              ? 'Belum ada riwayat setor majun'
+                              : 'Data tidak ditemukan untuk filter saat ini.',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: AppColors.greyDark,
+                          ),
+                        ),
+                        if (historyList.isEmpty) ...[
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Riwayat akan muncul setelah ada setoran',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.grey,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    itemCount: paginatedHistory.length,
                     itemBuilder: (context, index) {
-                      final item = filteredHistory[index];
+                      final item = paginatedHistory[index];
                       return Card(
                         margin: const EdgeInsets.only(bottom: 12),
                         elevation: 2,
+                        color: AppColors.cardBackground,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                           side: const BorderSide(color: AppColors.cardBorder),
@@ -332,40 +348,64 @@ class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
                         ),
                       );
                     },
-                  );
-                },
-                loading:
-                    () => const Center(
-                      child: CircularProgressIndicator(color: AppColors.primary),
-                    ),
-                error:
-                    (error, stack) => Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            size: 48,
-                            color: AppColors.error,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Error: $error',
-                            style: const TextStyle(color: AppColors.error),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 12),
-                          ElevatedButton.icon(
-                            onPressed: () => ref.invalidate(majunHistoryProvider),
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Coba Lagi'),
-                          ),
-                        ],
+                  ),
+                ),
+
+              // Pagination Controls
+              if (totalPages > 1)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left),
+                        onPressed: effectivePage > 1
+                            ? () => setState(() => _currentPage = effectivePage - 1)
+                            : null,
                       ),
-                    ),
+                      Text(
+                        'Halaman $effectivePage dari $totalPages',
+                        style: const TextStyle(fontSize: 14, color: AppColors.greyDark),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right),
+                        onPressed: effectivePage < totalPages
+                            ? () => setState(() => _currentPage = effectivePage + 1)
+                            : null,
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          );
+        },
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+        error: (error, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 48,
+                color: AppColors.error,
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              Text(
+                'Error: $error',
+                style: const TextStyle(color: AppColors.error),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () => ref.invalidate(majunHistoryProvider),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Coba Lagi'),
+              ),
+            ],
+          ),
         ),
       ),
     );

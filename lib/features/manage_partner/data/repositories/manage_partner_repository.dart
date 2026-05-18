@@ -269,7 +269,17 @@ class ManagePartnerRepository {
       );
 
       if (response.status != 200) {
-        throw Exception('Gagal mengupdate user: Status ${response.status}');
+        // Extract detailed error message from response body if available
+        final data = response.data;
+        String errorMsg = 'Status ${response.status}';
+        if (data is Map) {
+          final errStr = data['error']?.toString() ?? '';
+          final detailStr = data['details']?.toString() ?? '';
+          if (errStr.isNotEmpty) {
+            errorMsg = detailStr.isNotEmpty ? '$errStr ($detailStr)' : errStr;
+          }
+        }
+        throw Exception('Gagal mengupdate user: $errorMsg');
       }
 
       _log('Successfully updated user: id=$id, nama=$name');

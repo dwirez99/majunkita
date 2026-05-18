@@ -352,6 +352,7 @@ class _SetorLimbahScreenState extends ConsumerState<SetorLimbahScreen> {
                       const SizedBox(height: 6),
                       TextFormField(
                         controller: _weightController,
+                        onChanged: (_) => setState(() {}),
                         decoration: InputDecoration(
                           hintText: 'Masukkan berat limbah dalam KG',
                           prefixIcon: const Icon(Icons.delete_outline),

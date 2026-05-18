@@ -74,7 +74,7 @@ class _ManageExpeditionPartnersScreenState
                         TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.secondary,
+                    backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -243,7 +243,7 @@ class _ManageExpeditionPartnersScreenState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.secondary,
+        color: AppColors.primary,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -261,7 +261,7 @@ class _ManageExpeditionPartnersScreenState
             radius: 28,
             backgroundColor: AppColors.white,
             child: Icon(Icons.local_shipping,
-                color: AppColors.secondary, size: 28),
+                color: AppColors.primary, size: 28),
           ),
           const SizedBox(width: 14),
 
@@ -487,7 +487,7 @@ class _ManageExpeditionPartnersScreenState
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.secondary,
+                            backgroundColor: AppColors.primary,
                             foregroundColor: AppColors.white,
                             padding:
                                 const EdgeInsets.symmetric(vertical: 14),

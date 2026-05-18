@@ -158,7 +158,7 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.secondary,
+              backgroundColor: AppColors.primary,
               foregroundColor: AppColors.white,
             ),
             child: const Text('SIMPAN'),
@@ -364,7 +364,7 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: stockExceeded
                               ? AppColors.grey
-                              : AppColors.secondary,
+                              : AppColors.primary,
                           foregroundColor: AppColors.white,
                           padding:
                               const EdgeInsets.symmetric(vertical: 16),
@@ -436,7 +436,7 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide:
-            const BorderSide(color: AppColors.secondary, width: 1.5),
+            const BorderSide(color: AppColors.primary, width: 1.5),
       ),
       contentPadding:
           const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -460,7 +460,7 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
               width: 16,
               height: 16,
               child: CircularProgressIndicator(
-                  strokeWidth: 2, color: AppColors.secondary),
+                  strokeWidth: 2, color: AppColors.primary),
             ),
             SizedBox(width: 10),
             Text('Memuat daftar driver...',
@@ -500,7 +500,7 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide: const BorderSide(
-                color: AppColors.secondary, width: 1.5),
+                color: AppColors.primary, width: 1.5),
           ),
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -546,7 +546,7 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
               width: 16,
               height: 16,
               child: CircularProgressIndicator(
-                  strokeWidth: 2, color: AppColors.secondary),
+                  strokeWidth: 2, color: AppColors.primary),
             ),
             SizedBox(width: 10),
             Text('Memuat daftar mitra expedisi...',
@@ -578,7 +578,7 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
               icon: const Icon(Icons.add, size: 16),
               label: const Text('Tambah mitra expedisi'),
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.secondary,
+                foregroundColor: AppColors.primary,
                 padding: EdgeInsets.zero,
               ),
             ),
@@ -639,7 +639,7 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   borderSide: const BorderSide(
-                      color: AppColors.secondary, width: 1.5),
+                      color: AppColors.primary, width: 1.5),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16, vertical: 14),
@@ -677,12 +677,12 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: hasInput
-            ? AppColors.secondary.withValues(alpha: 0.06)
+            ? AppColors.primary.withValues(alpha: 0.06)
             : AppColors.greyLighter,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: hasInput
-              ? AppColors.secondary.withValues(alpha: 0.4)
+              ? AppColors.primary.withValues(alpha: 0.4)
               : AppColors.surfaceLight.withValues(alpha: 0),
         ),
       ),
@@ -690,7 +690,7 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
         children: [
           Icon(Icons.scale,
               size: 20,
-              color: hasInput ? AppColors.secondary : AppColors.grey),
+              color: hasInput ? AppColors.primary : AppColors.grey),
           const SizedBox(width: 12),
           Expanded(
             child: hasInput
@@ -703,7 +703,7 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
                           text: '$_calculatedWeight kg',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: AppColors.secondary,
+                            color: AppColors.primary,
                           ),
                         ),
                         TextSpan(
@@ -723,7 +723,7 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
           ),
           if (hasInput)
             const Icon(Icons.calculate_outlined,
-                size: 16, color: AppColors.secondary),
+                size: 16, color: AppColors.primary),
         ],
       ),
     );
@@ -865,8 +865,8 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
                     style: TextStyle(fontSize: 13)),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  side: const BorderSide(color: AppColors.secondary),
-                  foregroundColor: AppColors.secondary,
+                  side: const BorderSide(color: AppColors.primary),
+                  foregroundColor: AppColors.primary,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8)),
                 ),
@@ -883,8 +883,8 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
                     style: TextStyle(fontSize: 13)),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  side: const BorderSide(color: AppColors.secondary),
-                  foregroundColor: AppColors.secondary,
+                  side: const BorderSide(color: AppColors.primary),
+                  foregroundColor: AppColors.primary,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8)),
                 ),

@@ -8,6 +8,7 @@ import 'setor_majun_screen.dart';
 import 'setor_limbah_screen.dart';
 import 'majun_history_screen.dart';
 import '../../../auth/domain/providers/auth_provider.dart';
+import '../../../manage_expeditions/domain/expedition_provider.dart';
 
 /// Screen utama untuk manajemen majun
 /// Hub yang menampilkan menu dan statistik
@@ -54,6 +55,7 @@ class ManageMajunScreen extends ConsumerWidget {
               ref.invalidate(majunHistoryProvider);
               ref.invalidate(majunPricePerKgProvider);
               ref.invalidate(tailorListForMajunProvider);
+              ref.invalidate(availableStockProvider);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Data sedang dimuat ulang...'),
@@ -137,6 +139,11 @@ class ManageMajunScreen extends ConsumerWidget {
                   ),
                 ],
               ),
+
+              const SizedBox(height: 24),
+
+              // ── Stok Majun di Gudang ──
+              _buildWarehouseStockSection(ref),
 
               const SizedBox(height: 24),
 
@@ -384,6 +391,91 @@ class ManageMajunScreen extends ConsumerWidget {
           },
         );
       },
+    );
+  }
+
+  // ── Stok Majun di Gudang Section ──
+  Widget _buildWarehouseStockSection(WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.warehouse, size: 22, color: Colors.blue),
+            const SizedBox(width: 8),
+            const Text(
+              'Stok Majun di Gudang',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ref.watch(availableStockProvider).when(
+              data: (stock) {
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.blue.withValues(alpha: 0.1),
+                        Colors.blue.withValues(alpha: 0.05),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.blue.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.inventory_2_outlined,
+                        color: Colors.blue,
+                        size: 36,
+                      ),
+                      const SizedBox(width: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Total Stok Tersedia',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.black54,
+                            ),
+                          ),
+                          Text(
+                            '${stock.toStringAsFixed(1)} KG',
+                            style: const TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+              loading: () => const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (error, _) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Center(
+                  child: Text(
+                    'Error: $error',
+                    style: TextStyle(color: Colors.red[400]),
+                  ),
+                ),
+              ),
+            ),
+      ],
     );
   }
 

@@ -113,16 +113,18 @@ class StaffManagementNotifier extends AsyncNotifier<void> {
 
     final role = (profile?['role'] as String?)?.trim().toLowerCase();
 
-    if (role != AppRoles.manager) {
+    // Allow both admin and manager roles to manage staff
+    final isAllowed = role == AppRoles.manager || role == AppRoles.admin;
+    if (!isAllowed) {
       _log(
-        'Permission denied: Non-manager trying to access staff management (role=$role)',
+        'Permission denied: role=$role is not allowed (need admin or manager)',
         level: 'WARN',
       );
       throw Exception(
-        'Akses Ditolak: Hanya Manager yang boleh mengelola data.',
+        'Akses Ditolak: Hanya Admin atau Manager yang boleh mengelola data.',
       );
     }
-    _log('Manager permission verified');
+    _log('Permission verified for role=$role');
   }
 
   // --- PERBAIKAN DI SINI ---
@@ -189,7 +191,7 @@ class StaffManagementNotifier extends AsyncNotifier<void> {
     required String role,
     String? password,
   }) async {
-  await _checkManagerPermission();
+    await _checkManagerPermission();
     _log(
       'Updating $role: id=$id, name=$name, email=$email, address=${address ?? 'N/A'}',
     );
@@ -197,11 +199,9 @@ class StaffManagementNotifier extends AsyncNotifier<void> {
 
     try {
       final repository = ref.read(managePartnerRepositoryProvider);
-      // Use direct profile update for self-update to avoid manager-only Edge
-      // Function which forbids non-admin updates. Note: auth changes like
-      // email/password should be handled through supabase.auth.updateUser when
-      // necessary.
-      await repository.updateMyProfile(
+      // Use Edge Function (update-user) which uses service role key
+      // and bypasses RLS — works for updating any user by admin/manager.
+      await repository.updateUser(
         id: id,
         name: name,
         username: username,
