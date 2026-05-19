@@ -1,0 +1,1 @@
+genhtml coverage/clean_lcov.info -o coverage/html

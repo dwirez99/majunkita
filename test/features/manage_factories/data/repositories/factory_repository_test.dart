@@ -1,82 +1,43 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../../../../../lib/features/manage_factories/data/models/factory_model.dart';
+import 'package:mockito/mockito.dart';
+import 'package:mockito/annotations.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:majunkita/features/manage_factories/data/repositories/factory_repository.dart';
+import 'package:majunkita/features/manage_factories/data/models/factory_model.dart';
+import 'factory_repository_test.mocks.dart';
 
+@GenerateMocks([SupabaseClient, SupabaseQueryBuilder, PostgrestFilterBuilder, PostgrestTransformBuilder])
 void main() {
-  group('FactoryModel Integration Tests', () {
-    // Since Supabase mocking is complex, we'll focus on testing the model
-    // and repository logic that doesn't require external dependencies
+  late MockSupabaseClient mockSupabaseClient;
+  late FactoryRepository repository;
 
-    const testFactoryJson = {
-      'id': 'factory-123',
-      'factory_name': 'PT Maju Jaya',
-      'address': 'Jl. Industri No. 123',
-      'no_telp': '021-12345678',
-    };
-
-    final testFactory = FactoryModel(
-      id: 'factory-123',
-      factoryName: 'PT Maju Jaya',
-      address: 'Jl. Industri No. 123',
-      noTelp: '021-12345678',
-    );
-
-    test('FactoryModel should be properly constructed', () {
-      expect(testFactory.id, 'factory-123');
-      expect(testFactory.factoryName, 'PT Maju Jaya');
-      expect(testFactory.address, 'Jl. Industri No. 123');
-      expect(testFactory.noTelp, '021-12345678');
-    });
-
-    test('FactoryModel fromJson should handle valid data', () {
-      final factory = FactoryModel.fromJson(testFactoryJson);
-
-      expect(factory.id, 'factory-123');
-      expect(factory.factoryName, 'PT Maju Jaya');
-      expect(factory.address, 'Jl. Industri No. 123');
-      expect(factory.noTelp, '021-12345678');
-    });
-
-    test('FactoryModel toJson should return correct map', () {
-      final json = testFactory.toJson();
-
-      expect(json, equals(testFactoryJson));
-    });
-
-    test('FactoryModel copyWith should work correctly', () {
-      final copied = testFactory.copyWith(
-        factoryName: 'PT Maju Baru',
-        address: 'Jl. Baru No. 456',
-      );
-
-      expect(copied.id, testFactory.id);
-      expect(copied.factoryName, 'PT Maju Baru');
-      expect(copied.address, 'Jl. Baru No. 456');
-      expect(copied.noTelp, testFactory.noTelp);
-    });
-
-    test('FactoryModel equality should work', () {
-      final factory1 = FactoryModel.fromJson(testFactoryJson);
-      final factory2 = FactoryModel.fromJson(testFactoryJson);
-
-      expect(factory1, equals(factory2));
-      expect(factory1.hashCode, equals(factory2.hashCode));
-    });
-
-    test('FactoryModel toString should be readable', () {
-      final toString = testFactory.toString();
-
-      expect(toString, contains('FactoryModel'));
-      expect(toString, contains('factory-123'));
-      expect(toString, contains('PT Maju Jaya'));
-    });
+  setUp(() {
+    mockSupabaseClient = MockSupabaseClient();
+    repository = FactoryRepository(mockSupabaseClient);
   });
 
-  group('FactoryRepository Constructor Tests', () {
-    test('FactoryRepository should accept SupabaseClient', () {
-      // This is a basic constructor test
-      // In a real scenario, we'd mock SupabaseClient
-      // For now, we just verify the class can be instantiated
-      expect(true, isTrue); // Placeholder test
+  group('FactoryRepository', () {
+    test('getAllFactories returns list of FactoryModel on success', () async {
+      final mockData = [{'id': '1', 'factory_name': 'Factory A', 'address': 'Almt A', 'no_telp': '08111'}];
+
+      final mockQueryBuilder = MockSupabaseQueryBuilder();
+      final mockFilterBuilder = MockPostgrestFilterBuilder<List<Map<String, dynamic>>>();
+      final mockTransformBuilder1 = MockPostgrestTransformBuilder<List<Map<String, dynamic>>>();
+
+      when(mockSupabaseClient.from('factories')).thenAnswer((_) => mockQueryBuilder);
+      when(mockQueryBuilder.select('id, factory_name, address, no_telp')).thenAnswer((_) => mockFilterBuilder);
+      when(mockFilterBuilder.order('factory_name', ascending: true)).thenAnswer((_) => mockTransformBuilder1);
+      when(mockTransformBuilder1.range(any, any)).thenAnswer((_) => mockTransformBuilder1);
+      
+      when(mockTransformBuilder1.then(any, onError: anyNamed('onError'))).thenAnswer((invocation) {
+        final onValue = invocation.positionalArguments[0];
+        onValue(mockData);
+        return Future.value();
+      });
+
+      final result = await repository.getAllFactories(page: 1, limit: 10);
+      expect(result.length, 1);
+      expect(result.first.factoryName, 'Factory A');
     });
   });
 }

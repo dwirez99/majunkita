@@ -1,0 +1,12 @@
+cat supabase/migrations/20260430120000_allow_users_update_own_profile.sql
+echo "---END1---"
+cat supabase/migrations/20260430120001_update_wa_notifications_driver_permissions.sql
+echo "---END2---"
+cat supabase/migrations/20260430140000_wa_driver_perca_expedition_vis.sql
+echo "---END3---"
+cat supabase/migrations/20260430150000_wa_notification_added_tailor.sql
+echo "---END4---"
+cat supabase/migrations/20260430170000_wa_notification_batch_only.sql
+echo "---END5---"
+cat supabase/migrations/20260430200000_fix_perca_transaction_wa_notification.sql
+echo "---END6---"

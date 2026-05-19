@@ -1,0 +1,2 @@
+# Test runner configuration to reduce flakiness during coverage collection.
+concurrency: 1

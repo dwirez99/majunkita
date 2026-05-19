@@ -114,7 +114,6 @@ class ManagePartnerRepository {
     }
   }
 
-  // KEMBALIKAN FUNGSI INI (Tadi hilang)
   Future<List<Admin>> searchAdmins(String query) async {
     _log('Searching admins with query: "$query"');
     try {
