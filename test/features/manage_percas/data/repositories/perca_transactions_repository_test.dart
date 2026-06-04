@@ -139,6 +139,88 @@ void main() {
       expect(params['p_date_entry'], '2026-05-19');
     });
 
+    test(
+      'getPercaTransactionHistory returns raw records with sack_code and limbah entries',
+      () async {
+        final percaQb = MockSupabaseQueryBuilder();
+        final percaFb = MockPostgrestFilterBuilder<List<Map<String, dynamic>>>();
+        final limbahQb = MockSupabaseQueryBuilder();
+        final limbahFb =
+            MockPostgrestFilterBuilder<List<Map<String, dynamic>>>();
+
+        when(
+          mockSupabaseClient.from('perca_transactions'),
+        ).thenAnswer((_) => percaQb);
+        when(
+          percaQb.select(
+            'id, id_stock_perca, id_tailors, date_entry, percas_type, weight, staff_id, created_at, percas_stock(sack_code), tailors(name)',
+          ),
+        ).thenAnswer((_) => percaFb);
+        when(
+          percaFb.order('created_at', ascending: false),
+        ).thenAnswer((_) => percaFb);
+        when(
+          percaFb.then(any, onError: anyNamed('onError')),
+        ).thenAnswer((invocation) {
+          final onValue = invocation.positionalArguments[0] as Function;
+          return Future.value(
+            onValue([
+              {
+                'id': 'trx-1',
+                'id_stock_perca': 'stock-1',
+                'id_tailors': 'tailor-1',
+                'date_entry': '2026-05-10',
+                'percas_type': 'Kaos',
+                'weight': 8,
+                'staff_id': 'staff-1',
+                'created_at': '2026-05-10T10:00:00Z',
+                'percas_stock': {'sack_code': 'K-45'},
+                'tailors': {'name': 'Budi'},
+              },
+            ]),
+          );
+        });
+
+        when(
+          mockSupabaseClient.from('limbah_transactions'),
+        ).thenAnswer((_) => limbahQb);
+        when(
+          limbahQb.select(
+            'id, id_tailor, date_entry, weight_limbah, staff_id, created_at, tailors(name)',
+          ),
+        ).thenAnswer((_) => limbahFb);
+        when(
+          limbahFb.order('created_at', ascending: false),
+        ).thenAnswer((_) => limbahFb);
+        when(
+          limbahFb.then(any, onError: anyNamed('onError')),
+        ).thenAnswer((invocation) {
+          final onValue = invocation.positionalArguments[0] as Function;
+          return Future.value(
+            onValue([
+              {
+                'id': 'limbah-1',
+                'id_tailor': 'tailor-2',
+                'date_entry': '2026-05-11',
+                'weight_limbah': 2.5,
+                'staff_id': 'staff-2',
+                'created_at': '2026-05-11T11:00:00Z',
+                'tailors': {'name': 'Sari'},
+              },
+            ]),
+          );
+        });
+
+        final result = await repository.getPercaTransactionHistory();
+
+        expect(result.length, 2);
+        expect(result.first['source_type'], 'limbah');
+        expect(result.first['sack_code'], '-');
+        expect(result.last['source_type'], 'perca');
+        expect(result.last['sack_code'], 'K-45');
+      },
+    );
+
     test('getMonthlyTransactionStats aggregates weights by month', () async {
       final qb = MockSupabaseQueryBuilder();
       final fb = MockPostgrestFilterBuilder<List<Map<String, dynamic>>>();

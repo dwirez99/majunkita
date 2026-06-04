@@ -60,16 +60,21 @@ class _AddPercaTransactionScreenState
 
   // List transaksi yang sudah diinput (sebelum submit)
   final List<Map<String, dynamic>> _transactionList = [];
+  int? _editingIndex;
 
   // Flag lock tailor & tanggal
   bool _isLocked = false;
   final _tailorReadonlyController = TextEditingController();
   final _tanggalReadonlyController = TextEditingController();
 
-  /// Hitung jumlah karung yang sudah ditambahkan ke daftar transaksi per kode
-  int _addedSacksForCode(String sackCode) {
+  /// Hitung jumlah karung yang sudah ditambahkan ke daftar transaksi per kode.
+  /// [excludeIndex] dipakai saat mode edit agar item yang sedang diedit
+  /// tidak ikut dihitung sebagai "sudah terpakai".
+  int _addedSacksForCode(String sackCode, {int? excludeIndex}) {
     int count = 0;
-    for (var trx in _transactionList) {
+    for (int i = 0; i < _transactionList.length; i++) {
+      if (excludeIndex != null && i == excludeIndex) continue;
+      final trx = _transactionList[i];
       if (trx['sackCode'] == sackCode) {
         count += (trx['sackCount'] as int);
       }
@@ -83,9 +88,12 @@ class _AddPercaTransactionScreenState
     final totalSacks = (item['total_sacks'] as num?)?.toInt() ?? 0;
     final totalWeight = (item['total_weight'] as num?)?.toDouble() ?? 0;
 
-    // Kurangi dengan jumlah yang sudah ditambahkan ke daftar
-    final alreadyAdded = _addedSacksForCode(sackCode);
-    final remainingSacks = totalSacks - alreadyAdded;
+    final alreadyAdded = _addedSacksForCode(
+      sackCode,
+      excludeIndex: _editingIndex,
+    );
+    final remainingSacks =
+        (totalSacks - alreadyAdded).clamp(0, totalSacks).toInt();
     final weightPerSack = totalSacks > 0 ? totalWeight / totalSacks : 0.0;
     final remainingWeight = weightPerSack * remainingSacks;
 
@@ -105,9 +113,10 @@ class _AddPercaTransactionScreenState
         _selectedTailorId != null &&
         _selectedSackCode != null) {
       final sackCount = int.parse(_sackCountController.text);
+      final wasEditing = _editingIndex != null;
 
       setState(() {
-        _transactionList.add({
+        final data = {
           'idTailor': _selectedTailorId!,
           'tailorName': _selectedTailorName ?? '',
           'sackCode': _selectedSackCode!,
@@ -115,7 +124,20 @@ class _AddPercaTransactionScreenState
           'sackCount': sackCount,
           'dateEntry': _selectedDate,
           'totalWeight': _calculatedWeight,
-        });
+        };
+
+        if (_editingIndex != null) {
+          _transactionList[_editingIndex!] = data;
+        } else {
+          final existingIndex = _transactionList.indexWhere(
+            (trx) => trx['sackCode'] == _selectedSackCode!,
+          );
+          if (existingIndex >= 0) {
+            _transactionList[existingIndex] = data;
+          } else {
+            _transactionList.add(data);
+          }
+        }
 
         // Lock tailor & tanggal after first entry
         if (!_isLocked) {
@@ -129,6 +151,7 @@ class _AddPercaTransactionScreenState
         // Clear for next entry
         _selectedSackCode = null;
         _selectedPercaType = null;
+        _editingIndex = null;
         _sackCountController.clear();
         _availableSacks = 0;
         _availableWeight = 0;
@@ -139,7 +162,9 @@ class _AddPercaTransactionScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Transaksi ${_transactionList.length} berhasil ditambahkan',
+            wasEditing
+                ? 'Transaksi berhasil diperbarui'
+                : 'Transaksi ${_transactionList.length} berhasil ditambahkan',
           ),
           backgroundColor: Colors.green,
         ),
@@ -157,12 +182,42 @@ class _AddPercaTransactionScreenState
   void _removeTransaction(int index) {
     setState(() {
       _transactionList.removeAt(index);
+      if (_editingIndex == index) {
+        _editingIndex = null;
+        _selectedSackCode = null;
+        _selectedPercaType = null;
+        _sackCountController.clear();
+        _availableSacks = 0;
+        _availableWeight = 0;
+        _weightPerSack = 0;
+        _calculatedWeight = 0;
+      } else if (_editingIndex != null && index < _editingIndex!) {
+        _editingIndex = _editingIndex! - 1;
+      }
       if (_transactionList.isEmpty) {
         _isLocked = false;
         _tailorReadonlyController.clear();
         _tanggalReadonlyController.clear();
       }
     });
+  }
+
+  void _startEditTransaction(int index) {
+    final trx = _transactionList[index];
+    final sackCode = trx['sackCode'] as String? ?? '';
+    final summaryList = ref.read(availableSackSummaryProvider).value ?? const [];
+    final selected = summaryList.cast<Map<String, dynamic>?>().firstWhere(
+      (item) => item?['sack_code'] == sackCode,
+      orElse: () => null,
+    );
+    if (selected != null) {
+      _editingIndex = index;
+      _onSackCodeSelected(selected);
+      setState(() {
+        _sackCountController.text = '${trx['sackCount'] ?? ''}';
+        _calculateWeight();
+      });
+    }
   }
 
   /// Tampilkan dialog peringatan jika sisa perca penjahit > [threshold] Kg.
@@ -559,14 +614,11 @@ class _AddPercaTransactionScreenState
                             );
                           }
 
-                          // Filter: hitung sisa karung setelah dikurangi yang sudah ditambahkan
                           final filteredList =
                               summaryList.where((item) {
-                                final code = item['sack_code'] as String? ?? '';
                                 final totalSacks =
                                     (item['total_sacks'] as num?)?.toInt() ?? 0;
-                                final alreadyAdded = _addedSacksForCode(code);
-                                return (totalSacks - alreadyAdded) > 0;
+                                return totalSacks > 0;
                               }).toList();
 
                           if (filteredList.isEmpty) {
@@ -619,27 +671,6 @@ class _AddPercaTransactionScreenState
                                 >((item) {
                                   final code =
                                       item['sack_code'] as String? ?? '-';
-                                  final percaType =
-                                      item['perca_type'] as String? ?? '-';
-                                  final totalSacks =
-                                      (item['total_sacks'] as num?)?.toInt() ??
-                                      0;
-                                  final totalWeight =
-                                      (item['total_weight'] as num?)
-                                          ?.toDouble() ??
-                                      0;
-
-                                  // Hitung sisa setelah dikurangi yang sudah ditambahkan
-                                  final alreadyAdded = _addedSacksForCode(code);
-                                  final remainingSacks =
-                                      totalSacks - alreadyAdded;
-                                  final weightPerSack =
-                                      totalSacks > 0
-                                          ? totalWeight / totalSacks
-                                          : 0.0;
-                                  final remainingWeight =
-                                      weightPerSack * remainingSacks;
-
                                   return DropdownMenuItem<Map<String, dynamic>>(
                                     value: item,
                                     child: Text(
@@ -858,7 +889,11 @@ class _AddPercaTransactionScreenState
                       ElevatedButton.icon(
                         onPressed: _addTransactionToList,
                         icon: const Icon(Icons.add),
-                        label: const Text('Tambah ke Daftar'),
+                        label: Text(
+                          _editingIndex != null
+                              ? 'Perbarui di Daftar'
+                              : 'Tambah ke Daftar',
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green[400],
                           foregroundColor: Colors.white,
@@ -949,13 +984,26 @@ class _AddPercaTransactionScreenState
                                         color: Colors.grey[600],
                                       ),
                                     ),
-                                    trailing: IconButton(
-                                      icon: const Icon(
-                                        Icons.delete_outline,
-                                        color: Colors.red,
-                                      ),
-                                      onPressed:
-                                          () => _removeTransaction(index),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.edit_outlined,
+                                            color: Colors.blue,
+                                          ),
+                                          onPressed:
+                                              () => _startEditTransaction(index),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete_outline,
+                                            color: Colors.red,
+                                          ),
+                                          onPressed:
+                                              () => _removeTransaction(index),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 );

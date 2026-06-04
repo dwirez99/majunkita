@@ -85,7 +85,7 @@ class _ManageExpeditionsScreenState extends ConsumerState<ManageExpeditionsScree
                     _buildMenuCard(
                       context: context,
                       icon: Icons.add_road,
-                      title: 'Tambah\nExpedisi',
+                      title: 'Laporan\nPengiriman',
                       color: AppColors.primary,
                       onTap: () => Navigator.push(
                         context,

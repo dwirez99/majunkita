@@ -83,23 +83,13 @@ class _PercaTransactionHistoryScreenState extends ConsumerState<PercaTransaction
             final query = _searchQuery.toLowerCase();
             filteredRecords = filteredRecords.where((record) {
               final tailorName = (record['tailors'] as Map<String, dynamic>?)?['name']?.toString().toLowerCase() ?? '';
-              return tailorName.contains(query);
+              final sackCode = (record['sack_code'] as String? ?? '').toLowerCase();
+              return tailorName.contains(query) || sackCode.contains(query);
             }).toList();
           }
 
-          // Group records by date + tailor id
-          final Map<String, List<Map<String, dynamic>>> grouped = {};
-          for (final record in filteredRecords) {
-            final dateStr = record['date_entry'] as String? ?? '';
-            final tailorId = record['id_tailors'] as String? ?? '';
-            final key = '$dateStr|$tailorId';
-            grouped.putIfAbsent(key, () => []).add(record);
-          }
-
-          final keys = grouped.keys.toList();
-          
           // Pagination logic
-          final totalPages = keys.isEmpty ? 1 : (keys.length / _itemsPerPage).ceil();
+          final totalPages = filteredRecords.isEmpty ? 1 : (filteredRecords.length / _itemsPerPage).ceil();
           
           // Ensure current page is valid
           int effectivePage = _currentPage;
@@ -109,11 +99,14 @@ class _PercaTransactionHistoryScreenState extends ConsumerState<PercaTransaction
           if (effectivePage < 1) effectivePage = 1;
 
           final startIndex = (effectivePage - 1) * _itemsPerPage;
-          final endIndex = (startIndex + _itemsPerPage > keys.length)
-              ? keys.length
+          final endIndex = (startIndex + _itemsPerPage > filteredRecords.length)
+              ? filteredRecords.length
               : startIndex + _itemsPerPage;
-              
-          final paginatedKeys = keys.isEmpty ? <String>[] : keys.sublist(startIndex, endIndex);
+
+          final paginatedRecords =
+              filteredRecords.isEmpty
+                  ? <Map<String, dynamic>>[]
+                  : filteredRecords.sublist(startIndex, endIndex);
 
           return Column(
             children: [
@@ -195,7 +188,7 @@ class _PercaTransactionHistoryScreenState extends ConsumerState<PercaTransaction
                 ),
               ),
 
-              if (keys.isEmpty)
+              if (filteredRecords.isEmpty)
                 Expanded(
                   child: Center(
                     child: Column(
@@ -219,31 +212,19 @@ class _PercaTransactionHistoryScreenState extends ConsumerState<PercaTransaction
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    itemCount: paginatedKeys.length,
+                    itemCount: paginatedRecords.length,
                     itemBuilder: (context, index) {
-                      final key = paginatedKeys[index];
-                      final parts = key.split('|');
-                      final dateStr = parts[0];
-                      final items = grouped[key]!;
-                      
+                      final item = paginatedRecords[index];
                       final tailorName =
-                          (items.first['tailors'] as Map<String, dynamic>?)?['name']
+                          (item['tailors'] as Map<String, dynamic>?)?['name']
                               as String? ??
                           'Penjahit tidak diketahui';
-
-                      final formattedDate = _formatDate(dateStr);
-                      double totalWeight = 0;
-                      int totalItems = items.length;
-                      final Map<String, double> weightByType = {};
-                      final Map<String, int> countByType = {};
-
-                      for (final item in items) {
-                        final type = item['percas_type'] as String? ?? '-';
-                        final weight = (item['weight'] as num?)?.toDouble() ?? 0;
-                        totalWeight += weight;
-                        weightByType[type] = (weightByType[type] ?? 0) + weight;
-                        countByType[type] = (countByType[type] ?? 0) + 1;
-                      }
+                      final sourceType = item['source_type'] as String? ?? 'perca';
+                      final percaType = item['percas_type'] as String? ?? '-';
+                      final sackCode = item['sack_code'] as String? ?? '-';
+                      final weight = (item['weight'] as num?)?.toDouble() ?? 0;
+                      final dateValue = item['date_entry']?.toString() ?? '';
+                      final formattedDate = _formatDate(dateValue);
 
                       return Card(
                         margin: const EdgeInsets.only(bottom: 12),
@@ -253,8 +234,8 @@ class _PercaTransactionHistoryScreenState extends ConsumerState<PercaTransaction
                           borderRadius: BorderRadius.circular(12),
                           side: const BorderSide(color: AppColors.cardBorder),
                         ),
-                        child: ExpansionTile(
-                          tilePadding: const EdgeInsets.symmetric(
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 8,
                           ),
@@ -267,95 +248,43 @@ class _PercaTransactionHistoryScreenState extends ConsumerState<PercaTransaction
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           subtitle: Padding(
-                            padding: const EdgeInsets.only(top: 4.0),
+                            padding: const EdgeInsets.only(top: 6.0),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
                                   children: [
-                                    const Icon(
-                                      Icons.calendar_today,
-                                      size: 14,
-                                      color: AppColors.greyDark,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      formattedDate,
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        color: AppColors.greyDark,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
                                     _buildInfoChip(
-                                      '$totalItems item',
-                                      AppColors.info.withValues(alpha: 0.15),
-                                      AppColors.info,
+                                      sourceType == 'limbah' ? 'Setor Limbah' : 'Ambil Perca',
+                                      sourceType == 'limbah'
+                                          ? Colors.orange.withValues(alpha: 0.15)
+                                          : AppColors.info.withValues(alpha: 0.15),
+                                      sourceType == 'limbah'
+                                          ? Colors.orange[800]!
+                                          : AppColors.info,
                                     ),
                                     const SizedBox(width: 8),
                                     _buildInfoChip(
-                                      '${totalWeight.toStringAsFixed(1)} KG',
+                                      '${weight.toStringAsFixed(1)} KG',
                                       AppColors.primary.withValues(alpha: 0.15),
                                       AppColors.primaryDark,
                                     ),
                                   ],
                                 ),
+                                const SizedBox(height: 6),
+                                Text('Kode Sack: $sackCode'),
+                                Text('Jenis: $percaType'),
+                                const SizedBox(height: 2),
+                                Text(
+                                  formattedDate,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.greyDark,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
-                          children: [
-                            const Divider(height: 1),
-                            ...weightByType.entries.map((entry) {
-                              final type = entry.key;
-                              final weight = entry.value;
-                              final count = countByType[type] ?? 0;
-
-                              return ListTile(
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 2,
-                                ),
-                                leading: Icon(
-                                  type.toLowerCase() == 'kaos'
-                                      ? Icons.checkroom
-                                      : Icons.content_cut,
-                                  color: AppColors.primary,
-                                  size: 20,
-                                ),
-                                title: Text(
-                                  type,
-                                  style: const TextStyle(fontWeight: FontWeight.w500),
-                                ),
-                                trailing: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      '$count Karung',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                    Text(
-                                      '${weight.toStringAsFixed(1)} KG',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 12,
-                                        color: AppColors.greyDark,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }),
-                            const SizedBox(height: 8),
-                          ],
                         ),
                       );
                     },

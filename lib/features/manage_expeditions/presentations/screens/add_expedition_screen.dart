@@ -253,7 +253,7 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
-          'Tambah Expedisi',
+          'Laporan Pengiriman',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,

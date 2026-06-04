@@ -4,8 +4,6 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../auth/domain/providers/auth_provider.dart';
 import '../../../manage_expeditions/presentations/screens/add_expedition_screen.dart';
 import '../../../manage_expeditions/presentations/screens/expedition_history_screen.dart';
-// removed manage_expedition_partners_screen import because the shortcut banner was removed
-import '../../../manage_expeditions/presentations/screens/manage_expeditions_screen.dart';
 import '../../../manage_percas/presentations/screens/add_perca_screen.dart';
 import '../../../manage_notifications/presentations/screens/admin_notifications_screen.dart';
 import '../../../manage_notifications/domain/providers/wa_notifications_provider.dart';
@@ -133,7 +131,7 @@ class _DashboardDriverScreenState extends ConsumerState<DashboardDriverScreen> {
                     children: [
                       _buildMenuCard(
                         icon: Icons.add_box_outlined,
-                        title: 'Tambah\nPerca',
+                        title: 'Laporan\nTambah Perca',
                         color: AppColors.accent,
                         onTap:
                             () => Navigator.push(
@@ -145,7 +143,7 @@ class _DashboardDriverScreenState extends ConsumerState<DashboardDriverScreen> {
                       ),
                       _buildMenuCard(
                         icon: Icons.local_shipping_outlined,
-                        title: 'Tambah\nExpedisi',
+                        title: 'Laporan\nPengiriman',
                         color: AppColors.primary,
                         onTap:
                             () => Navigator.push(
@@ -164,18 +162,6 @@ class _DashboardDriverScreenState extends ConsumerState<DashboardDriverScreen> {
                               context,
                               MaterialPageRoute(
                                 builder: (_) => const ExpeditionHistoryScreen(),
-                              ),
-                            ),
-                      ),
-                      _buildMenuCard(
-                        icon: Icons.business_outlined,
-                        title: 'Kelola\nExpedisi',
-                        color: AppColors.secondaryDark,
-                        onTap:
-                            () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const ManageExpeditionsScreen(),
                               ),
                             ),
                       ),
