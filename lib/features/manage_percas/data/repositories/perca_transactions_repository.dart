@@ -163,10 +163,12 @@ class PercaTransactionsRepository {
 
       final merged = [...percaHistory, ...limbahHistory];
       merged.sort((a, b) {
+        // Fallback ke epoch untuk record lama/tidak valid agar tetap bisa diurutkan stabil.
+        final fallbackDate = DateTime.fromMillisecondsSinceEpoch(0);
         final aCreated = DateTime.tryParse(a['created_at']?.toString() ?? '') ??
-            DateTime.fromMillisecondsSinceEpoch(0);
+            fallbackDate;
         final bCreated = DateTime.tryParse(b['created_at']?.toString() ?? '') ??
-            DateTime.fromMillisecondsSinceEpoch(0);
+            fallbackDate;
         return bCreated.compareTo(aCreated);
       });
       return merged;

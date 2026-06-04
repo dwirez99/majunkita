@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -92,8 +93,7 @@ class _AddPercaTransactionScreenState
       sackCode,
       excludeIndex: _editingIndex,
     );
-    final remainingSacks =
-        (totalSacks - alreadyAdded).clamp(0, totalSacks).toInt();
+    final remainingSacks = max(0, totalSacks - alreadyAdded);
     final weightPerSack = totalSacks > 0 ? totalWeight / totalSacks : 0.0;
     final remainingWeight = weightPerSack * remainingSacks;
 
@@ -114,6 +114,22 @@ class _AddPercaTransactionScreenState
         _selectedSackCode != null) {
       final sackCount = int.parse(_sackCountController.text);
       final wasEditing = _editingIndex != null;
+      final existingIndex = _transactionList.indexWhere(
+        (trx) => trx['sackCode'] == _selectedSackCode!,
+      );
+
+      if (!wasEditing && existingIndex >= 0) {
+        _startEditTransaction(existingIndex);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Kode karung sudah ada di daftar. Ubah jumlah melalui mode edit.',
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
 
       setState(() {
         final data = {
@@ -129,14 +145,7 @@ class _AddPercaTransactionScreenState
         if (_editingIndex != null) {
           _transactionList[_editingIndex!] = data;
         } else {
-          final existingIndex = _transactionList.indexWhere(
-            (trx) => trx['sackCode'] == _selectedSackCode!,
-          );
-          if (existingIndex >= 0) {
-            _transactionList[existingIndex] = data;
-          } else {
-            _transactionList.add(data);
-          }
+          _transactionList.add(data);
         }
 
         // Lock tailor & tanggal after first entry
@@ -192,6 +201,7 @@ class _AddPercaTransactionScreenState
         _weightPerSack = 0;
         _calculatedWeight = 0;
       } else if (_editingIndex != null && index < _editingIndex!) {
+        // Geser index edit agar tetap menunjuk item yang sama setelah list memendek.
         _editingIndex = _editingIndex! - 1;
       }
       if (_transactionList.isEmpty) {

@@ -272,8 +272,20 @@ class _PercaTransactionHistoryScreenState extends ConsumerState<PercaTransaction
                                   ],
                                 ),
                                 const SizedBox(height: 6),
-                                Text('Kode Sack: $sackCode'),
-                                Text('Jenis: $percaType'),
+                                Text(
+                                  'Kode Sack: $sackCode',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.greyDark,
+                                  ),
+                                ),
+                                Text(
+                                  'Jenis: $percaType',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.greyDark,
+                                  ),
+                                ),
                                 const SizedBox(height: 2),
                                 Text(
                                   formattedDate,
