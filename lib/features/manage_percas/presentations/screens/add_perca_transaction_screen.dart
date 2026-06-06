@@ -230,6 +230,38 @@ class _AddPercaTransactionScreenState
     }
   }
 
+  /// Adjust the sack count of an existing transaction list item by [delta].
+  /// Clamps the value to [1 .. maxAvailable] where maxAvailable is the
+  /// total sacks in the stock summary minus those consumed by *other* items
+  /// with the same sack code.
+  void _adjustSackCount(int index, int delta) {
+    final trx = _transactionList[index];
+    final sackCode = trx['sackCode'] as String? ?? '';
+    final currentCount = trx['sackCount'] as int? ?? 0;
+    final weightPerSack = (trx['totalWeight'] as double) / (currentCount > 0 ? currentCount : 1);
+
+    // Determine the ceiling from the stock summary.
+    final summaryList = ref.read(availableSackSummaryProvider).value ?? const [];
+    final summaryItem = summaryList.cast<Map<String, dynamic>?>().firstWhere(
+      (item) => item?['sack_code'] == sackCode,
+      orElse: () => null,
+    );
+    final totalInStock = (summaryItem?['total_sacks'] as num?)?.toInt() ?? 0;
+    final usedByOthers = _addedSacksForCode(sackCode, excludeIndex: index);
+    final maxForThisItem = max(0, totalInStock - usedByOthers);
+
+    final newCount = (currentCount + delta).clamp(1, maxForThisItem);
+    if (newCount == currentCount) return;
+
+    setState(() {
+      _transactionList[index] = {
+        ...trx,
+        'sackCount': newCount,
+        'totalWeight': weightPerSack * newCount,
+      };
+    });
+  }
+
   /// Tampilkan dialog peringatan jika sisa perca penjahit > [threshold] Kg.
   /// Ini adalah bahan perca mentah yang masih ada di rumah penjahit dan belum diproses.
   /// Tujuan: pastikan admin menanyakan stok sisa sebelum memberikan bahan perca baru
@@ -381,7 +413,7 @@ class _AddPercaTransactionScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tambah Transaksi Perca'),
+        title: const Text('Laporan Ambil Perca dari Gudang'),
         backgroundColor: AppColors.surfaceLight,
         foregroundColor: AppColors.black,
         actions: [
@@ -963,55 +995,153 @@ class _AddPercaTransactionScreenState
                                 index,
                               ) {
                                 final trx = _transactionList[index];
+                                final sackCount = trx['sackCount'] as int;
+
+                                // Determine max available for this sack code
+                                final sackCode = trx['sackCode'] as String;
+                                final summaryList = ref.read(availableSackSummaryProvider).value ?? const [];
+                                final summaryItem = summaryList.cast<Map<String, dynamic>?>().firstWhere(
+                                  (item) => item?['sack_code'] == sackCode,
+                                  orElse: () => null,
+                                );
+                                final totalInStock = (summaryItem?['total_sacks'] as num?)?.toInt() ?? 0;
+                                final usedByOthers = _addedSacksForCode(sackCode, excludeIndex: index);
+                                final maxForThisItem = max(0, totalInStock - usedByOthers);
+                                final canIncrement = sackCount < maxForThisItem;
+                                final canDecrement = sackCount > 1;
+
                                 return Card(
                                   margin: const EdgeInsets.only(bottom: 8),
                                   elevation: 1,
-                                  child: ListTile(
-                                    contentPadding: const EdgeInsets.symmetric(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
                                       horizontal: 12,
-                                      vertical: 4,
+                                      vertical: 8,
                                     ),
-                                    leading: CircleAvatar(
-                                      backgroundColor: Colors.green[100],
-                                      child: Text(
-                                        '${index + 1}',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.green[800],
-                                        ),
-                                      ),
-                                    ),
-                                    title: Text(
-                                      '${_readableSackCode(trx['sackCode'] as String)} (${trx['percaType']}) — ${trx['sackCount']} karung',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    subtitle: Text(
-                                      '${(trx['totalWeight'] as double).toStringAsFixed(1)} KG',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                    trailing: Row(
-                                      mainAxisSize: MainAxisSize.min,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.edit_outlined,
-                                            color: Colors.blue,
-                                          ),
-                                          onPressed:
-                                              () => _startEditTransaction(index),
+                                        // Top row: index + title + delete
+                                        Row(
+                                          children: [
+                                            CircleAvatar(
+                                              radius: 16,
+                                              backgroundColor: Colors.green[100],
+                                              child: Text(
+                                                '${index + 1}',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.green[800],
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    '${_readableSackCode(sackCode)} (${trx['percaType']})',
+                                                    style: const TextStyle(
+                                                      fontWeight: FontWeight.w600,
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    '${(trx['totalWeight'] as double).toStringAsFixed(1)} KG',
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: Colors.grey[600],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.delete_outline,
+                                                color: Colors.red,
+                                                size: 22,
+                                              ),
+                                              onPressed:
+                                                  () => _removeTransaction(index),
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(),
+                                              tooltip: 'Hapus',
+                                            ),
+                                          ],
                                         ),
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.delete_outline,
-                                            color: Colors.red,
-                                          ),
-                                          onPressed:
-                                              () => _removeTransaction(index),
+                                        const SizedBox(height: 8),
+                                        // Bottom row: (+) / (-) stepper
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            // Decrement button
+                                            Material(
+                                              color: canDecrement
+                                                  ? Colors.red[50]
+                                                  : Colors.grey[100],
+                                              borderRadius: BorderRadius.circular(8),
+                                              child: InkWell(
+                                                onTap: canDecrement
+                                                    ? () => _adjustSackCount(index, -1)
+                                                    : null,
+                                                borderRadius: BorderRadius.circular(8),
+                                                child: Padding(
+                                                  padding: const EdgeInsets.all(6),
+                                                  child: Icon(
+                                                    Icons.remove,
+                                                    size: 20,
+                                                    color: canDecrement
+                                                        ? Colors.red[700]
+                                                        : Colors.grey[400],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            // Count display
+                                            Container(
+                                              constraints: const BoxConstraints(minWidth: 80),
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 6,
+                                              ),
+                                              child: Text(
+                                                '$sackCount karung',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.green[800],
+                                                ),
+                                              ),
+                                            ),
+                                            // Increment button
+                                            Material(
+                                              color: canIncrement
+                                                  ? Colors.green[50]
+                                                  : Colors.grey[100],
+                                              borderRadius: BorderRadius.circular(8),
+                                              child: InkWell(
+                                                onTap: canIncrement
+                                                    ? () => _adjustSackCount(index, 1)
+                                                    : null,
+                                                borderRadius: BorderRadius.circular(8),
+                                                child: Padding(
+                                                  padding: const EdgeInsets.all(6),
+                                                  child: Icon(
+                                                    Icons.add,
+                                                    size: 20,
+                                                    color: canIncrement
+                                                        ? Colors.green[700]
+                                                        : Colors.grey[400],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),

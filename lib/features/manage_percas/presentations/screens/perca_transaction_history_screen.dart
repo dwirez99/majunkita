@@ -46,7 +46,7 @@ class _PercaTransactionHistoryScreenState extends ConsumerState<PercaTransaction
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Riwayat Transaksi Perca'),
+        title: const Text('Riwayat Ambil Perca dari Gudang'),
         backgroundColor: AppColors.surfaceLight,
         foregroundColor: AppColors.black,
         actions: [
