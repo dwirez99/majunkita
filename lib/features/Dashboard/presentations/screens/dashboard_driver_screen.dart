@@ -5,6 +5,7 @@ import '../../../auth/domain/providers/auth_provider.dart';
 import '../../../manage_expeditions/presentations/screens/add_expedition_screen.dart';
 import '../../../manage_expeditions/presentations/screens/expedition_history_screen.dart';
 import '../../../manage_percas/presentations/screens/add_perca_screen.dart';
+import '../../../manage_percas/presentations/screens/add_perca_history_screen.dart';
 import '../../../manage_notifications/presentations/screens/admin_notifications_screen.dart';
 import '../../../manage_notifications/domain/providers/wa_notifications_provider.dart';
 import '../../domain/providers/dashboard_providers.dart';
@@ -138,6 +139,18 @@ class _DashboardDriverScreenState extends ConsumerState<DashboardDriverScreen> {
                               context,
                               MaterialPageRoute(
                                 builder: (_) => const AddPercaScreen(),
+                              ),
+                            ),
+                      ),
+                      _buildMenuCard(
+                        icon: Icons.history,
+                        title: 'Riwayat\nAmbil Perca',
+                        color: Colors.orange,
+                        onTap:
+                            () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AddPercaHistoryScreen(),
                               ),
                             ),
                       ),

@@ -187,7 +187,7 @@ class _AddExpeditionScreenState extends ConsumerState<AddExpeditionScreen> {
         sackNumber: int.tryParse(_sackNumberController.text.trim()) ?? 0,
         totalWeight: _calculatedWeight,
         proofOfDelivery: '',
-        idExpeditionPartner: _selectedExpeditionPartnerId,
+        expeditionPartnerName: _selectedExpeditionPartnerName,
       );
 
       await ref

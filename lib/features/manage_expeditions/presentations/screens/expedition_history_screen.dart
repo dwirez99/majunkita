@@ -84,8 +84,9 @@ class _ExpeditionHistoryScreenState
     return expeditions.where((expedition) {
       final destination = expedition.destination.toLowerCase();
       final partner = expedition.partnerName?.toLowerCase() ?? '';
+      final expPartner = expedition.expeditionPartnerName?.toLowerCase() ?? '';
       final matchesSearch =
-          query.isEmpty || destination.contains(query) || partner.contains(query);
+          query.isEmpty || destination.contains(query) || partner.contains(query) || expPartner.contains(query);
 
       final expeditionDate = DateTime(
         expedition.expeditionDate.year,
@@ -409,12 +410,20 @@ class _ExpeditionHistoryScreenState
                 const Divider(),
                 const SizedBox(height: 4),
 
-                // Nama partner (jika tersedia dari JOIN dengan profiles)
+                // Nama partner/driver (jika tersedia dari JOIN dengan profiles)
                 if (expedition.partnerName != null)
                   _buildDetailRow(
                     icon: Icons.person_outline,
-                    label: 'Partner',
+                    label: 'Driver',
                     value: expedition.partnerName!,
+                  ),
+
+                // Nama mitra pengiriman
+                if (expedition.expeditionPartnerName != null)
+                  _buildDetailRow(
+                    icon: Icons.business_outlined,
+                    label: 'Mitra Pengiriman',
+                    value: expedition.expeditionPartnerName!,
                   ),
 
                 // Tanggal pengiriman

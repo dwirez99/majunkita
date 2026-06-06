@@ -34,9 +34,9 @@ class ExpeditionRepository {
       final response = await _supabase
           .from('expeditions')
           .select(
-            'id, id_partner, id_expedition_partner, expedition_date, destination, '
+            'id, id_partner, expedition_date, destination, '
             'sack_number, total_weight, proof_of_delivery, '
-            'profiles(name), expedition_partners(name)',
+            'expedition_partner_name, profiles(name)',
           )
           .order('expedition_date', ascending: false);
 
@@ -99,9 +99,9 @@ class ExpeditionRepository {
           .from('expeditions')
           .insert(expeditionWithProof.toJson()..remove('id'))
           .select(
-            'id, id_partner, id_expedition_partner, expedition_date, destination, '
+            'id, id_partner, expedition_date, destination, '
             'sack_number, total_weight, proof_of_delivery, '
-            'profiles(name), expedition_partners(name)',
+            'expedition_partner_name, profiles(name)',
           )
           .single();
 

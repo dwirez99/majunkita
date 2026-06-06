@@ -76,7 +76,7 @@ class ManagePercaScreen extends ConsumerWidget {
                     _buildMenuCard(
                       context: context,
                       icon: Icons.add_box,
-                      title: 'Laporan Pengambilan\nStok Perca',
+                      title: 'Pelaporan Pengambilan\nStok Perca',
                       color: AppColors.primary,
                       onTap: () {
                         Navigator.push(
@@ -105,7 +105,7 @@ class ManagePercaScreen extends ConsumerWidget {
                     _buildMenuCard(
                       context: context,
                       icon: Icons.swap_horiz,
-                      title: 'Laporan Ambil\nPerca dari Gudang',
+                      title: 'Ambil\nPerca dari Gudang',
                       color: AppColors.accent,
                       onTap: () {
                         Navigator.push(
