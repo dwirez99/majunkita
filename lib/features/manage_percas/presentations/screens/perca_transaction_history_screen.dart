@@ -4,6 +4,16 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/providers/perca_transactions_provider.dart';
 
+/// Konversi kode karung dari DB (K-45, B-25) ke tampilan UI (Kaos-45, Kain-25)
+String _readableSackCode(String code) {
+  if (code.startsWith('K-')) {
+    return 'Kaos-${code.substring(2)}';
+  } else if (code.startsWith('B-')) {
+    return 'Kain-${code.substring(2)}';
+  }
+  return code;
+}
+
 class PercaTransactionHistoryScreen extends ConsumerStatefulWidget {
   const PercaTransactionHistoryScreen({super.key});
 
@@ -16,6 +26,19 @@ class _PercaTransactionHistoryScreenState extends ConsumerState<PercaTransaction
   static const int _itemsPerPage = 10;
   DateTimeRange? _selectedDateRange;
   String _searchQuery = '';
+
+  /// Derive a grouping key that identifies a single transaction event.
+  /// Records submitted via bulk RPC share the same tailor, date_entry,
+  /// and created_at (truncated to the minute).
+  String _transactionEventKey(Map<String, dynamic> record) {
+    final tailorId = record['id_tailors'] as String? ?? '';
+    final dateEntry = record['date_entry'] as String? ?? '';
+    final createdAt = record['created_at'] as String? ?? '';
+    final sourceType = record['source_type'] as String? ?? 'perca';
+    // Truncate created_at to the minute to group bulk submissions
+    final truncated = createdAt.length >= 16 ? createdAt.substring(0, 16) : createdAt;
+    return '$sourceType|$tailorId|$dateEntry|$truncated';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,25 +111,31 @@ class _PercaTransactionHistoryScreenState extends ConsumerState<PercaTransaction
             }).toList();
           }
 
-          // Pagination logic
-          final totalPages = filteredRecords.isEmpty ? 1 : (filteredRecords.length / _itemsPerPage).ceil();
-          
-          // Ensure current page is valid
-          int effectivePage = _currentPage;
-          if (effectivePage > totalPages) {
-            effectivePage = totalPages;
+          // Group records by transaction event
+          final Map<String, List<Map<String, dynamic>>> grouped = {};
+          for (final record in filteredRecords) {
+            final key = _transactionEventKey(record);
+            grouped.putIfAbsent(key, () => []).add(record);
           }
+
+          final groupKeys = grouped.keys.toList();
+
+          // Pagination on groups
+          final totalPages = groupKeys.isEmpty ? 1 : (groupKeys.length / _itemsPerPage).ceil();
+          
+          int effectivePage = _currentPage;
+          if (effectivePage > totalPages) effectivePage = totalPages;
           if (effectivePage < 1) effectivePage = 1;
 
           final startIndex = (effectivePage - 1) * _itemsPerPage;
-          final endIndex = (startIndex + _itemsPerPage > filteredRecords.length)
-              ? filteredRecords.length
+          final endIndex = (startIndex + _itemsPerPage > groupKeys.length)
+              ? groupKeys.length
               : startIndex + _itemsPerPage;
 
-          final paginatedRecords =
-              filteredRecords.isEmpty
-                  ? <Map<String, dynamic>>[]
-                  : filteredRecords.sublist(startIndex, endIndex);
+          final paginatedKeys =
+              groupKeys.isEmpty
+                  ? <String>[]
+                  : groupKeys.sublist(startIndex, endIndex);
 
           return Column(
             children: [
@@ -188,7 +217,7 @@ class _PercaTransactionHistoryScreenState extends ConsumerState<PercaTransaction
                 ),
               ),
 
-              if (filteredRecords.isEmpty)
+              if (groupKeys.isEmpty)
                 Expanded(
                   child: Center(
                     child: Column(
@@ -212,19 +241,30 @@ class _PercaTransactionHistoryScreenState extends ConsumerState<PercaTransaction
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    itemCount: paginatedRecords.length,
+                    itemCount: paginatedKeys.length,
                     itemBuilder: (context, index) {
-                      final item = paginatedRecords[index];
+                      final key = paginatedKeys[index];
+                      final items = grouped[key]!;
+                      final firstItem = items.first;
+
+                      // Common info from the group
                       final tailorName =
-                          (item['tailors'] as Map<String, dynamic>?)?['name']
+                          (firstItem['tailors'] as Map<String, dynamic>?)?['name']
                               as String? ??
                           'Penjahit tidak diketahui';
-                      final sourceType = item['source_type'] as String? ?? 'perca';
-                      final percaType = item['percas_type'] as String? ?? '-';
-                      final sackCode = item['sack_code'] as String? ?? '-';
-                      final weight = (item['weight'] as num?)?.toDouble() ?? 0;
-                      final dateValue = item['date_entry']?.toString() ?? '';
+                      final sourceType = firstItem['source_type'] as String? ?? 'perca';
+                      final dateValue = firstItem['date_entry']?.toString() ?? '';
                       final formattedDate = _formatDate(dateValue);
+
+                      // Calculate group totals
+                      double totalWeight = 0;
+                      int totalSacks = 0;
+                      for (final item in items) {
+                        totalWeight += (item['weight'] as num?)?.toDouble() ?? 0;
+                        totalSacks += 1;
+                      }
+
+                      final isLimbah = sourceType == 'limbah';
 
                       return Card(
                         margin: const EdgeInsets.only(bottom: 12),
@@ -234,8 +274,8 @@ class _PercaTransactionHistoryScreenState extends ConsumerState<PercaTransaction
                           borderRadius: BorderRadius.circular(12),
                           side: const BorderSide(color: AppColors.cardBorder),
                         ),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
+                        child: ExpansionTile(
+                          tilePadding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 8,
                           ),
@@ -255,38 +295,31 @@ class _PercaTransactionHistoryScreenState extends ConsumerState<PercaTransaction
                                 Row(
                                   children: [
                                     _buildInfoChip(
-                                      sourceType == 'limbah' ? 'Setor Limbah' : 'Ambil Perca',
-                                      sourceType == 'limbah'
+                                      isLimbah ? 'Setor Limbah' : 'Ambil Perca',
+                                      isLimbah
                                           ? Colors.orange.withValues(alpha: 0.15)
                                           : AppColors.info.withValues(alpha: 0.15),
-                                      sourceType == 'limbah'
+                                      isLimbah
                                           ? Colors.orange[800]!
                                           : AppColors.info,
                                     ),
                                     const SizedBox(width: 8),
                                     _buildInfoChip(
-                                      '${weight.toStringAsFixed(1)} KG',
+                                      '${totalWeight.toStringAsFixed(1)} KG',
                                       AppColors.primary.withValues(alpha: 0.15),
                                       AppColors.primaryDark,
                                     ),
+                                    if (!isLimbah && items.length > 1) ...[
+                                      const SizedBox(width: 8),
+                                      _buildInfoChip(
+                                        '$totalSacks item',
+                                        Colors.grey.withValues(alpha: 0.15),
+                                        AppColors.greyDark,
+                                      ),
+                                    ],
                                   ],
                                 ),
                                 const SizedBox(height: 6),
-                                Text(
-                                  'Kode Sack: $sackCode',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.greyDark,
-                                  ),
-                                ),
-                                Text(
-                                  'Jenis: $percaType',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.greyDark,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
                                 Text(
                                   formattedDate,
                                   style: const TextStyle(
@@ -297,6 +330,85 @@ class _PercaTransactionHistoryScreenState extends ConsumerState<PercaTransaction
                               ],
                             ),
                           ),
+                          children: [
+                            // Show each individual item in the transaction group
+                            ...items.asMap().entries.map((entry) {
+                              final idx = entry.key;
+                              final item = entry.value;
+                              final percaType = item['percas_type'] as String? ?? '-';
+                              final weight = (item['weight'] as num?)?.toDouble() ?? 0;
+                              final sackCode = item['sack_code'] as String? ?? '-';
+
+                              return ListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 0,
+                                ),
+                                leading: CircleAvatar(
+                                  radius: 14,
+                                  backgroundColor: isLimbah
+                                      ? Colors.orange.withValues(alpha: 0.15)
+                                      : AppColors.primary.withValues(alpha: 0.15),
+                                  child: Text(
+                                    '${idx + 1}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: isLimbah
+                                          ? Colors.orange[800]
+                                          : AppColors.primaryDark,
+                                    ),
+                                  ),
+                                ),
+                                title: Text(
+                                  isLimbah
+                                      ? 'Limbah — ${weight.toStringAsFixed(1)} KG'
+                                      : '${_readableSackCode(sackCode)} ($percaType) — ${weight.toStringAsFixed(1)} KG',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                subtitle: isLimbah
+                                    ? null
+                                    : Text(
+                                        'Kode: $sackCode',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.greyDark,
+                                        ),
+                                      ),
+                              );
+                            }),
+                            const Divider(indent: 24, endIndent: 24),
+                            // Summary row
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Total',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  Text(
+                                    isLimbah
+                                        ? '${totalWeight.toStringAsFixed(1)} KG'
+                                        : '$totalSacks karung — ${totalWeight.toStringAsFixed(1)} KG',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: AppColors.primaryDark,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                          ],
                         ),
                       );
                     },

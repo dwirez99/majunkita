@@ -73,7 +73,7 @@ class ManagePercaScreen extends ConsumerWidget {
                     _buildMenuCard(
                       context: context,
                       icon: Icons.add_box,
-                      title: 'Tambah\nStok Perca',
+                      title: 'Laporan Tambah\nStok Perca',
                       color: AppColors.primary,
                       onTap: () {
                         Navigator.push(

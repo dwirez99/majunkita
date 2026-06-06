@@ -91,6 +91,24 @@ class _AddPercaHistoryScreenState extends ConsumerState<AddPercaHistoryScreen> {
     }).toList();
   }
 
+  /// Derive a grouping key that identifies a single "taking event".
+  /// Records from the same batch share the same delivery_proof URL.
+  /// Fallback: date_entry + factory + created_at (truncated to minute).
+  String _takingEventKey(Map<String, dynamic> record) {
+    final deliveryProof = record['delivery_proof'] as String? ?? '';
+    if (deliveryProof.isNotEmpty) {
+      return deliveryProof;
+    }
+    final dateEntry = record['date_entry'] as String? ?? '';
+    final factoryName =
+        (record['factories'] as Map<String, dynamic>?)?['factory_name']
+            as String? ?? '';
+    final createdAt = record['created_at'] as String? ?? '';
+    // Truncate created_at to the minute to group records submitted together
+    final truncated = createdAt.length >= 16 ? createdAt.substring(0, 16) : createdAt;
+    return '$dateEntry|$factoryName|$truncated';
+  }
+
   Widget _buildFilterSection() {
     final hasFilter = _searchController.text.isNotEmpty || _dateRange != null;
     final dateLabel =
@@ -213,15 +231,10 @@ class _AddPercaHistoryScreenState extends ConsumerState<AddPercaHistoryScreen> {
                     );
                   }
 
-                  // Group records by date + factory
+                  // Group records by taking event
                   final Map<String, List<Map<String, dynamic>>> grouped = {};
                   for (final record in filteredRecords) {
-                    final dateStr = record['date_entry'] as String? ?? '';
-                    final factoryName =
-                        (record['factories'] as Map<String, dynamic>?)?['factory_name']
-                            as String? ??
-                        'Pabrik tidak diketahui';
-                    final key = '$dateStr|$factoryName';
+                    final key = _takingEventKey(record);
                     grouped.putIfAbsent(key, () => []).add(record);
                   }
 
@@ -240,24 +253,25 @@ class _AddPercaHistoryScreenState extends ConsumerState<AddPercaHistoryScreen> {
                           itemCount: pageKeys.length,
                           itemBuilder: (context, index) {
                             final key = pageKeys[index];
-                            final parts = key.split('|');
-                            final dateStr = parts[0];
-                            final factoryName = parts[1];
                             final items = grouped[key]!;
 
+                            // Extract common info from the first item
+                            final firstItem = items.first;
+                            final factoryName =
+                                (firstItem['factories'] as Map<String, dynamic>?)?['factory_name']
+                                    as String? ??
+                                'Pabrik tidak diketahui';
+                            final dateStr = firstItem['date_entry'] as String? ?? '';
                             final formattedDate = _formatDate(dateStr);
+
+                            // Calculate totals
                             double totalWeight = 0;
                             int totalKarung = items.length;
-                            final Map<String, double> weightByType = {};
-                            final Map<String, int> karungByType = {};
                             String proofUrl = '';
 
                             for (final item in items) {
-                              final type = item['perca_type'] as String? ?? '-';
                               final weight = (item['weight'] as num?)?.toDouble() ?? 0;
                               totalWeight += weight;
-                              weightByType[type] = (weightByType[type] ?? 0) + weight;
-                              karungByType[type] = (karungByType[type] ?? 0) + 1;
                               if (proofUrl.isEmpty) {
                                 final url = item['delivery_proof'] as String? ?? '';
                                 if (url.isNotEmpty) {
@@ -296,7 +310,7 @@ class _AddPercaHistoryScreenState extends ConsumerState<AddPercaHistoryScreen> {
                                         ),
                                       ),
                                       Text(
-                                        'Total Berat: $totalWeight KG',
+                                        'Total Berat: ${totalWeight.toStringAsFixed(1)} KG',
                                         style: const TextStyle(
                                           color: AppColors.greyDark,
                                         ),
@@ -305,40 +319,72 @@ class _AddPercaHistoryScreenState extends ConsumerState<AddPercaHistoryScreen> {
                                   ),
                                 ),
                                 children: [
-                                  ...weightByType.entries.map((entry) {
-                                    final type = entry.key;
-                                    final weight = entry.value;
-                                    final karung = karungByType[type] ?? 0;
+                                  // Show each individual item, matching the Add Perca list format
+                                  ...items.asMap().entries.map((entry) {
+                                    final idx = entry.key;
+                                    final item = entry.value;
+                                    final type = item['perca_type'] as String? ?? '-';
+                                    final weight = (item['weight'] as num?)?.toDouble() ?? 0;
+                                    final sackCode = item['sack_code'] as String? ?? '-';
 
                                     return ListTile(
                                       contentPadding: const EdgeInsets.symmetric(
                                         horizontal: 24,
-                                        vertical: 4,
+                                        vertical: 0,
                                       ),
-                                      title: Text('Total $type'),
-                                      trailing: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        mainAxisSize: MainAxisSize.min,
-                                        crossAxisAlignment: CrossAxisAlignment.end,
-                                        children: [
-                                          Text(
-                                            '$karung Karung',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                      leading: CircleAvatar(
+                                        radius: 14,
+                                        backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                                        child: Text(
+                                          '${idx + 1}',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.primaryDark,
                                           ),
-                                          Text(
-                                            '$weight KG',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                              fontSize: 12,
-                                              color: AppColors.grey,
-                                            ),
-                                          ),
-                                        ],
+                                        ),
+                                      ),
+                                      title: Text(
+                                        '$type — $weight KG',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      subtitle: Text(
+                                        'Kode: $sackCode',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.greyDark,
+                                        ),
                                       ),
                                     );
                                   }),
+                                  const Divider(indent: 24, endIndent: 24),
+                                  // Summary row
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text(
+                                          'Total',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        Text(
+                                          '$totalKarung Karung — ${totalWeight.toStringAsFixed(1)} KG',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            color: AppColors.primaryDark,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                   if (proofUrl.isNotEmpty)
                                     ListTile(
                                       contentPadding: const EdgeInsets.symmetric(
