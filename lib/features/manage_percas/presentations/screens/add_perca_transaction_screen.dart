@@ -688,49 +688,55 @@ class _AddPercaTransactionScreenState
                             );
                           }
 
-                          Map<String, dynamic>? dropdownValue;
-                          try {
-                            dropdownValue = filteredList.firstWhere(
-                              (item) => item['sack_code'] == _selectedSackCode,
-                            );
-                          } catch (_) {
-                            dropdownValue = null;
-                          }
-
-                          return DropdownButtonFormField<Map<String, dynamic>>(
-                            value: dropdownValue,
-                            hint: const Text('Pilih Kode Karung'),
-                            isExpanded: true,
-                            decoration: InputDecoration(
-                              prefixIcon: const Icon(Icons.qr_code),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            items:
-                                filteredList.map<
-                                  DropdownMenuItem<Map<String, dynamic>>
-                                >((item) {
-                                  final code =
-                                      item['sack_code'] as String? ?? '-';
-                                  return DropdownMenuItem<Map<String, dynamic>>(
-                                    value: item,
-                                    child: Text(
-                                      '${_readableSackCode(code)}',
-                                      overflow: TextOverflow.ellipsis,
+                          return FormField<String>(
+                            initialValue: _selectedSackCode,
+                            validator: (_) =>
+                                _selectedSackCode == null
+                                    ? 'Kode karung tidak boleh kosong'
+                                    : null,
+                            builder: (formFieldState) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  InkWell(
+                                    onTap: () async {
+                                      final selected = await _showSackCodePicker(
+                                        context,
+                                        filteredList,
+                                      );
+                                      if (selected != null) {
+                                        _onSackCodeSelected(selected);
+                                        formFieldState.didChange(
+                                          selected['sack_code'] as String?,
+                                        );
+                                      }
+                                    },
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: InputDecorator(
+                                      decoration: InputDecoration(
+                                        prefixIcon: const Icon(Icons.qr_code),
+                                        suffixIcon: const Icon(Icons.arrow_drop_down),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        errorText: formFieldState.errorText,
+                                      ),
+                                      child: Text(
+                                        _selectedSackCode != null
+                                            ? _readableSackCode(_selectedSackCode!)
+                                            : 'Pilih Kode Karung',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: _selectedSackCode != null
+                                              ? Colors.black87
+                                              : Colors.grey[600],
+                                        ),
+                                      ),
                                     ),
-                                  );
-                                }).toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                _onSackCodeSelected(value);
-                              }
+                                  ),
+                                ],
+                              );
                             },
-                            validator:
-                                (value) =>
-                                    value == null
-                                        ? 'Kode karung tidak boleh kosong'
-                                        : null,
                           );
                         },
                         loading: () => _buildLoadingDropdown('Loading stok...'),
@@ -1229,6 +1235,204 @@ class _AddPercaTransactionScreenState
                 ),
               ),
     );
+  }
+
+  /// Menampilkan dialog pencarian kode karung
+  Future<Map<String, dynamic>?> _showSackCodePicker(
+    BuildContext context,
+    List<Map<String, dynamic>> items,
+  ) async {
+    Map<String, dynamic>? result;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) {
+        // Controller dibuat di dalam builder agar lifecycle-nya mengikuti dialog.
+        // Tidak perlu dispose manual — akan di-GC setelah dialog ditutup.
+        final searchController = TextEditingController();
+
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            final query = searchController.text.trim().toLowerCase();
+            final filtered = items.where((item) {
+              final code = (item['sack_code'] as String? ?? '').toLowerCase();
+              final readable = _readableSackCode(code).toLowerCase();
+              final percaType = (item['perca_type'] as String? ?? '').toLowerCase();
+              return query.isEmpty ||
+                  code.contains(query) ||
+                  readable.contains(query) ||
+                  percaType.contains(query);
+            }).toList();
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.65,
+                  maxWidth: 400,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.qr_code, color: AppColors.primary),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'Pilih Kode Karung',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Navigator.of(ctx).pop(),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Search bar
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: TextField(
+                        controller: searchController,
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          hintText: 'Cari kode karung...',
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          isDense: true,
+                        ),
+                        onChanged: (_) => setDialogState(() {}),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Hint: Kode-Berat legend
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Kode:  K = Kaos  •  B = Kain',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[700],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Divider(height: 1),
+                    // List
+                    Flexible(
+                      child: filtered.isEmpty
+                          ? const Padding(
+                              padding: EdgeInsets.all(24),
+                              child: Text(
+                                'Tidak ada kode karung yang cocok.',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            )
+                          : ListView.separated(
+                              shrinkWrap: true,
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              itemCount: filtered.length,
+                              separatorBuilder: (_, __) =>
+                                  const Divider(height: 1, indent: 16, endIndent: 16),
+                              itemBuilder: (_, index) {
+                                final item = filtered[index];
+                                final code = item['sack_code'] as String? ?? '-';
+                                final percaType = item['perca_type'] as String? ?? '-';
+                                final totalSacks =
+                                    (item['total_sacks'] as num?)?.toInt() ?? 0;
+                                final totalWeight =
+                                    (item['total_weight'] as num?)?.toDouble() ?? 0;
+                                final isSelected = code == _selectedSackCode;
+
+                                return ListTile(
+                                  selected: isSelected,
+                                  selectedTileColor:
+                                      AppColors.primary.withValues(alpha: 0.08),
+                                  leading: CircleAvatar(
+                                    backgroundColor: isSelected
+                                        ? AppColors.primary
+                                        : Colors.grey[200],
+                                    child: Icon(
+                                      Icons.inventory_2,
+                                      size: 20,
+                                      color: isSelected
+                                          ? Colors.white
+                                          : Colors.grey[600],
+                                    ),
+                                  ),
+                                  title: Text(
+                                    _readableSackCode(code),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: isSelected
+                                          ? AppColors.primary
+                                          : Colors.black87,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    '$percaType • $totalSacks karung • ${totalWeight.toStringAsFixed(1)} KG',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  trailing: isSelected
+                                      ? const Icon(
+                                          Icons.check_circle,
+                                          color: AppColors.primary,
+                                        )
+                                      : null,
+                                  onTap: () {
+                                    result = item;
+                                    Navigator.of(ctx).pop();
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    return result;
   }
 
   Widget _buildLoadingDropdown(String hint) {

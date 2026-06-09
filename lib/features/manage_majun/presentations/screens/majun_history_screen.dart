@@ -16,6 +16,9 @@ class MajunHistoryScreen extends ConsumerStatefulWidget {
 class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
   final TextEditingController _searchController = TextEditingController();
   DateTimeRange? _dateRange;
+
+  /// Filter tipe setor: 'semua', 'majun', 'limbah'
+  String _selectedType = 'semua';
   
   int _currentPage = 1;
   static const int _itemsPerPage = 10;
@@ -90,7 +93,13 @@ class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
                 ),
               ));
 
-      return matchesSearch && matchesDate;
+      // Filter berdasarkan tipe setor
+      final isLimbah = item.id?.startsWith('limbah:') ?? false;
+      final matchesType = _selectedType == 'semua' ||
+          (_selectedType == 'limbah' && isLimbah) ||
+          (_selectedType == 'majun' && !isLimbah);
+
+      return matchesSearch && matchesDate && matchesType;
     }).toList();
   }
 
@@ -168,47 +177,62 @@ class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
               // Filters Section
               Padding(
                 padding: const EdgeInsets.all(12),
-                child: Row(
+                child: Column(
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          hintText: 'Cari penjahit...',
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              hintText: 'Cari penjahit...',
+                              prefixIcon: const Icon(Icons.search, size: 20),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              isDense: true,
+                            ),
+                            onChanged: (val) {
+                              setState(() {
+                                _currentPage = 1;
+                              });
+                            },
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          isDense: true,
                         ),
-                        onChanged: (val) {
-                          setState(() {
-                            _currentPage = 1;
-                          });
-                        },
-                      ),
+                        const SizedBox(width: 8),
+                        OutlinedButton.icon(
+                          onPressed: _pickDateRange,
+                          icon: const Icon(Icons.date_range, size: 18),
+                          label: Text(
+                            _dateRange == null 
+                              ? 'Tanggal' 
+                              : '${DateFormat('dd/MM').format(_dateRange!.start)} - ${DateFormat('dd/MM').format(_dateRange!.end)}'
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                          ),
+                        ),
+                        if (_dateRange != null)
+                          IconButton(
+                            icon: const Icon(Icons.clear, color: AppColors.error, size: 20),
+                            onPressed: _clearDateFilter,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    OutlinedButton.icon(
-                      onPressed: _pickDateRange,
-                      icon: const Icon(Icons.date_range, size: 18),
-                      label: Text(
-                        _dateRange == null 
-                          ? 'Tanggal' 
-                          : '${DateFormat('dd/MM').format(_dateRange!.start)} - ${DateFormat('dd/MM').format(_dateRange!.end)}'
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                      ),
+                    const SizedBox(height: 8),
+                    // Filter Tipe Setor
+                    Row(
+                      children: [
+                        _buildTypeChip('semua', 'Semua'),
+                        const SizedBox(width: 8),
+                        _buildTypeChip('majun', 'Setor Majun'),
+                        const SizedBox(width: 8),
+                        _buildTypeChip('limbah', 'Setor Limbah'),
+                      ],
                     ),
-                    if (_dateRange != null)
-                      IconButton(
-                        icon: const Icon(Icons.clear, color: AppColors.error, size: 20),
-                        onPressed: _clearDateFilter,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
                   ],
                 ),
               ),
@@ -465,6 +489,34 @@ class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTypeChip(String value, String label) {
+    final isSelected = _selectedType == value;
+    return ChoiceChip(
+      label: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          color: isSelected ? Colors.white : AppColors.greyDark,
+        ),
+      ),
+      selected: isSelected,
+      selectedColor: AppColors.primary,
+      backgroundColor: AppColors.surfaceLight,
+      side: BorderSide(
+        color: isSelected ? AppColors.primary : AppColors.cardBorder,
+      ),
+      onSelected: (_) {
+        setState(() {
+          _selectedType = value;
+          _currentPage = 1;
+        });
+      },
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
 
