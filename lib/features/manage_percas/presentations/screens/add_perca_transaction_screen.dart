@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -60,16 +61,21 @@ class _AddPercaTransactionScreenState
 
   // List transaksi yang sudah diinput (sebelum submit)
   final List<Map<String, dynamic>> _transactionList = [];
+  int? _editingIndex;
 
   // Flag lock tailor & tanggal
   bool _isLocked = false;
   final _tailorReadonlyController = TextEditingController();
   final _tanggalReadonlyController = TextEditingController();
 
-  /// Hitung jumlah karung yang sudah ditambahkan ke daftar transaksi per kode
-  int _addedSacksForCode(String sackCode) {
+  /// Hitung jumlah karung yang sudah ditambahkan ke daftar transaksi per kode.
+  /// [excludeIndex] dipakai saat mode edit agar item yang sedang diedit
+  /// tidak ikut dihitung sebagai "sudah terpakai".
+  int _addedSacksForCode(String sackCode, {int? excludeIndex}) {
     int count = 0;
-    for (var trx in _transactionList) {
+    for (int i = 0; i < _transactionList.length; i++) {
+      if (excludeIndex != null && i == excludeIndex) continue;
+      final trx = _transactionList[i];
       if (trx['sackCode'] == sackCode) {
         count += (trx['sackCount'] as int);
       }
@@ -83,9 +89,11 @@ class _AddPercaTransactionScreenState
     final totalSacks = (item['total_sacks'] as num?)?.toInt() ?? 0;
     final totalWeight = (item['total_weight'] as num?)?.toDouble() ?? 0;
 
-    // Kurangi dengan jumlah yang sudah ditambahkan ke daftar
-    final alreadyAdded = _addedSacksForCode(sackCode);
-    final remainingSacks = totalSacks - alreadyAdded;
+    final alreadyAdded = _addedSacksForCode(
+      sackCode,
+      excludeIndex: _editingIndex,
+    );
+    final remainingSacks = max(0, totalSacks - alreadyAdded);
     final weightPerSack = totalSacks > 0 ? totalWeight / totalSacks : 0.0;
     final remainingWeight = weightPerSack * remainingSacks;
 
@@ -105,9 +113,26 @@ class _AddPercaTransactionScreenState
         _selectedTailorId != null &&
         _selectedSackCode != null) {
       final sackCount = int.parse(_sackCountController.text);
+      final wasEditing = _editingIndex != null;
+      final existingIndex = _transactionList.indexWhere(
+        (trx) => trx['sackCode'] == _selectedSackCode!,
+      );
+
+      if (!wasEditing && existingIndex >= 0) {
+        _startEditTransaction(existingIndex);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Kode karung sudah ada di daftar. Ubah jumlah melalui mode edit.',
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
 
       setState(() {
-        _transactionList.add({
+        final data = {
           'idTailor': _selectedTailorId!,
           'tailorName': _selectedTailorName ?? '',
           'sackCode': _selectedSackCode!,
@@ -115,7 +140,13 @@ class _AddPercaTransactionScreenState
           'sackCount': sackCount,
           'dateEntry': _selectedDate,
           'totalWeight': _calculatedWeight,
-        });
+        };
+
+        if (_editingIndex != null) {
+          _transactionList[_editingIndex!] = data;
+        } else {
+          _transactionList.add(data);
+        }
 
         // Lock tailor & tanggal after first entry
         if (!_isLocked) {
@@ -129,6 +160,7 @@ class _AddPercaTransactionScreenState
         // Clear for next entry
         _selectedSackCode = null;
         _selectedPercaType = null;
+        _editingIndex = null;
         _sackCountController.clear();
         _availableSacks = 0;
         _availableWeight = 0;
@@ -139,7 +171,9 @@ class _AddPercaTransactionScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Transaksi ${_transactionList.length} berhasil ditambahkan',
+            wasEditing
+                ? 'Transaksi berhasil diperbarui'
+                : 'Transaksi ${_transactionList.length} berhasil ditambahkan',
           ),
           backgroundColor: Colors.green,
         ),
@@ -157,11 +191,74 @@ class _AddPercaTransactionScreenState
   void _removeTransaction(int index) {
     setState(() {
       _transactionList.removeAt(index);
+      if (_editingIndex == index) {
+        _editingIndex = null;
+        _selectedSackCode = null;
+        _selectedPercaType = null;
+        _sackCountController.clear();
+        _availableSacks = 0;
+        _availableWeight = 0;
+        _weightPerSack = 0;
+        _calculatedWeight = 0;
+      } else if (_editingIndex != null && index < _editingIndex!) {
+        // Geser index edit agar tetap menunjuk item yang sama setelah list memendek.
+        _editingIndex = _editingIndex! - 1;
+      }
       if (_transactionList.isEmpty) {
         _isLocked = false;
         _tailorReadonlyController.clear();
         _tanggalReadonlyController.clear();
       }
+    });
+  }
+
+  void _startEditTransaction(int index) {
+    final trx = _transactionList[index];
+    final sackCode = trx['sackCode'] as String? ?? '';
+    final summaryList = ref.read(availableSackSummaryProvider).value ?? const [];
+    final selected = summaryList.cast<Map<String, dynamic>?>().firstWhere(
+      (item) => item?['sack_code'] == sackCode,
+      orElse: () => null,
+    );
+    if (selected != null) {
+      _editingIndex = index;
+      _onSackCodeSelected(selected);
+      setState(() {
+        _sackCountController.text = '${trx['sackCount'] ?? ''}';
+        _calculateWeight();
+      });
+    }
+  }
+
+  /// Adjust the sack count of an existing transaction list item by [delta].
+  /// Clamps the value to [1 .. maxAvailable] where maxAvailable is the
+  /// total sacks in the stock summary minus those consumed by *other* items
+  /// with the same sack code.
+  void _adjustSackCount(int index, int delta) {
+    final trx = _transactionList[index];
+    final sackCode = trx['sackCode'] as String? ?? '';
+    final currentCount = trx['sackCount'] as int? ?? 0;
+    final weightPerSack = (trx['totalWeight'] as double) / (currentCount > 0 ? currentCount : 1);
+
+    // Determine the ceiling from the stock summary.
+    final summaryList = ref.read(availableSackSummaryProvider).value ?? const [];
+    final summaryItem = summaryList.cast<Map<String, dynamic>?>().firstWhere(
+      (item) => item?['sack_code'] == sackCode,
+      orElse: () => null,
+    );
+    final totalInStock = (summaryItem?['total_sacks'] as num?)?.toInt() ?? 0;
+    final usedByOthers = _addedSacksForCode(sackCode, excludeIndex: index);
+    final maxForThisItem = max(0, totalInStock - usedByOthers);
+
+    final newCount = (currentCount + delta).clamp(1, maxForThisItem);
+    if (newCount == currentCount) return;
+
+    setState(() {
+      _transactionList[index] = {
+        ...trx,
+        'sackCount': newCount,
+        'totalWeight': weightPerSack * newCount,
+      };
     });
   }
 
@@ -316,7 +413,7 @@ class _AddPercaTransactionScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tambah Transaksi Perca'),
+        title: const Text('Laporan Ambil Perca dari Gudang'),
         backgroundColor: AppColors.surfaceLight,
         foregroundColor: AppColors.black,
         actions: [
@@ -559,14 +656,11 @@ class _AddPercaTransactionScreenState
                             );
                           }
 
-                          // Filter: hitung sisa karung setelah dikurangi yang sudah ditambahkan
                           final filteredList =
                               summaryList.where((item) {
-                                final code = item['sack_code'] as String? ?? '';
                                 final totalSacks =
                                     (item['total_sacks'] as num?)?.toInt() ?? 0;
-                                final alreadyAdded = _addedSacksForCode(code);
-                                return (totalSacks - alreadyAdded) > 0;
+                                return totalSacks > 0;
                               }).toList();
 
                           if (filteredList.isEmpty) {
@@ -594,70 +688,55 @@ class _AddPercaTransactionScreenState
                             );
                           }
 
-                          Map<String, dynamic>? dropdownValue;
-                          try {
-                            dropdownValue = filteredList.firstWhere(
-                              (item) => item['sack_code'] == _selectedSackCode,
-                            );
-                          } catch (_) {
-                            dropdownValue = null;
-                          }
-
-                          return DropdownButtonFormField<Map<String, dynamic>>(
-                            value: dropdownValue,
-                            hint: const Text('Pilih Kode Karung'),
-                            isExpanded: true,
-                            decoration: InputDecoration(
-                              prefixIcon: const Icon(Icons.qr_code),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            items:
-                                filteredList.map<
-                                  DropdownMenuItem<Map<String, dynamic>>
-                                >((item) {
-                                  final code =
-                                      item['sack_code'] as String? ?? '-';
-                                  final percaType =
-                                      item['perca_type'] as String? ?? '-';
-                                  final totalSacks =
-                                      (item['total_sacks'] as num?)?.toInt() ??
-                                      0;
-                                  final totalWeight =
-                                      (item['total_weight'] as num?)
-                                          ?.toDouble() ??
-                                      0;
-
-                                  // Hitung sisa setelah dikurangi yang sudah ditambahkan
-                                  final alreadyAdded = _addedSacksForCode(code);
-                                  final remainingSacks =
-                                      totalSacks - alreadyAdded;
-                                  final weightPerSack =
-                                      totalSacks > 0
-                                          ? totalWeight / totalSacks
-                                          : 0.0;
-                                  final remainingWeight =
-                                      weightPerSack * remainingSacks;
-
-                                  return DropdownMenuItem<Map<String, dynamic>>(
-                                    value: item,
-                                    child: Text(
-                                      '${_readableSackCode(code)}',
-                                      overflow: TextOverflow.ellipsis,
+                          return FormField<String>(
+                            initialValue: _selectedSackCode,
+                            validator: (_) =>
+                                _selectedSackCode == null
+                                    ? 'Kode karung tidak boleh kosong'
+                                    : null,
+                            builder: (formFieldState) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  InkWell(
+                                    onTap: () async {
+                                      final selected = await _showSackCodePicker(
+                                        context,
+                                        filteredList,
+                                      );
+                                      if (selected != null) {
+                                        _onSackCodeSelected(selected);
+                                        formFieldState.didChange(
+                                          selected['sack_code'] as String?,
+                                        );
+                                      }
+                                    },
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: InputDecorator(
+                                      decoration: InputDecoration(
+                                        prefixIcon: const Icon(Icons.qr_code),
+                                        suffixIcon: const Icon(Icons.arrow_drop_down),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        errorText: formFieldState.errorText,
+                                      ),
+                                      child: Text(
+                                        _selectedSackCode != null
+                                            ? _readableSackCode(_selectedSackCode!)
+                                            : 'Pilih Kode Karung',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: _selectedSackCode != null
+                                              ? Colors.black87
+                                              : Colors.grey[600],
+                                        ),
+                                      ),
                                     ),
-                                  );
-                                }).toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                _onSackCodeSelected(value);
-                              }
+                                  ),
+                                ],
+                              );
                             },
-                            validator:
-                                (value) =>
-                                    value == null
-                                        ? 'Kode karung tidak boleh kosong'
-                                        : null,
                           );
                         },
                         loading: () => _buildLoadingDropdown('Loading stok...'),
@@ -858,7 +937,11 @@ class _AddPercaTransactionScreenState
                       ElevatedButton.icon(
                         onPressed: _addTransactionToList,
                         icon: const Icon(Icons.add),
-                        label: const Text('Tambah ke Daftar'),
+                        label: Text(
+                          _editingIndex != null
+                              ? 'Perbarui di Daftar'
+                              : 'Tambah ke Daftar',
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green[400],
                           foregroundColor: Colors.white,
@@ -918,44 +1001,155 @@ class _AddPercaTransactionScreenState
                                 index,
                               ) {
                                 final trx = _transactionList[index];
+                                final sackCount = trx['sackCount'] as int;
+
+                                // Determine max available for this sack code
+                                final sackCode = trx['sackCode'] as String;
+                                final summaryList = ref.read(availableSackSummaryProvider).value ?? const [];
+                                final summaryItem = summaryList.cast<Map<String, dynamic>?>().firstWhere(
+                                  (item) => item?['sack_code'] == sackCode,
+                                  orElse: () => null,
+                                );
+                                final totalInStock = (summaryItem?['total_sacks'] as num?)?.toInt() ?? 0;
+                                final usedByOthers = _addedSacksForCode(sackCode, excludeIndex: index);
+                                final maxForThisItem = max(0, totalInStock - usedByOthers);
+                                final canIncrement = sackCount < maxForThisItem;
+                                final canDecrement = sackCount > 1;
+
                                 return Card(
                                   margin: const EdgeInsets.only(bottom: 8),
                                   elevation: 1,
-                                  child: ListTile(
-                                    contentPadding: const EdgeInsets.symmetric(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
                                       horizontal: 12,
-                                      vertical: 4,
+                                      vertical: 8,
                                     ),
-                                    leading: CircleAvatar(
-                                      backgroundColor: Colors.green[100],
-                                      child: Text(
-                                        '${index + 1}',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.green[800],
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        // Top row: index + title + delete
+                                        Row(
+                                          children: [
+                                            CircleAvatar(
+                                              radius: 16,
+                                              backgroundColor: Colors.green[100],
+                                              child: Text(
+                                                '${index + 1}',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.green[800],
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    '${_readableSackCode(sackCode)} (${trx['percaType']})',
+                                                    style: const TextStyle(
+                                                      fontWeight: FontWeight.w600,
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    '${(trx['totalWeight'] as double).toStringAsFixed(1)} KG',
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: Colors.grey[600],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.delete_outline,
+                                                color: Colors.red,
+                                                size: 22,
+                                              ),
+                                              onPressed:
+                                                  () => _removeTransaction(index),
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(),
+                                              tooltip: 'Hapus',
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                    ),
-                                    title: Text(
-                                      '${_readableSackCode(trx['sackCode'] as String)} (${trx['percaType']}) — ${trx['sackCount']} karung',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    subtitle: Text(
-                                      '${(trx['totalWeight'] as double).toStringAsFixed(1)} KG',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                    trailing: IconButton(
-                                      icon: const Icon(
-                                        Icons.delete_outline,
-                                        color: Colors.red,
-                                      ),
-                                      onPressed:
-                                          () => _removeTransaction(index),
+                                        const SizedBox(height: 8),
+                                        // Bottom row: (+) / (-) stepper
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            // Decrement button
+                                            Material(
+                                              color: canDecrement
+                                                  ? Colors.red[50]
+                                                  : Colors.grey[100],
+                                              borderRadius: BorderRadius.circular(8),
+                                              child: InkWell(
+                                                onTap: canDecrement
+                                                    ? () => _adjustSackCount(index, -1)
+                                                    : null,
+                                                borderRadius: BorderRadius.circular(8),
+                                                child: Padding(
+                                                  padding: const EdgeInsets.all(6),
+                                                  child: Icon(
+                                                    Icons.remove,
+                                                    size: 20,
+                                                    color: canDecrement
+                                                        ? Colors.red[700]
+                                                        : Colors.grey[400],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            // Count display
+                                            Container(
+                                              constraints: const BoxConstraints(minWidth: 80),
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 6,
+                                              ),
+                                              child: Text(
+                                                '$sackCount karung',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.green[800],
+                                                ),
+                                              ),
+                                            ),
+                                            // Increment button
+                                            Material(
+                                              color: canIncrement
+                                                  ? Colors.green[50]
+                                                  : Colors.grey[100],
+                                              borderRadius: BorderRadius.circular(8),
+                                              child: InkWell(
+                                                onTap: canIncrement
+                                                    ? () => _adjustSackCount(index, 1)
+                                                    : null,
+                                                borderRadius: BorderRadius.circular(8),
+                                                child: Padding(
+                                                  padding: const EdgeInsets.all(6),
+                                                  child: Icon(
+                                                    Icons.add,
+                                                    size: 20,
+                                                    color: canIncrement
+                                                        ? Colors.green[700]
+                                                        : Colors.grey[400],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 );
@@ -1041,6 +1235,204 @@ class _AddPercaTransactionScreenState
                 ),
               ),
     );
+  }
+
+  /// Menampilkan dialog pencarian kode karung
+  Future<Map<String, dynamic>?> _showSackCodePicker(
+    BuildContext context,
+    List<Map<String, dynamic>> items,
+  ) async {
+    Map<String, dynamic>? result;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) {
+        // Controller dibuat di dalam builder agar lifecycle-nya mengikuti dialog.
+        // Tidak perlu dispose manual — akan di-GC setelah dialog ditutup.
+        final searchController = TextEditingController();
+
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            final query = searchController.text.trim().toLowerCase();
+            final filtered = items.where((item) {
+              final code = (item['sack_code'] as String? ?? '').toLowerCase();
+              final readable = _readableSackCode(code).toLowerCase();
+              final percaType = (item['perca_type'] as String? ?? '').toLowerCase();
+              return query.isEmpty ||
+                  code.contains(query) ||
+                  readable.contains(query) ||
+                  percaType.contains(query);
+            }).toList();
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.65,
+                  maxWidth: 400,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.qr_code, color: AppColors.primary),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'Pilih Kode Karung',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Navigator.of(ctx).pop(),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Search bar
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: TextField(
+                        controller: searchController,
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          hintText: 'Cari kode karung...',
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          isDense: true,
+                        ),
+                        onChanged: (_) => setDialogState(() {}),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Hint: Kode-Berat legend
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Kode:  K = Kaos  •  B = Kain',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[700],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Divider(height: 1),
+                    // List
+                    Flexible(
+                      child: filtered.isEmpty
+                          ? const Padding(
+                              padding: EdgeInsets.all(24),
+                              child: Text(
+                                'Tidak ada kode karung yang cocok.',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            )
+                          : ListView.separated(
+                              shrinkWrap: true,
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              itemCount: filtered.length,
+                              separatorBuilder: (_, __) =>
+                                  const Divider(height: 1, indent: 16, endIndent: 16),
+                              itemBuilder: (_, index) {
+                                final item = filtered[index];
+                                final code = item['sack_code'] as String? ?? '-';
+                                final percaType = item['perca_type'] as String? ?? '-';
+                                final totalSacks =
+                                    (item['total_sacks'] as num?)?.toInt() ?? 0;
+                                final totalWeight =
+                                    (item['total_weight'] as num?)?.toDouble() ?? 0;
+                                final isSelected = code == _selectedSackCode;
+
+                                return ListTile(
+                                  selected: isSelected,
+                                  selectedTileColor:
+                                      AppColors.primary.withValues(alpha: 0.08),
+                                  leading: CircleAvatar(
+                                    backgroundColor: isSelected
+                                        ? AppColors.primary
+                                        : Colors.grey[200],
+                                    child: Icon(
+                                      Icons.inventory_2,
+                                      size: 20,
+                                      color: isSelected
+                                          ? Colors.white
+                                          : Colors.grey[600],
+                                    ),
+                                  ),
+                                  title: Text(
+                                    _readableSackCode(code),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: isSelected
+                                          ? AppColors.primary
+                                          : Colors.black87,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    '$percaType • $totalSacks karung • ${totalWeight.toStringAsFixed(1)} KG',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  trailing: isSelected
+                                      ? const Icon(
+                                          Icons.check_circle,
+                                          color: AppColors.primary,
+                                        )
+                                      : null,
+                                  onTap: () {
+                                    result = item;
+                                    Navigator.of(ctx).pop();
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    return result;
   }
 
   Widget _buildLoadingDropdown(String hint) {

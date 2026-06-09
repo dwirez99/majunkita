@@ -16,6 +16,9 @@ class MajunHistoryScreen extends ConsumerStatefulWidget {
 class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
   final TextEditingController _searchController = TextEditingController();
   DateTimeRange? _dateRange;
+
+  /// Filter tipe setor: 'semua', 'majun', 'limbah'
+  String _selectedType = 'semua';
   
   int _currentPage = 1;
   static const int _itemsPerPage = 10;
@@ -90,13 +93,20 @@ class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
                 ),
               ));
 
-      return matchesSearch && matchesDate;
+      // Filter berdasarkan tipe setor
+      final isLimbah = item.id?.startsWith('limbah:') ?? false;
+      final matchesType = _selectedType == 'semua' ||
+          (_selectedType == 'limbah' && isLimbah) ||
+          (_selectedType == 'majun' && !isLimbah);
+
+      return matchesSearch && matchesDate && matchesType;
     }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     final historyState = ref.watch(majunHistoryProvider);
+    final limbahState = ref.watch(limbahHistoryProvider);
     final currencyFormat = NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp',
@@ -113,15 +123,40 @@ class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Muat Ulang',
-            onPressed: () => ref.invalidate(majunHistoryProvider),
+            onPressed: () {
+              ref.invalidate(majunHistoryProvider);
+              ref.invalidate(limbahHistoryProvider);
+            },
           ),
         ],
       ),
       backgroundColor: AppColors.background,
       body: historyState.when(
-        data: (historyList) {
-          final filteredHistory = _applyFilters(historyList);
-          
+        data: (historyList) => limbahState.when(
+          data: (limbahList) {
+            final combinedHistory = [
+              ...historyList,
+              ...limbahList.map(
+                (item) => MajunTransactionsModel(
+                  id: 'limbah:${item.id ?? ''}',
+                  idTailor: item.idTailor,
+                  dateEntry: item.dateEntry,
+                  weightMajun: item.weightLimbah,
+                  earnedWage: 0,
+                  staffId: item.staffId,
+                  deliveryProof: item.deliveryProof,
+                  createdAt: item.createdAt,
+                  tailorName: item.tailorName,
+                ),
+              ),
+            ]..sort((a, b) {
+              final aDate = a.createdAt ?? a.dateEntry;
+              final bDate = b.createdAt ?? b.dateEntry;
+              return bDate.compareTo(aDate);
+            });
+
+            final filteredHistory = _applyFilters(combinedHistory);
+
           final totalPages = filteredHistory.isEmpty ? 1 : (filteredHistory.length / _itemsPerPage).ceil();
           
           int effectivePage = _currentPage;
@@ -137,52 +172,67 @@ class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
               
           final paginatedHistory = filteredHistory.isEmpty ? <MajunTransactionsModel>[] : filteredHistory.sublist(startIndex, endIndex);
 
-          return Column(
+            return Column(
             children: [
               // Filters Section
               Padding(
                 padding: const EdgeInsets.all(12),
-                child: Row(
+                child: Column(
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          hintText: 'Cari penjahit...',
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              hintText: 'Cari penjahit...',
+                              prefixIcon: const Icon(Icons.search, size: 20),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              isDense: true,
+                            ),
+                            onChanged: (val) {
+                              setState(() {
+                                _currentPage = 1;
+                              });
+                            },
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          isDense: true,
                         ),
-                        onChanged: (val) {
-                          setState(() {
-                            _currentPage = 1;
-                          });
-                        },
-                      ),
+                        const SizedBox(width: 8),
+                        OutlinedButton.icon(
+                          onPressed: _pickDateRange,
+                          icon: const Icon(Icons.date_range, size: 18),
+                          label: Text(
+                            _dateRange == null 
+                              ? 'Tanggal' 
+                              : '${DateFormat('dd/MM').format(_dateRange!.start)} - ${DateFormat('dd/MM').format(_dateRange!.end)}'
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                          ),
+                        ),
+                        if (_dateRange != null)
+                          IconButton(
+                            icon: const Icon(Icons.clear, color: AppColors.error, size: 20),
+                            onPressed: _clearDateFilter,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    OutlinedButton.icon(
-                      onPressed: _pickDateRange,
-                      icon: const Icon(Icons.date_range, size: 18),
-                      label: Text(
-                        _dateRange == null 
-                          ? 'Tanggal' 
-                          : '${DateFormat('dd/MM').format(_dateRange!.start)} - ${DateFormat('dd/MM').format(_dateRange!.end)}'
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                      ),
+                    const SizedBox(height: 8),
+                    // Filter Tipe Setor
+                    Row(
+                      children: [
+                        _buildTypeChip('semua', 'Semua'),
+                        const SizedBox(width: 8),
+                        _buildTypeChip('majun', 'Setor Majun'),
+                        const SizedBox(width: 8),
+                        _buildTypeChip('limbah', 'Setor Limbah'),
+                      ],
                     ),
-                    if (_dateRange != null)
-                      IconButton(
-                        icon: const Icon(Icons.clear, color: AppColors.error, size: 20),
-                        onPressed: _clearDateFilter,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
                   ],
                 ),
               ),
@@ -200,7 +250,7 @@ class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          historyList.isEmpty
+                          combinedHistory.isEmpty
                               ? 'Belum ada riwayat setor majun'
                               : 'Data tidak ditemukan untuk filter saat ini.',
                           style: const TextStyle(
@@ -208,7 +258,7 @@ class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
                             color: AppColors.greyDark,
                           ),
                         ),
-                        if (historyList.isEmpty) ...[
+                        if (combinedHistory.isEmpty) ...[
                           const SizedBox(height: 8),
                           const Text(
                             'Riwayat akan muncul setelah ada setoran',
@@ -229,6 +279,8 @@ class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
                     itemCount: paginatedHistory.length,
                     itemBuilder: (context, index) {
                       final item = paginatedHistory[index];
+                      final isLimbah =
+                          item.id?.startsWith('limbah:') ?? false;
                       return Card(
                         margin: const EdgeInsets.only(bottom: 12),
                         elevation: 2,
@@ -284,6 +336,15 @@ class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
                                               color: AppColors.grey,
                                             ),
                                           ),
+                                          if (isLimbah)
+                                            const Text(
+                                              'Setor Limbah',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.orange,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
                                         ],
                                       ),
                                     ),
@@ -299,7 +360,10 @@ class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
                                     Expanded(
                                       child: _buildDataColumn(
                                         icon: Icons.scale,
-                                        label: 'Berat Majun',
+                                        label:
+                                            isLimbah
+                                                ? 'Berat Limbah'
+                                                : 'Berat Majun',
                                         value:
                                             '${item.weightMajun.toStringAsFixed(1)} KG',
                                         color: AppColors.secondary,
@@ -314,9 +378,12 @@ class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
                                       child: _buildDataColumn(
                                         icon: Icons.monetization_on,
                                         label: 'Upah',
-                                        value: currencyFormat.format(
-                                          item.earnedWage,
-                                        ),
+                                        value:
+                                            isLimbah
+                                                ? '-'
+                                                : currencyFormat.format(
+                                                  item.earnedWage,
+                                                ),
                                         color: AppColors.accentDark,
                                       ),
                                     ),
@@ -379,7 +446,18 @@ class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
                 ),
             ],
           );
-        },
+          },
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          ),
+          error: (error, _) => Center(
+            child: Text(
+              'Error: $error',
+              style: const TextStyle(color: AppColors.error),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
         loading: () => const Center(
           child: CircularProgressIndicator(color: AppColors.primary),
         ),
@@ -400,7 +478,10 @@ class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
               ),
               const SizedBox(height: 12),
               ElevatedButton.icon(
-                onPressed: () => ref.invalidate(majunHistoryProvider),
+                onPressed: () {
+                  ref.invalidate(majunHistoryProvider);
+                  ref.invalidate(limbahHistoryProvider);
+                },
                 icon: const Icon(Icons.refresh),
                 label: const Text('Coba Lagi'),
               ),
@@ -408,6 +489,34 @@ class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTypeChip(String value, String label) {
+    final isSelected = _selectedType == value;
+    return ChoiceChip(
+      label: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          color: isSelected ? Colors.white : AppColors.greyDark,
+        ),
+      ),
+      selected: isSelected,
+      selectedColor: AppColors.primary,
+      backgroundColor: AppColors.surfaceLight,
+      side: BorderSide(
+        color: isSelected ? AppColors.primary : AppColors.cardBorder,
+      ),
+      onSelected: (_) {
+        setState(() {
+          _selectedType = value;
+          _currentPage = 1;
+        });
+      },
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
 
@@ -444,11 +553,12 @@ class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
     NumberFormat currencyFormat,
     DateFormat dateFormat,
   ) {
+    final isLimbah = item.id?.startsWith('limbah:') ?? false;
     showDialog(
       context: context,
       builder:
           (ctx) => AlertDialog(
-            title: const Text('Detail Setor Majun'),
+            title: Text(isLimbah ? 'Detail Setor Limbah' : 'Detail Setor Majun'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -456,10 +566,13 @@ class _MajunHistoryScreenState extends ConsumerState<MajunHistoryScreen> {
                 _buildDetailRow('Penjahit', item.tailorName ?? 'Unknown'),
                 _buildDetailRow('Tanggal', dateFormat.format(item.dateEntry)),
                 _buildDetailRow(
-                  'Berat Majun',
+                  isLimbah ? 'Berat Limbah' : 'Berat Majun',
                   '${item.weightMajun.toStringAsFixed(1)} KG',
                 ),
-                _buildDetailRow('Upah', currencyFormat.format(item.earnedWage)),
+                _buildDetailRow(
+                  'Upah',
+                  isLimbah ? '-' : currencyFormat.format(item.earnedWage),
+                ),
                 if (item.deliveryProof != null &&
                     item.deliveryProof!.isNotEmpty) ...[
                   const SizedBox(height: 12),

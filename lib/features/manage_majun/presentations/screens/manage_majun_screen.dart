@@ -114,7 +114,7 @@ class ManageMajunScreen extends ConsumerWidget {
                   _buildMenuCard(
                     context: context,
                     icon: Icons.history,
-                    title: 'Riwayat\nSetor Majun',
+                    title: 'Riwayat Setor\nMajun & Limbah',
                     color: AppColors.accent,
                     onTap: () {
                       Navigator.push(

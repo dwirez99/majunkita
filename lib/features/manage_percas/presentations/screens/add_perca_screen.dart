@@ -178,7 +178,11 @@ class _AddPercaScreenState extends ConsumerState<AddPercaScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isInputStockMode ? 'Tambah Stok Perca' : 'Upload Bukti Pengambilan'),
+        title: Text(
+          _isInputStockMode
+              ? 'Laporan Tambah Perca'
+              : 'Upload Bukti Pengambilan',
+        ),
         backgroundColor: AppColors.surfaceLight,
         foregroundColor: AppColors.black,
       ),

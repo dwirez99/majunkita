@@ -85,7 +85,7 @@ class _ManageExpeditionsScreenState extends ConsumerState<ManageExpeditionsScree
                     _buildMenuCard(
                       context: context,
                       icon: Icons.add_road,
-                      title: 'Tambah\nExpedisi',
+                      title: 'Laporan\nPengiriman',
                       color: AppColors.primary,
                       onTap: () => Navigator.push(
                         context,
@@ -122,7 +122,7 @@ class _ManageExpeditionsScreenState extends ConsumerState<ManageExpeditionsScree
                     _buildMenuCard(
                       context: context,
                       icon: Icons.business_outlined,
-                      title: 'Mitra\nExpedisi',
+                      title: 'Mitra\nPengiriman',
                       color: AppColors.primaryDark,
                       onTap: () => Navigator.push(
                         context,
@@ -354,9 +354,19 @@ class _ManageExpeditionsScreenState extends ConsumerState<ManageExpeditionsScree
           expedition.destination,
           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
         ),
-        subtitle: Text(
-          '$dateFormatted  ·  ${expedition.sackNumber} karung  ·  ${expedition.totalWeight} kg',
-          style: const TextStyle(fontSize: 12, color: AppColors.grey),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$dateFormatted  ·  ${expedition.sackNumber} karung  ·  ${expedition.totalWeight} kg',
+              style: const TextStyle(fontSize: 12, color: AppColors.grey),
+            ),
+            if (expedition.expeditionPartnerName != null)
+              Text(
+                'Mitra: ${expedition.expeditionPartnerName}',
+                style: const TextStyle(fontSize: 11, color: AppColors.greyDark),
+              ),
+          ],
         ),
         trailing: expedition.partnerName != null
             ? Text(

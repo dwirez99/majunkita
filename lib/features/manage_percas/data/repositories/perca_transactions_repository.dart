@@ -120,14 +120,58 @@ class PercaTransactionsRepository {
   /// Ambil semua riwayat transaksi perca
   Future<List<Map<String, dynamic>>> getPercaTransactionHistory() async {
     try {
-      final data = await _supabase
+      final percaData = await _supabase
           .from('perca_transactions')
           .select(
-            'id, id_stock_perca, id_tailors, date_entry, percas_type, weight, staff_id, created_at, tailors(name)',
+            'id, id_stock_perca, id_tailors, date_entry, percas_type, weight, staff_id, created_at, percas_stock(sack_code), tailors(name)',
           )
-          .order('date_entry', ascending: false)
           .order('created_at', ascending: false);
-      return List<Map<String, dynamic>>.from(data);
+
+      final limbahData = await _supabase
+          .from('limbah_transactions')
+          .select(
+            'id, id_tailor, date_entry, weight_limbah, staff_id, created_at, tailors(name)',
+          )
+          .order('created_at', ascending: false);
+
+      final percaHistory =
+          List<Map<String, dynamic>>.from(percaData).map((row) {
+            final stock = row['percas_stock'] as Map<String, dynamic>?;
+            return {
+              ...row,
+              'sack_code': stock?['sack_code']?.toString() ?? '-',
+              'source_type': 'perca',
+            };
+          }).toList();
+
+      final limbahHistory =
+          List<Map<String, dynamic>>.from(limbahData).map((row) {
+            return {
+              'id': row['id'],
+              'id_stock_perca': null,
+              'id_tailors': row['id_tailor'],
+              'date_entry': row['date_entry'],
+              'percas_type': 'Setor Limbah',
+              'weight': row['weight_limbah'],
+              'staff_id': row['staff_id'],
+              'created_at': row['created_at'],
+              'tailors': row['tailors'],
+              'sack_code': '-',
+              'source_type': 'limbah',
+            };
+          }).toList();
+
+      final merged = [...percaHistory, ...limbahHistory];
+      merged.sort((a, b) {
+        // Fallback ke epoch untuk record lama/tidak valid agar tetap bisa diurutkan stabil.
+        final fallbackDate = DateTime.fromMillisecondsSinceEpoch(0);
+        final aCreated = DateTime.tryParse(a['created_at']?.toString() ?? '') ??
+            fallbackDate;
+        final bCreated = DateTime.tryParse(b['created_at']?.toString() ?? '') ??
+            fallbackDate;
+        return bCreated.compareTo(aCreated);
+      });
+      return merged;
     } catch (e) {
       throw Exception('Gagal mengambil riwayat transaksi perca: $e');
     }

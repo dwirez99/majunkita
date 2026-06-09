@@ -1,6 +1,6 @@
 /// Model untuk Expedisi (Pengiriman barang)
 /// Menyimpan informasi tentang pengiriman yang dilakukan oleh driver,
-/// beserta mitra expedisi (perusahaan pengiriman) yang menanganinya.
+/// beserta nama mitra expedisi (perusahaan pengiriman) yang menanganinya.
 class ExpeditionModel {
   final String id;
   final String idPartner;
@@ -10,14 +10,11 @@ class ExpeditionModel {
   final int totalWeight;
   final String proofOfDelivery;
 
-  /// ID mitra expedisi (FK ke expedition_partners)
-  final String? idExpeditionPartner;
+  /// Nama mitra expedisi (disimpan langsung sebagai TEXT di tabel expeditions)
+  final String? expeditionPartnerName;
 
   /// Nama driver dari tabel profiles (opsional, hasil JOIN)
   final String? partnerName;
-
-  /// Nama mitra expedisi dari tabel expedition_partners (opsional, hasil JOIN)
-  final String? expeditionPartnerName;
 
   ExpeditionModel({
     required this.id,
@@ -27,9 +24,8 @@ class ExpeditionModel {
     required this.sackNumber,
     required this.totalWeight,
     required this.proofOfDelivery,
-    this.idExpeditionPartner,
-    this.partnerName,
     this.expeditionPartnerName,
+    this.partnerName,
   });
 
   /// Factory method untuk membuat ExpeditionModel dari JSON (Supabase response)
@@ -47,15 +43,11 @@ class ExpeditionModel {
       sackNumber: (json['sack_number'] as num?)?.toInt() ?? 0,
       totalWeight: (json['total_weight'] as num?)?.toInt() ?? 0,
       proofOfDelivery: json['proof_of_delivery'] as String? ?? '',
-      idExpeditionPartner: json['id_expedition_partner'] as String?,
+      // Nama mitra expedisi langsung dari kolom TEXT
+      expeditionPartnerName: json['expedition_partner_name'] as String?,
       // Ambil nama driver dari hasil JOIN dengan tabel profiles
       partnerName: json['profiles'] != null
           ? (json['profiles'] as Map<String, dynamic>)['name'] as String?
-          : null,
-      // Ambil nama mitra expedisi dari hasil JOIN dengan tabel expedition_partners
-      expeditionPartnerName: json['expedition_partners'] != null
-          ? (json['expedition_partners'] as Map<String, dynamic>)['name']
-              as String?
           : null,
     );
   }
@@ -74,8 +66,8 @@ class ExpeditionModel {
       'sack_number': sackNumber,
       'total_weight': totalWeight,
       'proof_of_delivery': proofOfDelivery,
-      if (idExpeditionPartner != null)
-        'id_expedition_partner': idExpeditionPartner,
+      if (expeditionPartnerName != null)
+        'expedition_partner_name': expeditionPartnerName,
     };
   }
 
@@ -88,9 +80,8 @@ class ExpeditionModel {
     int? sackNumber,
     int? totalWeight,
     String? proofOfDelivery,
-    String? idExpeditionPartner,
-    String? partnerName,
     String? expeditionPartnerName,
+    String? partnerName,
   }) {
     return ExpeditionModel(
       id: id ?? this.id,
@@ -100,10 +91,9 @@ class ExpeditionModel {
       sackNumber: sackNumber ?? this.sackNumber,
       totalWeight: totalWeight ?? this.totalWeight,
       proofOfDelivery: proofOfDelivery ?? this.proofOfDelivery,
-      idExpeditionPartner: idExpeditionPartner ?? this.idExpeditionPartner,
-      partnerName: partnerName ?? this.partnerName,
       expeditionPartnerName:
           expeditionPartnerName ?? this.expeditionPartnerName,
+      partnerName: partnerName ?? this.partnerName,
     );
   }
 
